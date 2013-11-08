@@ -1,0 +1,53 @@
+2013-04-1:
+* pouzitie regexp namiesto beatifulsoup -> rychlejsie nacitavanie relacii
+* pridane kategorie
+* moznost pouzit prihlasovacie udaje na voyo.cz
+
+2013-03-26:
+ * oprava zpr�v a listingu n�kter�ch po�ad�,zobrazen� p�ehr�van� kvality
+2012-08-28:
+ * opraveno strankovani poradu, opet lze prohlizet vice neuz poslednich 35 epizod
+2012-08-23:
+ * opraven vypis poradu, nyni se jiz zobrazuji vsechny,opravena zmena podstranek poradu Farma,opraven vypis zpr�v,zatim neni v provozu prochazeni stranek poradu
+2012-08-07:
+ * zatim pouze castecna oprava zmen na webu tv nova, doplnek zobrazuje zatim pouze 35 poradu v kategorii a poslednich 35 epizod, opravu strankovani predpokladam koncem mesice
+2012-07-03:
+ * oprava linku
+2012-06-26:
+ * pridany vyjimky pro prehrani videi v podseznamech (napr.Farma)
+2012-04-14:
+ * zmena vypisu poradu (nyni po strankach), puvodni reseni nepocitalo s velkym poctem stran v kategorii, coz melo za nasledek nenacteni posledni strany
+2012-03-17:
+ * oprava vyhledavani poradu
+2012-02-23:
+ * oprava pouziti knihovny hashlib a md5
+2012-02-20:
+ * uprava knihoven
+2012-02-17:
+ * aktualizace chranenych serialu, prizpusobeni chyboveho hlaseni
+2012-01-18:
+ * uprava debug rezimu
+2011-12-21:
+ * pridana moznost vyberu preferovane kvality prehravani v nastaveni doplnku
+2011-12-15:
+ * prechod na novy engine webu voyo.cz
+2011-11-17:
+ * testovaci sestava
+ * odstraneni poradu chranenych DRM
+2011-11-16:
+ * pridan filtr poradu
+2011-11-15:
+ * oprava vyberu kvality prehravaneho poradu
+2011-10-24:
+ * prizpusobeni doplnku provedenym zmenam
+ * pro prehravani je nyni nutne "tajne heslo" ktere z pravnich duvodu nemohu uverejnit na strankach projektu 
+2011-08-06:
+ * odstraneni nove pridanych serialu z listu (nelze prehrat z duvodu DRM) 
+2011-07-22:
+ * upravena funkce ziskavani popisu poradu, ktery nekde chybel, thanx to IVO za upozorneni ;-)
+ * prechod na upravenou knihovnu BeautifulSOAP - udajne ma zpracovavat dotazy o 100% rychleji, thanx to IVO ;-)  
+2011-07-04:
+ * zmena fanart(u)
+2009-06-18: 
+ * Voyo.cz (alpha) - first release
+

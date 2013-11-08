@@ -1,0 +1,33 @@
+2013-03-21
+ * resolver vmail.ru
+2013-03-06
+ * oprava resolveru youtube
+ * oprava resolveru novamov
+ * download souboru
+2013-01-06:
+ * oprava resolveru youtube
+2012-11-29:
+ * oprava resolveru vk.com
+2012-08-14:
+ * oprava vyhledávání a polo¸ky Seriály
+2012-08-07:
+ * doplneni info o filmu, oprava vk.com a 24video.net
+2012-05-27:
+ * pridani upoutavky z youtube.com
+ * pridani serveru 24video.net
+ * pridani hd rozliseni videa z vk.com
+2012-01-08:
+ * oprava skriptu videobb a videozer
+2011-12-07:
+ * oprava skriptu videobb a videozer
+2011-09-29:
+ * pridana polozka "Serialy"
+2011-09-13:
+ * oprava pluginu vk.com - nefungoval spravne ve Windows prostredi, problem s cookies a home adresarem
+2011-08-16:
+ * oprava nazvu filmu u serialu
+ * pridan popisek k filmu
+2011-08-03:
+ * opraveno strankovani, pridano vyhledavani, presunuti kodu videoserveru do common knihoven
+2011-07-27:
+ * FilmyCZ.com

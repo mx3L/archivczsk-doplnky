@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings>
+<setting id="tv_addon" type="bool" label="TV archiv" default="true" visible="false"/>
+<!-- archivCZSK specificke nastavenie -->
+   <category label="Prehrávanie">
+   		<setting id="rtmp_seek_fix" type="bool" label="Opraviť RTMP pretáčanie" default="true"/>
+   </category>
+</settings>

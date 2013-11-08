@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.dmd-czech.filmyczcom"
+       name="Filmy CZ"
+       version="1.5.1"
+       provider-name="Ivo Brhel">
+  <requires>
+    <import addon="xbmc.python" version="2.1.0"/>
+    <import addon="script.module.dmd-czech.common" version="1.5.2"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <summary>FilmyCZ.com</summary>
+    <summary lang="cs">FilmyCZ.com</summary>
+    <description>
+        Plugin to play videos form FilmyCZ.com
+    </description>
+    <description lang="cs">
+        Plugin pro přehrávání videí z FilmyCZ.com
+    </description>
+  </extension>
+</addon>

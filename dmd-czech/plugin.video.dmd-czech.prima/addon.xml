@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.dmd-czech.prima"
+       name="Prima PLAY"
+       version="3.3.1"
+       provider-name="Jiri Vyhnalek">
+  <requires>
+    <import addon="xbmc.python" version="2.1.0"/>
+    <import addon="script.module.dmd-czech.common" version="1.5.0"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <summary>Prima TV video-archive plugin</summary>
+    <summary lang="cs">Prima PLAY</summary>
+    <description>
+        Plugin to play TV video archive iprima.cz/videoarchiv
+    </description>
+    <description lang="cs">
+        Plugin pro přehrávání videí z archivu iprima.cz/videoarchiv
+    </description>
+  </extension>
+</addon>

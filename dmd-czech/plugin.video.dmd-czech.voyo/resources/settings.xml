@@ -1,0 +1,12 @@
+<settings>
+   <setting label="Meno" id="username" type="text" default="" />
+   <setting label="Heslo" id="password" type="text" default="" option="true" />
+   <setting label="Zariadenie" id="devhash" type="text" default="" />
+   <setting id="kvalita_sel" type="labelenum" label="Preferovaná kvalita" values="LQ|HQ|HD" default="HQ" />
+   <setting id="secret_token" type="text" label="Zadejte tajné heslo" default="" />
+   <setting id="test_nastaveni" type="bool" label="Použít testovací nastavení" default="false"/>
+   <setting id="tv_addon" type="bool" label="TV archiv" default="true" visible="false"/>
+   <category label="Prehrávanie">
+   		<setting id="rtmp_seek_fix" type="bool" label="Opraviť RTMP pretáčanie" default="true"/>
+   </category>
+</settings>
