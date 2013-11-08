@@ -1,0 +1,42 @@
+2013-10-5:
+ * oprava nacitavania niektorych relacii v kategoriach
+2013-09-23:
+ * oprava živého vysílání
+2013-09-21:
+ * oprava pro změnu HTML kódu iVysílání (thanx to Ivo)
+2013-09-08:
+ * oprava vzhledávání podle datumu (thanx to Ivo)
+2013-05-28:
+ * oprava linku k videu
+2013-03-26:
+ * přidáno upozornění na bonus video
+2013-02-06:
+ * vyhledavani v archivu (beta) nyni zobrazuje max 100 vysledku hledani na 5 stranach
+2013-02-05:
+ * vyhledavani v archivu (beta)
+2013-02-04:
+ * oprava RTMP url pri pouziti nove librtmp (by mx3L)
+2012-07-03:
+ * pridano nastaveni mnozstvi zobrazenych stranek ve vypisu poradu 1,2,4,neomezene (by libor.zoubek)
+2012-05-28:
+ * oprava ziveho vysilani
+2012-05-15:
+ * oprava opet zmenene hlavicky pro zasilani pozadavku POST
+2012-05-14:
+ * oprava zmenene hlavicky pro zasilani pozadavku POST
+2012-03-12:
+ * special pro Spike :)
+2011-11-15:
+ * oprava zobrazovani poradu pod polozkou "Zive iVysilani" a pridan do nazvu poradu v nem nazev programu a odehrana doba.
+2011-08-24:
+ * zmena "dekoderu playlistu" z JSON na SIMPLEJSON, dle IVOse by melo zlepsit kompatibilitu...
+2011-08-06:
+ * pridani casoveho udaje do seznamu poradu podle datumu
+2011-07-22:
+ * nove funkce od IVO - Zobrazení podle datumu, Nejnovejsi porady, Nejsledovanejsi porady tydne, uprava parseru
+ * prechod na upravenou knihovnu BeautifulSOAP - udajne ma zpracovavat dotazy o 100% rychleji, thanx to IVO ;-)  
+2011-07-04:
+ * zmena fanart(u)
+2011-06-26:
+ * ČT iVysilani (alpha) - first release
+
