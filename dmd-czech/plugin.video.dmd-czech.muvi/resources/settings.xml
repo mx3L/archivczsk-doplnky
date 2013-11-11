@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <settings>
    <setting id="kvalita_sel" type="bool" label="Použít vyšší kvalitu HQ" default="true"/>
    <setting id="tv_addon" type="bool" label="TV archiv" default="true" visible="false"/>
