@@ -3,6 +3,7 @@
 
 TOOLS=$(dirname "$0")
 
+
 BUILD_DIR=repo
 #echo "Cleaning up *.pyc files.."
 #find . -name '*.pyc' | xargs rm -f
@@ -10,6 +11,10 @@ BUILD_DIR=repo
 if [ -z $1 ];
 then
 	addons=$(ls -l | grep "^d" | gawk -F' ' '{print $8}')
+elif [ "$1" == "-n" ];
+then
+  echo "Determining which addons need to be released"
+  addons=$(./needs_release.sh | grep Addon | gawk -F' ' '{print $2}')
 else
 	addons=$1
 fi
@@ -17,7 +22,7 @@ fi
 for addonFile in $addons ; do
     dirname=$addonFile
     if [ ! -f $addonFile/addon.xml ] ; then
-	echo "$addonFile/addon.xml does not exist, skipping"
+	#echo "$addonFile/addon.xml does not exist, skipping"
 	continue
     fi
     addon_id=$("$TOOLS/get_addon_attribute" "$addonFile/addon.xml" "id")
@@ -45,7 +50,7 @@ for addonFile in $addons ; do
     if [ -e "$package" ] ; then
         rm "$package"
     fi
-    zip -FS -r "$package" "$dirname" -x "*.py[oc] *.sw[onp]" ".*"
+    zip -FS -q -r "$package" "$dirname" -x "*.py[oc] *.sw[onp]" ".*"
 
     # copy changelog file
     changelog=$(ls "$dirname"/[Cc]hangelog.txt)
@@ -58,8 +63,11 @@ for addonFile in $addons ; do
     if [ -f "$icon" ] ; then
         cp "$icon" "$target_dir"/
     fi
-    echo
-done
+    git add $target_dir
+    # generate unique hash of released addon for further check 
+    echo $(find $addon_id -type f | xargs md5sum | md5sum | tr -d -) > hashes/$addon_id
+done 
 echo "Regenerate addons.xml"
 python addons_xml_generator.py
+git add addons.xml addons.xml.md5
 echo "Done"
