@@ -1,5 +1,9 @@
+2013-11-23:
+  * oprava archivu na novy web, zatim provizorni
+2013-10-21:
+  * docasna oprava archivu (thanx to Radim)
 2013-06-03:
-* oprava zobrazeni sekci
+ * oprava zobrazeni sekci
 2012-07-18:
  * obroda archivu
 2011-11-03:
