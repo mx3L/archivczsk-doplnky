@@ -1,5 +1,7 @@
+2013-11-24:
+* oprava HD kvality
 2013-09-23:
- * oprava stránkování
+ * oprava strï¿½nkovï¿½nï¿½
 2013-09-21:
  * oprava na novou verzi webu iPrima
 2013-04-11:
@@ -7,9 +9,9 @@
 2013-04-11:
  * oprava stream serveru pro HD kvalitu
 2013-04-07:
- * oprava nastavení proxy
+ * oprava nastavenï¿½ proxy
 2013-03-26:
- * pøidána možnost proxy pro zahranièní diváky
+ * pï¿½idï¿½na moï¿½nost proxy pro zahraniï¿½nï¿½ divï¿½ky
 2013-02-13:
  * oficialni pridani HD kvality
 2013-02-04:
@@ -47,19 +49,19 @@
 2011-11-04:
  * pridany nahledy poradu ve vyssi kvalite (thx to peter.harmansky)
 2011-10-31:
- * opraveno stránkování
+ * opraveno strï¿½nkovï¿½nï¿½
 2011-10-29:
- * provizorní oprava archivu, prozatím nefunkèní stránkování
+ * provizornï¿½ oprava archivu, prozatï¿½m nefunkï¿½nï¿½ strï¿½nkovï¿½nï¿½
 2011-10-24:
- * oprava náhledù poøadù 
+ * oprava nï¿½hledï¿½ poï¿½adï¿½ 
 2011-10-03:
- * pøidány náhledy poøadù  
+ * pï¿½idï¿½ny nï¿½hledy poï¿½adï¿½  
 2011-09-15:
- * archiv komplet pøedìlán pro pøehrávání poøadù, které prima novì dává pouze do archivu na svých stránkách  
+ * archiv komplet pï¿½edï¿½lï¿½n pro pï¿½ehrï¿½vï¿½nï¿½ poï¿½adï¿½, kterï¿½ prima novï¿½ dï¿½vï¿½ pouze do archivu na svï¿½ch strï¿½nkï¿½ch  
 2011-07-22:
- * pøechod na upravenou knihovnu BeautifulSOAP - údajnì má zpracovávat dotazy o 100% rychleji, thanx to IVO ;-)  
+ * pï¿½echod na upravenou knihovnu BeautifulSOAP - ï¿½dajnï¿½ mï¿½ zpracovï¿½vat dotazy o 100% rychleji, thanx to IVO ;-)  
 2011-07-04:
- * zmìna fanart(u)
+ * zmï¿½na fanart(u)
 2009-06-18: 
  * Prima.cz (alpha) - first release
 

@@ -188,7 +188,7 @@ def VIDEOLINK(url,name):
         addLink('LQ '+name,__cdn_url__+stream_video[0],icon,'')        
     else:
         try:
-            hd_stream = re.compile("'hd_id':'(.+?)'").findall(data)
+            hd_stream = re.compile('"hd_id":"(.+?)"').findall(data)
             hd_stream = hd_stream[0]
         except:
             hd_stream = 'Null'        
