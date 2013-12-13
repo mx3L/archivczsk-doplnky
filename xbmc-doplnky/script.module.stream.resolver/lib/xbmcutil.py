@@ -198,10 +198,13 @@ def add_video(name, params={}, logo=None, infoLabels={}, menuItems={}):
 		value = decode_html(params[key])
 		value = value.encode('utf-8')
 		params[key] = value
-	add_dir(name, params, logo=logo, infoLabels=infoLabels, menuItems=menuItems)
+	try:
+		client.add_dir(name, params, logo, infoLabels=infoLabels, menuItems=menuItems, video_item=True)
+	except Exception:
+		add_dir(name, params, logo=logo, infoLabels=infoLabels, menuItems=menuItems)
     
 def add_play(title, provider_name, quality, url, subs=None, filename=None, image=None, infoLabels={}, menuItems={},headers={}):
-	name = '%s - %s[%s]' % (decode_html(title), decode_html(provider_name), decode_html(quality))
+	name = '[%s] %s - %s' % (decode_html(quality), decode_html(provider_name), decode_html(title))
 	if not 'title' in infoLabels:
 		infoLabels['title'] = name
 		
