@@ -112,7 +112,7 @@
 
 <addon id="script.module.stream.resolver"
        name="stream resolver"
-       version="1.6.9"
+       version="1.6.10"
        provider-name="Libor Zoubek">
   <requires>
     <import addon="xbmc.python" version="2.0" />
@@ -175,7 +175,7 @@
 
 <addon id="plugin.video.serialycz.cz"
        name="serialycz.cz"
-       version="1.1.15"
+       version="1.1.16"
        provider-name="Libor Zoubek">
   <requires>
     <import addon="xbmc.python" version="2.0" />
@@ -263,7 +263,7 @@
 
 <addon id="plugin.video.koukni.cz"
        name="koukni.cz"
-       version="1.0.13"
+       version="1.0.14"
        provider-name="Libor Zoubek">
   <requires>
     <import addon="xbmc.python" version="2.0" />
@@ -327,6 +327,30 @@
     <description lang="en">Watch online TV archive from joj.sk</description>
     <description lang="cs">Sledujte online TV archiv zo serveru joj.sk</description>
     <description lang="sk">Sledujte online TV archív zo serveru joj.sk</description>
+    <platform>all</platform>
+  </extension>
+</addon>
+
+<addon id="plugin.video.mixer.cz"
+       name="mixer.cz"
+       version="1.0.0"
+       provider-name="Maros Ondrasek">
+  <requires>
+    <import addon="xbmc.python" version="2.0" />
+    <import addon="script.module.stream.resolver" version="1.6.9" />
+  </requires>
+  <extension point="xbmc.python.pluginsource"
+             provides="video"
+             library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">mixer.cz</summary>
+    <summary lang="cs">mixer.cz</summary>
+    <summary lang="sk">mixer.cz</summary>
+    <description lang="en">Watch music clips from mixer.cz</description>
+    <description lang="cs">Sledujte hudobne klipy ze servru mixer.cz</description>
+    <description lang="sk">Sledujte hudobne klipy zo serveru mixer.cz</description>
     <platform>all</platform>
   </extension>
 </addon>
@@ -469,11 +493,11 @@
 
 <addon id="plugin.video.online-files"
        name="Soubory Online"
-       version="1.2.3"
+       version="1.2.5"
        provider-name="Libor Zoubek">
   <requires>
     <import addon="xbmc.python" version="2.0" />
-    <import addon="script.module.stream.resolver" version="1.6.8" />
+    <import addon="script.module.stream.resolver" version="1.6.10" />
   </requires>
   <extension point="xbmc.python.pluginsource"
              provides="video"
