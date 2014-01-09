@@ -10,7 +10,7 @@ find . -name '*.pyc' | xargs rm -f
 
 if [ -z $1 ];
 then
-	addons=$(ls -l | grep "^d" | gawk -F' ' '{print $8}')
+	addons=$(ls -l | grep "^d" | gawk -F' ' '{print $9}')
 elif [ "$1" == "-n" ];
 then
   echo "Determining which addons need to be released"
