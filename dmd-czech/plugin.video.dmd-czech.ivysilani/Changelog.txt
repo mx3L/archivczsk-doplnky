@@ -1,5 +1,5 @@
-2013-10-5:
- * oprava nacitavania niektorych relacii v kategoriach
+2013-12-28:
+ * oprava nezobrazitelných videí
 2013-09-23:
  * oprava živého vysílání
 2013-09-21:
