@@ -1,3 +1,5 @@
+2013-12-27:
+  * pridana sekce Pohadky
 2013-11-24:
   * oprava ziskavani starsich videi 
 2013-11-24:

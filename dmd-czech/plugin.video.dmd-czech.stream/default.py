@@ -12,7 +12,7 @@ _UserAgent_ = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko
 __settings__ = ArchivCZSK.get_addon('plugin.video.dmd-czech.stream')
 home = __settings__.get_info('path')
 icon = os.path.join(home, 'icon.png')
-nexticon = os.path.join(home, 'nextpage.png') 
+nexticon = os.path.join(home, 'nextpage.png')
 
 def replace_words(text, word_dic):
     rc = re.compile('|'.join(map(re.escape, word_dic)))
@@ -78,16 +78,28 @@ word_dic = {
 def OBSAH():
     addDir('Všechny Pořady','listShows',1,icon)
     addDir('Komerční pořady','listCommercials',1,icon)
-    
+    addDir('Pohádky','dreams',1,icon)
+
 def INDEX(url):
     link = __baseurl__+'get_catalogue?0.'+str(gen_random_decimal(9999999999999999))
+    temp = 'porady'
+    if url == 'dreams':
+        link = __baseurl__+'get_catalogue?dreams&0.'+str(gen_random_decimal(9999999999999999))
+        temp = 'pohadky'
+        url = 'listShows'
     req = urllib2.Request(link)
     req.add_header('User-Agent', _UserAgent_)
     response = urllib2.urlopen(req)
     httpdata = response.read()
     response.close()
     match = re.compile('<ul id="'+url+'" class="shows clearfix">(.+?)</ul>', re.S).findall(httpdata)
-    match2 = re.compile('<a href="/porady/(.+?)" class=".+?" data-show-id="(.+?)" data-action=".+?">(.+?)<img src="(.+?)"', re.S).findall(match[0])
+
+    if temp == 'porady':
+        match2 = re.compile('<a href="/porady/(.+?)" class=".+?" data-show-id="(.+?)" data-action=".+?">(.+?)<img src="(.+?)"', re.S).findall(match[0])
+
+    else:
+        match2 = re.compile('<a href="/pohadky/(.+?)" class=".+?" data-show-id="(.+?)" data-action=".+?">(.+?)<img src="(.+?)"', re.S).findall(match[0])
+
     for link, id, name, thumb in match2:
             name = str.strip(name)
             link = __baseurl__+'get_series?show_url='+link+'&0.'+str(gen_random_decimal(9999999999999999))
@@ -113,7 +125,7 @@ def VIDEOLINK(url,name):
     httpdata = replace_words(httpdata, word_dic)
     data = json.loads(httpdata)
     name = data[u'episode_name']
-    thumb = data[u'episode_image_original_url']    
+    thumb = data[u'episode_image_original_url']
     for item in data[u'instances']:
         try:
             stream_url = item[u'instances'][0][u'source']
@@ -153,7 +165,7 @@ print "Name: "+str(name)
 if mode==None or url==None or len(url)<1:
         print ""
         OBSAH()
-       
+
 elif mode==1:
         print ""
         INDEX(url)
