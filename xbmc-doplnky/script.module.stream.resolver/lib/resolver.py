@@ -56,7 +56,7 @@ def resolve(url):
     value = None
     if resolver == None:
         return None
-    util.debug('Using resolver '+str(resolver.__name__));
+    util.info('Using resolver \'%s\''%str(resolver.__name__));
     try:
         value = resolver.resolve(url)
     except:
@@ -64,7 +64,7 @@ def resolve(url):
     if value == None:
         return False
     default = item()
-    # fix  missing but required values 
+    # fix  missing but required values
     def fix_stream(i,url,resolver,default):
         if not 'name' in i.keys():
             i['name'] = resolver.__name__
@@ -117,7 +117,7 @@ def findstreams(data,regexes):
     if len(resolvables) == 0:
         util.info('No resolvables found!')
         return False
-    for rurl in resolvables:        
+    for rurl in resolvables:
             streams = resolve(rurl)
             if streams == False:
                 util.info('There was an error resolving '+rurl)
