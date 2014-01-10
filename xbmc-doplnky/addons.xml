@@ -1,222 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addons>
-<addon id="plugin.video.rajfilmy.cz"
-       name="Rajfilmy.cz"
-       version="1.0.4"
-       provider-name="Ivo Brhel">
-  <requires>
-    <import addon="xbmc.python" version="1.0"/>
-    <import addon="script.module.stream.resolver" version="1.4.1" />
-  </requires>
-  <extension point="xbmc.python.pluginsource"
-             provides="video"
-             library="default.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <summary lang="en">rajfilmy.cz</summary>
-    <summary lang="cs">rajfilmy.cz</summary>
-    <description lang="en">Watch online www.rajfilmy.cz</description>
-    <description lang="cs">Sledujte online www.rajfilmy.cz</description>
-    <platform>all</platform>
-  </extension>
-</addon>
-
-<addon id="plugin.video.re-play.cz"
-       name="re-play.cz"
-       version="1.0.3"
-       provider-name="Libor Zoubek">
-  <requires>
-    <import addon="xbmc.python" version="1.0"/>
-    <import addon="script.module.stream.resolver" version="1.3.0" />
-  </requires>
-  <extension point="xbmc.python.pluginsource"
-             provides="video"
-             library="default.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <summary lang="en">re-play.cz</summary>
-    <summary lang="cs">re-play.cz</summary>
-    <description lang="en">Watch news about games on re-play.cz</description>
-    <description lang="cs">Sledujte video-archív seriálu o nejnovějších hrách</description>
-    <platform>all</platform>
-  </extension>
-</addon>
-
-<addon id="plugin.video.zkouknito.cz"
-       name="zkouknito.cz"
-       version="1.0.4"
-       provider-name="Libor Zoubek">
-  <requires>
-    <import addon="xbmc.python" version="2.0" />
-    <import addon="script.module.stream.resolver" version="1.6.5" />
-  </requires>
-  <extension point="xbmc.python.pluginsource"
-             provides="video"
-             library="default.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <summary lang="en">zkouknito.cz</summary>
-    <summary lang="cs">zkouknito.cz</summary>
-    <description lang="en">Watch online content from zkouknito.cz</description>
-    <description lang="cs">Sledujte online obsah ze servru zkouknito.cz</description>
-    <platform>all</platform>
-  </extension>
-</addon>
-
-<addon id="plugin.video.play-movie.eu"
-       name="Play-Movie"
-       version="1.0.2"
-       provider-name="Ivo Brhel">
-  <requires>
-    <import addon="xbmc.python" version="2.0" />
-    <import addon="script.module.stream.resolver" version="1.6.11" />
-  </requires>
-  <extension point="xbmc.python.pluginsource"
-             provides="video"
-             library="default.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <summary lang="en">play-movie.eu</summary>
-    <summary lang="cs">play-movie.eu</summary>
-    <description lang="en">Watch online www.play-movie.eu</description>
-    <description lang="cs">Sledujte online www.play-movie.eu</description>
-    <platform>all</platform>
-  </extension>
-</addon>
-
-<addon id="plugin.video.pohadkar.cz"
-       name="Pohádkář.cz"
-       version="1.1.1"
-       provider-name="Libor Zoubek">
-  <requires>
-    <import addon="xbmc.python" version="2.0" />
-    <import addon="script.module.stream.resolver" version="1.6.5" />
-  </requires>
-  <extension point="xbmc.python.pluginsource"
-             provides="video"
-             library="default.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <summary lang="en">pohadkar.cz</summary>
-    <summary lang="cs">pohadkar.cz</summary>
-    <description lang="en">Watch online tales mostly in czech language on pohadkar.cz</description>
-    <description lang="cs">Sledujte online pohádky ze servru pohádkář.cz. Ideální pro zabavení dětí.</description>
-    <platform>all</platform>
-  </extension>
-</addon>
-
-<addon id="script.module.stream.resolver"
-       name="stream resolver"
-       version="1.6.11"
-       provider-name="Libor Zoubek">
-  <requires>
-    <import addon="xbmc.python" version="2.0" />
-    <import addon="script.module.simplejson" version="2.0.10" />
-    <!--    <import addon="script.common.plugin.cache" version="2.5.0" /> -->
-  </requires>
-  <extension point="xbmc.python.module"
-             library="lib" />
-  <extension point="xbmc.addon.metadata">
-    <summary>xbmc-doplnky plugins common python modules mainly for resolving stream URLs</summary>
-    <description>Common python modules pack that is used by xbmc-doplnky plugins</description>
-    <license>GNU GPL</license>
-    <platform>all</platform>
-  </extension>
-</addon>
-
-<addon id="plugin.video.befun.cz"
-       name="befun.cz"
-       version="1.0.11"
-       provider-name="Libor Zoubek">
-  <requires>
-    <import addon="xbmc.python" version="2.0" />
-    <import addon="script.module.stream.resolver" version="1.6.8" />
-  </requires>
-  <extension point="xbmc.python.pluginsource"
-             provides="video"
-             library="default.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <summary lang="en">befun.cz</summary>
-    <summary lang="cs">befun.cz</summary>
-    <description lang="en">Watch online HD movies and series from befun.cz</description>
-    <description lang="cs">Sledujte online HD filmy seriály se servru befun.cz</description>
-    <platform>all</platform>
-  </extension>
-</addon>
-
-<addon id="plugin.video.jaksetodela.cz"
-       name="Jak se to dela"
-       version="1.0.0"
-       provider-name="Ivo Brhel">
-  <requires>
-    <import addon="xbmc.python" version="2.0"/>
-    <import addon="script.module.stream.resolver" version="1.6.2" />
-  </requires>
-  <extension point="xbmc.python.pluginsource"
-             provides="video"
-             library="default.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <summary lang="en">jaksetodela.cz</summary>
-    <summary lang="cs">jaksetodela.cz</summary>
-    <description lang="en">Watch online www.jaksetodela.cz</description>
-    <description lang="cs">Sledujte online www.jaksetodela.cz</description>
-    <platform>all</platform>
-  </extension>
-</addon>
-
-<addon id="plugin.video.serialycz.cz"
-       name="serialycz.cz"
-       version="1.1.16"
-       provider-name="Libor Zoubek">
-  <requires>
-    <import addon="xbmc.python" version="2.0" />
-    <import addon="script.module.stream.resolver" version="1.6.7" />
-  </requires>
-  <extension point="xbmc.python.pluginsource"
-             provides="video"
-             library="default.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <summary lang="en">serialycz.cz</summary>
-    <summary lang="cs">serialycz.cz</summary>
-    <description lang="en">Watch online series from serialycz.cz</description>
-    <description lang="cs">Sledujte online seriály ze servru serialycz.cz</description>
-    <platform>all</platform>
-  </extension>
-</addon>
-
-<addon id="plugin.video.hejbejse.tv"
-       name="Hejbejse.tv"
-       version="1.0.1"
-       provider-name="Ivo Brhel">
-  <requires>
-    <import addon="xbmc.python" version="1.0"/>
-    <import addon="script.module.stream.resolver" version="1.3.11"/>
-  </requires>
-  <extension point="xbmc.python.pluginsource"
-             provides="video"
-             library="default.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <summary lang="en">hejbejse.tv</summary>
-    <summary lang="cs">hejbejse.tv</summary>
-    <description lang="en">Watch online hejbejse.tv</description>
-    <description lang="cs">Sledujte online hejbejse.tv</description>
-    <platform>all</platform>
-  </extension>
-</addon>
-
 <addon id="plugin.video.eserial.cz"
        name="eserial.cz"
        version="1.0.12"
@@ -239,31 +22,9 @@
   </extension>
 </addon>
 
-<addon id="plugin.video.playserial.cz"
-       name="PlaySerialCZ"
-       version="1.0.7"
-       provider-name="Ivo Brhel">
-  <requires>
-    <import addon="xbmc.python" version="1.0"/>
-    <import addon="script.module.stream.resolver" version="1.4.2" />
-  </requires>
-  <extension point="xbmc.python.pluginsource"
-             provides="video"
-             library="default.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <summary lang="en">playserial.cz</summary>
-    <summary lang="cs">playserial.cz</summary>
-    <description lang="en">Watch online PlaySerial.CZ</description>
-    <description lang="cs">Sledujte online scénky PlaySerial.CZ</description>
-    <platform>all</platform>
-  </extension>
-</addon>
-
 <addon id="plugin.video.koukni.cz"
        name="koukni.cz"
-       version="1.0.14"
+       version="1.0.15"
        provider-name="Libor Zoubek">
   <requires>
     <import addon="xbmc.python" version="2.0" />
@@ -283,13 +44,13 @@
   </extension>
 </addon>
 
-<addon id="plugin.video.gordon.ura.cz"
-       name="Gordon Ramsay CZ"
-       version="1.0.1"
-       provider-name="Maros Ondrasek">
+<addon id="plugin.video.videacesky.cz"
+       name="videacesky.cz"
+       version="1.0.7"
+       provider-name="Libor Zoubek">
   <requires>
     <import addon="xbmc.python" version="2.0" />
-    <import addon="script.module.stream.resolver" version="1.6.6" />
+    <import addon="script.module.stream.resolver" version="1.6.0" />
   </requires>
   <extension point="xbmc.python.pluginsource"
              provides="video"
@@ -297,60 +58,10 @@
     <provides>video</provides>
   </extension>
   <extension point="xbmc.addon.metadata">
-    <summary lang="en">Gordon Ramsay CZ</summary>
-    <summary lang="cs">Gordon Ramsay CZ</summary>
-    <summary lang="sk">Gordon Ramsay CZ</summary>
-    <description lang="en">Watch online archive from http://gordon.ura.cz</description>
-    <description lang="cs">Gordon Ramsay a jeho hustokrutý pořady ze serveru http://gordon.ura.cz</description>
-    <description lang="sk">Gordon Ramsay a jeho hustokrutý pořady ze serveru http://gordon.ura.cz</description>
-    <platform>all</platform>
-  </extension>
-</addon>
-
-<addon id="plugin.video.joj.sk"
-       name="joj.sk"
-       version="1.1.1"
-       provider-name="Maros Ondrasek">
-  <requires>
-    <import addon="xbmc.python" version="2.0" />
-    <import addon="script.module.stream.resolver" version="1.6.6" />
-  </requires>
-  <extension point="xbmc.python.pluginsource"
-             provides="video"
-             library="default.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <summary lang="en">joj.sk</summary>
-    <summary lang="cs">joj.sk</summary>
-    <summary lang="sk">joj.sk</summary>
-    <description lang="en">Watch online TV archive from joj.sk</description>
-    <description lang="cs">Sledujte online TV archiv zo serveru joj.sk</description>
-    <description lang="sk">Sledujte online TV archív zo serveru joj.sk</description>
-    <platform>all</platform>
-  </extension>
-</addon>
-
-<addon id="plugin.video.mixer.cz"
-       name="mixer.cz"
-       version="1.0.0"
-       provider-name="Maros Ondrasek">
-  <requires>
-    <import addon="xbmc.python" version="2.0" />
-    <import addon="script.module.stream.resolver" version="1.6.9" />
-  </requires>
-  <extension point="xbmc.python.pluginsource"
-             provides="video"
-             library="default.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <summary lang="en">mixer.cz</summary>
-    <summary lang="cs">mixer.cz</summary>
-    <summary lang="sk">mixer.cz</summary>
-    <description lang="en">Watch music clips from mixer.cz</description>
-    <description lang="cs">Sledujte hudobne klipy ze servru mixer.cz</description>
-    <description lang="sk">Sledujte hudobne klipy zo serveru mixer.cz</description>
+    <summary lang="en">videacesky.cz</summary>
+    <summary lang="cs">videacasky.cz</summary>
+    <description lang="en">Watch content from videacesky.cz</description>
+    <description lang="cs">Sledujte videa, reklamy, seriály, články a návody ze servru videacesky.cz</description>
     <platform>all</platform>
   </extension>
 </addon>
@@ -377,13 +88,13 @@
   </extension>
 </addon>
 
-<addon id="plugin.video.barrandov.tv"
-       name="barrandov.tv"
-       version="1.0.1"
-       provider-name="Maros Ondrasek">
+<addon id="plugin.video.online-files"
+       name="Soubory Online"
+       version="1.2.5"
+       provider-name="Libor Zoubek">
   <requires>
     <import addon="xbmc.python" version="2.0" />
-    <import addon="script.module.stream.resolver" version="1.6.6" />
+    <import addon="script.module.stream.resolver" version="1.6.10" />
   </requires>
   <extension point="xbmc.python.pluginsource"
              provides="video"
@@ -391,12 +102,98 @@
     <provides>video</provides>
   </extension>
   <extension point="xbmc.addon.metadata">
-    <summary lang="en">barrandov.tv</summary>
-    <summary lang="cs">barrandov.tv</summary>
-    <summary lang="sk">barrandov.tv</summary>
-    <description lang="en">Watch online TV archive from barrandov.tv</description>
-    <description lang="cs">Sledujte TV archiv zo serveru barrandov.tv</description>
-    <description lang="sk">Sledujte TV archív zo serveru barrandov.tv</description>
+    <summary lang="en">Files Online</summary>
+    <summary lang="cs">Soubory Online</summary>
+    <description lang="en">Get access to various czech filesharing services</description>
+    <description lang="cs">Získejte přístup k různým file-sharingovým službám</description>
+    <platform>all</platform>
+  </extension>
+</addon>
+
+<addon id="plugin.video.serialycz.cz"
+       name="serialycz.cz"
+       version="1.1.16"
+       provider-name="Libor Zoubek">
+  <requires>
+    <import addon="xbmc.python" version="2.0" />
+    <import addon="script.module.stream.resolver" version="1.6.7" />
+  </requires>
+  <extension point="xbmc.python.pluginsource"
+             provides="video"
+             library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">serialycz.cz</summary>
+    <summary lang="cs">serialycz.cz</summary>
+    <description lang="en">Watch online series from serialycz.cz</description>
+    <description lang="cs">Sledujte online seriály ze servru serialycz.cz</description>
+    <platform>all</platform>
+  </extension>
+</addon>
+
+<addon id="plugin.video.re-play.cz"
+       name="re-play.cz"
+       version="1.0.3"
+       provider-name="Libor Zoubek">
+  <requires>
+    <import addon="xbmc.python" version="1.0"/>
+    <import addon="script.module.stream.resolver" version="1.3.0" />
+  </requires>
+  <extension point="xbmc.python.pluginsource"
+             provides="video"
+             library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">re-play.cz</summary>
+    <summary lang="cs">re-play.cz</summary>
+    <description lang="en">Watch news about games on re-play.cz</description>
+    <description lang="cs">Sledujte video-archív seriálu o nejnovějších hrách</description>
+    <platform>all</platform>
+  </extension>
+</addon>
+
+<addon id="plugin.video.befun.cz"
+       name="befun.cz"
+       version="1.0.11"
+       provider-name="Libor Zoubek">
+  <requires>
+    <import addon="xbmc.python" version="2.0" />
+    <import addon="script.module.stream.resolver" version="1.6.8" />
+  </requires>
+  <extension point="xbmc.python.pluginsource"
+             provides="video"
+             library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">befun.cz</summary>
+    <summary lang="cs">befun.cz</summary>
+    <description lang="en">Watch online HD movies and series from befun.cz</description>
+    <description lang="cs">Sledujte online HD filmy seriály se servru befun.cz</description>
+    <platform>all</platform>
+  </extension>
+</addon>
+
+<addon id="plugin.video.rajfilmy.cz"
+       name="Rajfilmy.cz"
+       version="1.0.4"
+       provider-name="Ivo Brhel">
+  <requires>
+    <import addon="xbmc.python" version="1.0"/>
+    <import addon="script.module.stream.resolver" version="1.4.1" />
+  </requires>
+  <extension point="xbmc.python.pluginsource"
+             provides="video"
+             library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">rajfilmy.cz</summary>
+    <summary lang="cs">rajfilmy.cz</summary>
+    <description lang="en">Watch online www.rajfilmy.cz</description>
+    <description lang="cs">Sledujte online www.rajfilmy.cz</description>
     <platform>all</platform>
   </extension>
 </addon>
@@ -425,32 +222,10 @@
   </extension>
 </addon>
 
-<addon id="plugin.video.videacesky.cz"
-       name="videacesky.cz"
-       version="1.0.7"
-       provider-name="Libor Zoubek">
-  <requires>
-    <import addon="xbmc.python" version="2.0" />
-    <import addon="script.module.stream.resolver" version="1.6.0" />
-  </requires>
-  <extension point="xbmc.python.pluginsource"
-             provides="video"
-             library="default.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <summary lang="en">videacesky.cz</summary>
-    <summary lang="cs">videacasky.cz</summary>
-    <description lang="en">Watch content from videacesky.cz</description>
-    <description lang="cs">Sledujte videa, reklamy, seriály, články a návody ze servru videacesky.cz</description>
-    <platform>all</platform>
-  </extension>
-</addon>
-
-<addon id="plugin.video.sledujuserialy.cz"
-       name="sledujuserialy.cz"
-       version="1.0.6"
-       provider-name="Libor Zoubek">
+<addon id="plugin.video.joj.sk"
+       name="joj.sk"
+       version="1.1.1"
+       provider-name="Maros Ondrasek">
   <requires>
     <import addon="xbmc.python" version="2.0" />
     <import addon="script.module.stream.resolver" version="1.6.6" />
@@ -461,10 +236,12 @@
     <provides>video</provides>
   </extension>
   <extension point="xbmc.addon.metadata">
-    <summary lang="en">sledujuserialy.cz</summary>
-    <summary lang="cs">sledujuserialy.cz</summary>
-    <description lang="en">Watch online series from sledujuserialy.cz</description>
-    <description lang="cs">Sledujte online seriály ze servru sledujuserialy.cz</description>
+    <summary lang="en">joj.sk</summary>
+    <summary lang="cs">joj.sk</summary>
+    <summary lang="sk">joj.sk</summary>
+    <description lang="en">Watch online TV archive from joj.sk</description>
+    <description lang="cs">Sledujte online TV archiv zo serveru joj.sk</description>
+    <description lang="sk">Sledujte online TV archív zo serveru joj.sk</description>
     <platform>all</platform>
   </extension>
 </addon>
@@ -491,13 +268,13 @@
   </extension>
 </addon>
 
-<addon id="plugin.video.online-files"
-       name="Soubory Online"
-       version="1.2.5"
-       provider-name="Libor Zoubek">
+<addon id="plugin.video.barrandov.tv"
+       name="barrandov.tv"
+       version="1.0.1"
+       provider-name="Maros Ondrasek">
   <requires>
     <import addon="xbmc.python" version="2.0" />
-    <import addon="script.module.stream.resolver" version="1.6.10" />
+    <import addon="script.module.stream.resolver" version="1.6.6" />
   </requires>
   <extension point="xbmc.python.pluginsource"
              provides="video"
@@ -505,10 +282,229 @@
     <provides>video</provides>
   </extension>
   <extension point="xbmc.addon.metadata">
-    <summary lang="en">Files Online</summary>
-    <summary lang="cs">Soubory Online</summary>
-    <description lang="en">Get access to various czech filesharing services</description>
-    <description lang="cs">Získejte přístup k různým file-sharingovým službám</description>
+    <summary lang="en">barrandov.tv</summary>
+    <summary lang="cs">barrandov.tv</summary>
+    <summary lang="sk">barrandov.tv</summary>
+    <description lang="en">Watch online TV archive from barrandov.tv</description>
+    <description lang="cs">Sledujte TV archiv zo serveru barrandov.tv</description>
+    <description lang="sk">Sledujte TV archív zo serveru barrandov.tv</description>
+    <platform>all</platform>
+  </extension>
+</addon>
+
+<addon id="plugin.video.hejbejse.tv"
+       name="Hejbejse.tv"
+       version="1.0.1"
+       provider-name="Ivo Brhel">
+  <requires>
+    <import addon="xbmc.python" version="1.0"/>
+    <import addon="script.module.stream.resolver" version="1.3.11"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource"
+             provides="video"
+             library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">hejbejse.tv</summary>
+    <summary lang="cs">hejbejse.tv</summary>
+    <description lang="en">Watch online hejbejse.tv</description>
+    <description lang="cs">Sledujte online hejbejse.tv</description>
+    <platform>all</platform>
+  </extension>
+</addon>
+
+<addon id="plugin.video.mixer.cz"
+       name="mixer.cz"
+       version="1.0.0"
+       provider-name="Maros Ondrasek">
+  <requires>
+    <import addon="xbmc.python" version="2.0" />
+    <import addon="script.module.stream.resolver" version="1.6.9" />
+  </requires>
+  <extension point="xbmc.python.pluginsource"
+             provides="video"
+             library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">mixer.cz</summary>
+    <summary lang="cs">mixer.cz</summary>
+    <summary lang="sk">mixer.cz</summary>
+    <description lang="en">Watch music clips from mixer.cz</description>
+    <description lang="cs">Sledujte hudobne klipy ze servru mixer.cz</description>
+    <description lang="sk">Sledujte hudobne klipy zo serveru mixer.cz</description>
+    <platform>all</platform>
+  </extension>
+</addon>
+
+<addon id="plugin.video.playserial.cz"
+       name="PlaySerialCZ"
+       version="1.0.7"
+       provider-name="Ivo Brhel">
+  <requires>
+    <import addon="xbmc.python" version="1.0"/>
+    <import addon="script.module.stream.resolver" version="1.4.2" />
+  </requires>
+  <extension point="xbmc.python.pluginsource"
+             provides="video"
+             library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">playserial.cz</summary>
+    <summary lang="cs">playserial.cz</summary>
+    <description lang="en">Watch online PlaySerial.CZ</description>
+    <description lang="cs">Sledujte online scénky PlaySerial.CZ</description>
+    <platform>all</platform>
+  </extension>
+</addon>
+
+<addon id="plugin.video.zkouknito.cz"
+       name="zkouknito.cz"
+       version="1.0.4"
+       provider-name="Libor Zoubek">
+  <requires>
+    <import addon="xbmc.python" version="2.0" />
+    <import addon="script.module.stream.resolver" version="1.6.5" />
+  </requires>
+  <extension point="xbmc.python.pluginsource"
+             provides="video"
+             library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">zkouknito.cz</summary>
+    <summary lang="cs">zkouknito.cz</summary>
+    <description lang="en">Watch online content from zkouknito.cz</description>
+    <description lang="cs">Sledujte online obsah ze servru zkouknito.cz</description>
+    <platform>all</platform>
+  </extension>
+</addon>
+
+<addon id="script.module.stream.resolver" name="stream resolver" provider-name="Libor Zoubek" version="1.6.13">
+  <requires>
+    <import addon="xbmc.python" version="2.1.0" />
+    <import addon="script.module.simplejson" version="2.0.10" />
+
+  </requires>
+  <extension library="lib" point="xbmc.python.module" />
+  <extension point="xbmc.addon.metadata">
+    <summary>xbmc-doplnky plugins common python modules mainly for resolving stream URLs</summary>
+    <description>Common python modules pack that is used by xbmc-doplnky plugins</description>
+    <license>GNU GPL</license>
+    <platform>all</platform>
+  </extension>
+</addon>
+
+<addon id="plugin.video.sledujuserialy.cz"
+       name="sledujuserialy.cz"
+       version="1.0.6"
+       provider-name="Libor Zoubek">
+  <requires>
+    <import addon="xbmc.python" version="2.0" />
+    <import addon="script.module.stream.resolver" version="1.6.6" />
+  </requires>
+  <extension point="xbmc.python.pluginsource"
+             provides="video"
+             library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">sledujuserialy.cz</summary>
+    <summary lang="cs">sledujuserialy.cz</summary>
+    <description lang="en">Watch online series from sledujuserialy.cz</description>
+    <description lang="cs">Sledujte online seriály ze servru sledujuserialy.cz</description>
+    <platform>all</platform>
+  </extension>
+</addon>
+
+<addon id="plugin.video.gordon.ura.cz"
+       name="Gordon Ramsay CZ"
+       version="1.0.1"
+       provider-name="Maros Ondrasek">
+  <requires>
+    <import addon="xbmc.python" version="2.0" />
+    <import addon="script.module.stream.resolver" version="1.6.6" />
+  </requires>
+  <extension point="xbmc.python.pluginsource"
+             provides="video"
+             library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">Gordon Ramsay CZ</summary>
+    <summary lang="cs">Gordon Ramsay CZ</summary>
+    <summary lang="sk">Gordon Ramsay CZ</summary>
+    <description lang="en">Watch online archive from http://gordon.ura.cz</description>
+    <description lang="cs">Gordon Ramsay a jeho hustokrutý pořady ze serveru http://gordon.ura.cz</description>
+    <description lang="sk">Gordon Ramsay a jeho hustokrutý pořady ze serveru http://gordon.ura.cz</description>
+    <platform>all</platform>
+  </extension>
+</addon>
+
+<addon id="plugin.video.pohadkar.cz"
+       name="Pohádkář.cz"
+       version="1.1.1"
+       provider-name="Libor Zoubek">
+  <requires>
+    <import addon="xbmc.python" version="2.0" />
+    <import addon="script.module.stream.resolver" version="1.6.5" />
+  </requires>
+  <extension point="xbmc.python.pluginsource"
+             provides="video"
+             library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">pohadkar.cz</summary>
+    <summary lang="cs">pohadkar.cz</summary>
+    <description lang="en">Watch online tales mostly in czech language on pohadkar.cz</description>
+    <description lang="cs">Sledujte online pohádky ze servru pohádkář.cz. Ideální pro zabavení dětí.</description>
+    <platform>all</platform>
+  </extension>
+</addon>
+
+<addon id="plugin.video.play-movie.eu"
+       name="Play-Movie"
+       version="1.0.2"
+       provider-name="Ivo Brhel">
+  <requires>
+    <import addon="xbmc.python" version="2.0" />
+    <import addon="script.module.stream.resolver" version="1.6.11" />
+  </requires>
+  <extension point="xbmc.python.pluginsource"
+             provides="video"
+             library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">play-movie.eu</summary>
+    <summary lang="cs">play-movie.eu</summary>
+    <description lang="en">Watch online www.play-movie.eu</description>
+    <description lang="cs">Sledujte online www.play-movie.eu</description>
+    <platform>all</platform>
+  </extension>
+</addon>
+
+<addon id="plugin.video.jaksetodela.cz"
+       name="Jak se to dela"
+       version="1.0.0"
+       provider-name="Ivo Brhel">
+  <requires>
+    <import addon="xbmc.python" version="2.0"/>
+    <import addon="script.module.stream.resolver" version="1.6.2" />
+  </requires>
+  <extension point="xbmc.python.pluginsource"
+             provides="video"
+             library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">jaksetodela.cz</summary>
+    <summary lang="cs">jaksetodela.cz</summary>
+    <description lang="en">Watch online www.jaksetodela.cz</description>
+    <description lang="cs">Sledujte online www.jaksetodela.cz</description>
     <platform>all</platform>
   </extension>
 </addon>
