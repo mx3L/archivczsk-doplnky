@@ -405,16 +405,31 @@ def VIDEOLINK(url, name, live):
     # Converting dictionary to text arrays    options[UserIP]=xxxx&options[playlistItems][0][..]....
     strquery = http_build_query(query)
     # Ask a link page XML
-    request = urllib2.Request('http://www.ceskatelevize.cz/ajax/getPlaylistURL.php')
-    request.add_data(strquery)
-    request.add_header("Referer", url)
-    request.add_header("Origin", "http://www.ceskatelevize.cz")
-    request.add_header("Accept", "*/*")
-    request.add_header("X-Requested-With", "XMLHttpRequest")
-    request.add_header("x-addr", "127.0.0.1")
-    request.add_header("User-Agent", _UserAgent_)
-    request.add_header("Content-Type", "application/x-www-form-urlencoded")
-    con = urllib2.urlopen(request)
+    headers = {
+               "Referer":url,
+               "Origin":"http://www.ceskatelevize.cz",
+               "Accept":"*/*",
+               "X-Requested-With":"XMLHttpRequest",
+               "x-addr":"127.0.0.1",
+               "User-Agent": _UserAgent_,
+               "Content-Type":"application/x-www-form-urlencoded"
+    }
+    playlist_urls=['http://www.ceskatelevize.cz/ajax/getPlaylistURI.php',
+                   'http://www.ceskatelevize.cz/ajax/getPlaylistURL.php',
+                   'http://www.ceskatelevize.cz/ajax/playlistURL.php'
+                   ]
+    con = None
+    for url in playlist_urls:
+        request = urllib2.Request(url, headers=headers)
+        request.add_data(strquery)
+        try:
+            con = urllib2.urlopen(request)
+        except urllib2.HTTPError:
+            if url != playlist_urls[-1]:
+                continue
+            raise
+        break
+
     # Read lisk XML page
     data = con.read()
     con.close()
