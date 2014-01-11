@@ -194,6 +194,7 @@
     <summary lang="cs">rajfilmy.cz</summary>
     <description lang="en">Watch online www.rajfilmy.cz</description>
     <description lang="cs">Sledujte online www.rajfilmy.cz</description>
+    <broken>stranka vyzaduje registraci</broken>
     <platform>all</platform>
   </extension>
 </addon>
@@ -505,6 +506,7 @@
     <summary lang="cs">jaksetodela.cz</summary>
     <description lang="en">Watch online www.jaksetodela.cz</description>
     <description lang="cs">Sledujte online www.jaksetodela.cz</description>
+    <broken>nutny update</broken>
     <platform>all</platform>
   </extension>
 </addon>
