@@ -414,10 +414,12 @@ def VIDEOLINK(url, name, live):
                "User-Agent": _UserAgent_,
                "Content-Type":"application/x-www-form-urlencoded"
     }
-    playlist_urls=['http://www.ceskatelevize.cz/ajax/getPlaylistURI.php',
+    playlist_urls=[
+                   'http://www.ceskatelevize.cz/ajax/getVideoURL.php',
+                   'http://www.ceskatelevize.cz/ajax/getPlaylistURI.php',
                    'http://www.ceskatelevize.cz/ajax/getPlaylistURL.php',
                    'http://www.ceskatelevize.cz/ajax/playlistURL.php'
-                   ]
+                    ]
     con = None
     for url in playlist_urls:
         request = urllib2.Request(url, headers=headers)
