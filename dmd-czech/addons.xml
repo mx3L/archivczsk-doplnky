@@ -50,7 +50,7 @@
 
 <addon id="plugin.video.dmd-czech.ivysilani"
        name="iVysílání TV Archiv"
-       version="1.5.1"
+       version="1.5.2"
        provider-name="Jiri Vyhnalek">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
