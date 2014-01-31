@@ -427,7 +427,9 @@ def VIDEOLINK(url, name, live):
     # Read lisk XML page
     data = con.read()
     con.close()
-    doc = read_page(urllib.unquote(data))
+    client_url = urllib.unquote(re.sub('<[^>]*>', '', data))
+    client_url = client_url.replace('hashedId=','id=')
+    doc = read_page(client_url)
     items = doc.find('body')
     for item in items.findAll('switchitem'):
         match = re.compile('<switchitem id="(.+?)" base="(.+?)"').findall(str(item))
