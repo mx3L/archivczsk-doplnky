@@ -98,7 +98,7 @@
 
 <addon id="plugin.video.dmd-czech.voyo"
        name="Voyo TV Archiv"
-       version="2.1"
+       version="2.2"
        provider-name="Jiri Vyhnalek, mx3L">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
