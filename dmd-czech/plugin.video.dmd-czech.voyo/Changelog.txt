@@ -1,3 +1,6 @@
+2014-02-04:
+* opravene strankovanie
+
 2013-04-1:
 * pouzitie regexp namiesto beatifulsoup -> rychlejsie nacitavanie relacii
 * pridane kategorie
@@ -40,14 +43,14 @@
  * oprava vyberu kvality prehravaneho poradu
 2011-10-24:
  * prizpusobeni doplnku provedenym zmenam
- * pro prehravani je nyni nutne "tajne heslo" ktere z pravnich duvodu nemohu uverejnit na strankach projektu 
+ * pro prehravani je nyni nutne "tajne heslo" ktere z pravnich duvodu nemohu uverejnit na strankach projektu
 2011-08-06:
- * odstraneni nove pridanych serialu z listu (nelze prehrat z duvodu DRM) 
+ * odstraneni nove pridanych serialu z listu (nelze prehrat z duvodu DRM)
 2011-07-22:
  * upravena funkce ziskavani popisu poradu, ktery nekde chybel, thanx to IVO za upozorneni ;-)
- * prechod na upravenou knihovnu BeautifulSOAP - udajne ma zpracovavat dotazy o 100% rychleji, thanx to IVO ;-)  
+ * prechod na upravenou knihovnu BeautifulSOAP - udajne ma zpracovavat dotazy o 100% rychleji, thanx to IVO ;-)
 2011-07-04:
  * zmena fanart(u)
-2009-06-18: 
+2009-06-18:
  * Voyo.cz (alpha) - first release
 

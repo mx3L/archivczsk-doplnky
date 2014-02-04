@@ -33,7 +33,7 @@ def VIDEOLINK_TEST(url, name):
     except:
         md5hash = md5.new(md5hash)
     signature = urllib.quote(base64.b64encode(md5hash.digest()))
-    config = nova_service_url + '?t=' + timestamp + '&d=1&tm=nova&h=0&c=' + videoid + '&s=' + signature    
+    config = nova_service_url + '?t=' + timestamp + '&d=1&tm=nova&h=0&c=' + videoid + '&s=' + signature
     print config
     try:
         desc = popis[0]
@@ -51,17 +51,17 @@ def VIDEOLINK_TEST(url, name):
         chyba = int(error_secret_token[0])
     except:
         chyba = 0
-    if chyba == 2:    
+    if chyba == 2:
         print 'Nesprávné tajné heslo'
         showWarning(u"Doplněk DMD VOYO Nesprávné tajné heslo!")
-        #__settings__.open_settings(session)        
-    elif chyba == 1:    
+        #__settings__.open_settings(session)
+    elif chyba == 1:
         print 'Špatné časové razítko'
         showError(u"Doplněk DMD VOYO Pořad lze přehrát pouze na webu Voyo.cz!")
-        #xbmc.executebuiltin("XBMC.Notification('Doplněk DMD VOYO','Pořad lze přehrát pouze na webu Voyo.cz!',30000,"+icon+")")      
+        #xbmc.executebuiltin("XBMC.Notification('Doplněk DMD VOYO','Pořad lze přehrát pouze na webu Voyo.cz!',30000,"+icon+")")
     elif chyba == 0:
         baseurl = re.compile('<baseUrl>(.+?)</baseUrl>').findall(httpdata)
-        streamurl = re.compile('<media>\s<quality>(.+?)</quality>.\s<url>(.+?)</url>\s</media>').findall(httpdata)        
+        streamurl = re.compile('<media>\s<quality>(.+?)</quality>.\s<url>(.+?)</url>\s</media>').findall(httpdata)
         for kvalita, odkaz in streamurl:
             #print kvalita,odkaz
             if re.match('hd', kvalita, re.U):
@@ -72,18 +72,18 @@ def VIDEOLINK_TEST(url, name):
                 urllq = odkaz.encode('utf-8')
         print urlhq, urllq
         swfurl = 'http://voyo.nova.cz/static/shared/app/flowplayer/13-flowplayer.commercial-3.1.5-19-003.swf'
-        if __settings__.get_setting('test_nastaveni'):          
-            rtmp_url_lq = baseurl[0] + ' playpath=' + urllq + ' pageUrl=' + url + ' swfUrl=' + swfurl + ' swfVfy=true token=' + rtmp_token 
-            rtmp_url_hq = baseurl[0] + ' playpath=' + urlhq + ' pageUrl=' + url + ' swfUrl=' + swfurl + ' swfVfy=true token=' + rtmp_token 
+        if __settings__.get_setting('test_nastaveni'):
+            rtmp_url_lq = baseurl[0] + ' playpath=' + urllq + ' pageUrl=' + url + ' swfUrl=' + swfurl + ' swfVfy=true token=' + rtmp_token
+            rtmp_url_hq = baseurl[0] + ' playpath=' + urlhq + ' pageUrl=' + url + ' swfUrl=' + swfurl + ' swfVfy=true token=' + rtmp_token
             try:
-                rtmp_url_hd = baseurl[0] + ' playpath=' + urlhd + ' pageUrl=' + url + ' swfUrl=' + swfurl + ' swfVfy=true token=' + rtmp_token 
+                rtmp_url_hd = baseurl[0] + ' playpath=' + urlhd + ' pageUrl=' + url + ' swfUrl=' + swfurl + ' swfVfy=true token=' + rtmp_token
             except:
                 rtmp_url_hd = 0
         else:
             rtmp_url_lq = baseurl[0] + ' playpath=' + urllq
             rtmp_url_hq = baseurl[0] + ' playpath=' + urlhq
             try:
-                rtmp_url_hd = baseurl[0] + ' playpath=' + urlhd            
+                rtmp_url_hd = baseurl[0] + ' playpath=' + urlhd
             except:
                 rtmp_url_hd = 0
         if __settings__.get_setting('kvalita_sel') == "HQ":
@@ -92,7 +92,7 @@ def VIDEOLINK_TEST(url, name):
             addLink("LQ " + name, rtmp_url_lq, icon, desc)
         elif __settings__.get_setting('kvalita_sel') == "HD":
             if rtmp_url_hd == 0:
-                addLink("HQ " + name, rtmp_url_hq, icon, desc)                
+                addLink("HQ " + name, rtmp_url_hq, icon, desc)
             else:
                 addLink("HD " + name, rtmp_url_hd, icon, desc)
         else:
@@ -122,7 +122,7 @@ def VIDEOLINK_TEST(url, name):
 #
 #  Credits to Jirka Vyhnalek - author of voyocz plugin from dmd-xbmc project
 #  Some sources in this plugin are used from this project
-#  
+#
 #
 
 import urllib
@@ -151,7 +151,7 @@ _UserAgent_ = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:18.0) Gecko/20100101 Firef
 __settings__ = ArchivCZSK.get_xbmc_addon('plugin.video.dmd-czech.voyo')
 home = __settings__.getAddonInfo('path')
 icon = os.path.join(home, 'icon.png')
-nexticon = os.path.join(home, 'nextpage.png') 
+nexticon = os.path.join(home, 'nextpage.png')
 
 username = __settings__.getSetting('username')
 password = __settings__.getSetting('password')
@@ -162,7 +162,7 @@ user_php_url = __baseurl__ + '/bin/eshop/ws/user.php'
 wallet_php_url = __baseurl__ + '/bin/eshop/ws/ewallet.php'
 player_php_url = __baseurl__ + '/bin/eshop/ws/plusPlayer.php'
 
-MAX_PAGE_ENTRIES = 35
+MAX_PAGE_ENTRIES = 34
 PAGER_RE = "<span class=\'next next_set\'><a href=\'([^']+)"
 LISTING_START = 'productsList series'
 LISTING_END = 'productsList latestEpisodes'
@@ -185,7 +185,7 @@ def OBSAH():
     #addDir('Deti', __baseurl__ + '/deti/', 1, icon) #not working - use of silverlight
     addDir('Sport', __baseurl__ + '/sport/', 1, icon)
     addDir('Živé vysielanie', __baseurl__ + '/tv-zive/', 2, icon)
-    
+
 def VOYO_OBSAH_LIVE():
     addDir('VOYO Cinema', __baseurl__ + '/product/tv-zive/28995-simulcast-voyo-cinema', 3, None)
     addDir('Nova', __baseurl__ + '/product/tv-zive/28992-simulcast-nova', 3, None)
@@ -211,14 +211,14 @@ def VOYO_OBSAH(url, name='', page=None):
         iter1 = True
         i += 1
         addDir(item.group('title'), __baseurl__ + item.group('url'), 1, item.group('img'))
-    
+
     if not iter1:
         for item in re.finditer(LISTING_ITER_RE, data, re.DOTALL):
             iter2 = True
             i += 1
             addDir(item.group('title'), __baseurl__ + item.group('url'), 1, item.group('img'))
-    
-    if i == MAX_PAGE_ENTRIES:
+
+    if i >= MAX_PAGE_ENTRIES:
         if page is None:
             page = 1
         page += 1
@@ -228,40 +228,40 @@ def VOYO_OBSAH(url, name='', page=None):
         else:
             nexturl = url + '?page=' + str(page)
         addDir('Daľšia strana >>', nexturl, 1, nexticon, page=page)
-        
+
     if not iter1 and not iter2:
         if username != "":
             VIDEOLINK(url, name)
         else:
             VIDEOLINK_TEST(url, name)
-    
-        
+
+
 def VIDEOLINK(url, name, live=False):
-    
+
     def gen_dev_hash():
         r = gen_random_decimal(0, 99999999999999)
         device_params = {'x':'device', 'a':'generateNewHash', 'userId':urllib.quote(username), 'r':r}
         devicehash_url = wallet_php_url + '?' + urllib.urlencode(device_params)
-    
+
         print 'generating new devicehash'
         request = create_req(devicehash_url)
         response = urllib2.urlopen(request)
         data = json.load(response)
         response.close()
         return data[u'hash']
-    
+
     def add_dev(hash):
         r = gen_random_decimal(0, 99999999999999)
         client_details = '{"b":"FF","bv":"18.0","ua":"Mozilla/5.0 (Windows NT 6.1; WOW64; rv:18.0) Gecko/20100101 Firefox/18.0"}'
         adddevice_params = {'x':'device', 'a':'add', 'deviceCode':'PC', 'deviceHash':hash, 'client':client_details, 'r':r}
         adddevice_url = wallet_php_url + '?' + urllib.urlencode(adddevice_params)
-    
+
         print 'trying to add new device'
         request = create_req(adddevice_url)
         response = urllib2.urlopen(request)
         data = json.load(response)
         response.close()
-        
+
         succ = data[u'ok']
         dev_hash = data[u'hash']
         if not succ:
@@ -270,7 +270,7 @@ def VIDEOLINK(url, name, live=False):
         else:
             print 'device was successfully added'
         return dev_hash
-    
+
     if not islogged_in():
         log_in(username, password)
 
@@ -278,10 +278,10 @@ def VIDEOLINK(url, name, live=False):
         new_devhash = gen_dev_hash()
         add_dev(new_devhash)
         __settings__.setSetting('devhash', new_devhash)
-    
+
     # to remove device
     # http://voyo.nova.cz/profil?sect=subscription
-    
+
     request = urllib2.Request(url)
     request.add_header('User-Agent', _UserAgent_)
     request.add_header("Referer", url)
@@ -290,7 +290,7 @@ def VIDEOLINK(url, name, live=False):
     response.close()
 
     media_data = re.search('mainVideo = new mediaData\((.+?), (.+?), (.+?),', httpdata)
-    
+
     prod = media_data.group(1)
     unit = media_data.group(2)
     media = media_data.group(3)
@@ -303,9 +303,9 @@ def VIDEOLINK(url, name, live=False):
     desc = re.search('<meta name="description" content="(.+?)" />', httpdata)
     desc = (desc and desc.group(1)) or name
     thumb = thumb and thumb.group(1)
-    
+
     r = gen_random_decimal(0, 99999999999999)
-    
+
     player_params = {
                    'x':'playerFlash',
                    'prod':prod,
@@ -325,13 +325,13 @@ def VIDEOLINK(url, name, live=False):
                    'sts':'undefined',
                    'r': r,
                    }
-    
+
     player_url = player_php_url + '?' + urllib.urlencode(player_params)
     request = create_req(player_url)
     response = urllib2.urlopen(request)
     data = json.load(response)
     response.close()
-    
+
     if data[u'error']:
         showError(data[u'msg'])
     elif data[u'html'].find('silverlight') != -1:
@@ -344,8 +344,8 @@ def VIDEOLINK(url, name, live=False):
         httpdata = response.read()
         response.close()
         baseurl = re.compile('<baseUrl>(.+?)</baseUrl>').findall(httpdata)
-        streamurl = re.compile('<media>\s<quality>(.+?)</quality>.\s<url>(.+?)</url>\s</media>').findall(httpdata) 
-        
+        streamurl = re.compile('<media>\s<quality>(.+?)</quality>.\s<url>(.+?)</url>\s</media>').findall(httpdata)
+
         for kvalita, odkaz in streamurl:
             if re.match('hd', kvalita, re.U):
                 urlhd = odkaz.encode('utf-8')
@@ -374,7 +374,7 @@ def VIDEOLINK(url, name, live=False):
             addLink("LQ " + name, rtmp_url_lq, icon, desc)
         elif __settings__.get_setting('kvalita_sel') == "HD":
             if rtmp_url_hd == 0:
-                addLink("HQ " + name, rtmp_url_hq, icon, desc)                
+                addLink("HQ " + name, rtmp_url_hq, icon, desc)
             else:
                 addLink("HD " + name, rtmp_url_hd, icon, desc)
         else:
@@ -382,19 +382,19 @@ def VIDEOLINK(url, name, live=False):
 
 def gen_random_decimal(i, d):
         return decimal.Decimal('%d.%d' % (random.randint(0, i), random.randint(0, d)))
-    
+
 def init_opener():
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.LWPCookieJar()))
-    urllib2.install_opener(opener) 
+    urllib2.install_opener(opener)
 
 
 def create_req(url, postdata=None):
     request = urllib2.Request(url, postdata)
     request.add_header('User-Agent', _UserAgent_)
-    request.add_header("Referer", __baseurl__)    
+    request.add_header("Referer", __baseurl__)
     request.add_header("Accept", "application/json, text/javascript, */*")
     request.add_header("X-Requested-With", "XMLHttpRequest")
-    return request 
+    return request
 
 def islogged_in():
     print 'checking if logged in'
@@ -427,7 +427,7 @@ def log_in(username, password):
     #    print 'you dont have any subscription'
     #    raise showError(session,"Nemáte predplatné")
     else:
-        print 'succesfully logged in'   
+        print 'succesfully logged in'
 
 def voyo_read(url):
     count = 0
@@ -446,7 +446,7 @@ def voyo_read(url):
             data = response.read()
             return data
         finally:
-            response and response.close()   
+            response and response.close()
 
 
 url = None
@@ -480,12 +480,12 @@ print "Page: " + str(page)
 if mode == None or url == None or len(url) < 1:
     init_opener()
     OBSAH()
-       
+
 elif mode == 1:
     VOYO_OBSAH(url, name, page)
-        
+
 elif mode == 2:
     VOYO_OBSAH_LIVE()
-        
+
 elif mode == 3:
     VIDEOLINK(url, name, True)
