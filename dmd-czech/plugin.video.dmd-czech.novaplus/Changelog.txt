@@ -1,0 +1,3 @@
+2014-02-04: 
+ * Nova Plus (alpha) - first release
+
