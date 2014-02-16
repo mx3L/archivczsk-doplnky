@@ -1,3 +1,10 @@
+2014-02-16:
+ * oprava otevirani videa po zmene stranky CT
+ * Pridano 'Otevřít Web URL' a 'Otevřít Web Live URL' do hlavniho menu
+   - umoznuje vyhledat porad na v prohlizeci na tabletu/telefonu
+   - nasledne zkopirovat URL to XBMC napr pomoci Yatse
+2014-02-05:
+ * oprava obsluzneho linku
 2013-12-28:
  * oprava nezobrazitelných videí
 2013-09-23:
@@ -34,7 +41,7 @@
  * pridani casoveho udaje do seznamu poradu podle datumu
 2011-07-22:
  * nove funkce od IVO - Zobrazení podle datumu, Nejnovejsi porady, Nejsledovanejsi porady tydne, uprava parseru
- * prechod na upravenou knihovnu BeautifulSOAP - udajne ma zpracovavat dotazy o 100% rychleji, thanx to IVO ;-)  
+ * prechod na upravenou knihovnu BeautifulSOAP - udajne ma zpracovavat dotazy o 100% rychleji, thanx to IVO ;-)
 2011-07-04:
  * zmena fanart(u)
 2011-06-26:

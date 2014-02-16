@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 import urllib2, urllib, re, os, time, datetime
 from parseutils import *
-from urlparse import urlparse
+from urlparse import urlparse,urlunparse
 from util import addDir, addLink, addSearch, getSearch
 from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
 #import json
 import simplejson as json
+import httplib
+import xml.etree.ElementTree as ET
 
 
 
@@ -384,68 +386,124 @@ def HLEDAT(url):
 
 
 
-def VIDEOLINK(url, name, live):
+def VIDEOLINK(url,name, live):
     if name.find('pořad se ještě nevysílá')!=-1:
-        return
-    req = urllib2.Request(url)
-    req.add_header('User-Agent', _UserAgent_)
-    response = urllib2.urlopen(req)
-    httpdata = response.read()
-    response.close()
-    #match = re.compile('callSOAP\((.+?)\)').findall(httpdata)
-    match = re.compile('callSOAP\((.*)\)').findall(httpdata)
-    print "VIDEO-LINK URL: " + url
-    print match[0]
-    info = re.compile('<meta name="description" content="(.+?)"').findall(httpdata)
-    if len(info) < 1:
-            info = re.compile('<title>(.+?)&mdash').findall(httpdata)
-    #RE_PLAYLIST_URL = re.compile('callSOAP\((.+?)\)')
-    # Converting text to dictionary
-    query = json.loads(match[0])
-    # Converting dictionary to text arrays    options[UserIP]=xxxx&options[playlistItems][0][..]....
-    strquery = http_build_query(query)
-    # Ask a link page XML
-    req = urllib2.Request('http://img.ceskatelevize.cz/libraries/player/ajaxPlaylist.js?ver=1.2')
-    req.add_header('User-Agent', _UserAgent_)
-    response = urllib2.urlopen(req)
-    data = response.read()
-    response.close()
-    playlist_url= re.search("url\: \"([^\"]+)",data, re.DOTALL)
-    playlist_url = 'http://www.ceskatelevize.cz' + playlist_url.group(1)
+            return
+
+    ### Log URL
+    url_path = url.replace('http://www.ceskatelevize.cz', '')
+    print '====> URL: '+ url
+    print '====> URL Path: '+ url_path
+
+    ### HTTP Connection to www.ceskatekevize.cz
+    conn = httplib.HTTPConnection('www.ceskatelevize.cz')
+
+    ### Load main page
     headers = {
-               "Referer":url,
-               "Origin":"http://www.ceskatelevize.cz",
-               "Accept":"*/*",
-               "X-Requested-With":"XMLHttpRequest",
-               "x-addr":"127.0.0.1",
-               "User-Agent": _UserAgent_,
-               "Content-Type":"application/x-www-form-urlencoded"
+       'User-Agent': _UserAgent_
     }
-    request = urllib2.Request(playlist_url, headers=headers)
-    request.add_data(strquery)
-    con = urllib2.urlopen(request)
-    # Read lisk XML page
-    data = con.read()
-    con.close()
-    client_url = urllib.unquote(re.sub('<[^>]*>', '', data))
-    client_url = client_url.replace('hashedId=','id=')
-    doc = read_page(client_url)
-    items = doc.find('body')
-    for item in items.findAll('switchitem'):
-        match = re.compile('<switchitem id="(.+?)" base="(.+?)"').findall(str(item))
-        for id, base in match:
-            base = re.sub('&amp;', '&', base)
+    conn.request('GET', url_path, '', headers)
+    res = conn.getresponse()
+    httpdata = res.read();
+
+    #print '====> MAIN PAGE START: ' + url
+    #print httpdata
+    #print '====> MAIN PAGE END: ' + url
+
+    ### Extract Info from main page
+    info = re.compile('<title>(.+?)</title>').findall(httpdata)
+    info = info[0]
+    if (name == ''):
+        name = info
+    print '====> Title: ' + info
+
+    ### Extract Playlist ID form main page
+    playlist_id = re.search("getPlaylistUrl.*\"id\"\:\"([^\"]+)", httpdata, re.DOTALL)
+    playlist_id = playlist_id.group(1)
+
+    print '====> Playlist ID: ' + playlist_id
+
+    ### Get Playlist link
+    headers = {
+       'Connection': 'keep-alive',
+       'x-addr': '127.0.0.1',
+       'User-Agent': _UserAgent_,
+       'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+       'Accept': '*/*',
+       'X-Requested-With': 'XMLHttpRequest',
+       'Referer': url,
+       'Origin': 'http://www.ceskatelevize.cz'
+    }
+    data = {
+       'playlist[0][type]' : 'episode',
+       'playlist[0][id]' : playlist_id,
+       'requestUrl' : url_path,
+       'requestSource' : 'iVysilani'
+    }
+    conn.request('POST', '/ivysilani/ajax/get-playlist-url', urllib.urlencode(data), headers )
+    res = conn.getresponse()
+    httpdata = res.read()
+    conn.close()
+
+    print '====> PLAYLIST LINK PAGE START'
+    print httpdata
+    print '====> PLAYLIST LINK PAGE END'
+
+    ### Extract Playlist URL
+    jsondata = json.loads(httpdata);
+    playlist_url = urllib.unquote(jsondata['url'])
+
+    print '====> Playlist ULR: ' + playlist_url
+    urlobj = urlparse(playlist_url)
+    urlhost = urlobj.netloc
+    urlpath = urlunparse(('', '', urlobj.path, urlobj.params, urlobj.query, urlobj.fragment))
+
+    print '===> Playlist Host= ' + urlhost + ' Path=' + urlpath
+
+    ### Get Playlists
+    conn = httplib.HTTPConnection(urlhost)
+    headers = {
+       'Connection': 'keep-alive',
+       #'Referer': 'http://imgct.ceskatelevize.cz/global/swf/player/player.swf?version=1.45.15a',
+       'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/32.0.1700.107 Safari/537.36',
+       'Accept-Encoding': 'identity',
+       #'Accept-Encoding': 'gzip,deflate,sdch',
+       'Accept-Language': 'en-US,en;q=0.8,cs;q=0.6'
+    }
+    conn.request('GET', urlpath, '', headers)
+    res = conn.getresponse()
+    httpdata = res.read()
+    conn.close()
+
+    print '====> PLAYLIST PAGE START'
+    print httpdata
+    print '====> PLAYLIST PAGE END'
+
+    ### Read links XML page
+    httpdata = urllib2.unquote(httpdata)
+    root = ET.fromstring(httpdata)
+    for item in root.findall('.//body/switchItem'):
+        if ('id' in item.attrib) and ('base' in item.attrib):
+            id = item.attrib['id']
+            base = item.attrib['base']
+
             if re.search('AD', id, re.U):
                 continue
-            video = re.compile('<video src="(.+?)" system-bitrate=".+?" label="(.+?)" enabled=".+?"').findall(str(item))
-            for cesta, kvalita in video:
-                if live:
-                    rtmp_url = base+'/'+cesta
-                else:
-                    app = base[base.find('/', base.find('://') + 3) + 1:]
-                    rtmp_url = base + ' app=' + app + ' playpath=' + cesta
-                addLink(kvalita + ' ' + name, rtmp_url, icon, info[0])
-                #print rtmp_url,kvalita+info[0] #vystupni parametry RTMP
+
+            base = re.sub('&amp;','&', base)
+
+            print '==> SwitchItem id=' + id + ', base=' + base
+            for videoNode in item.findall('./video'):
+                if ('src' in videoNode.attrib) and ('label' in videoNode.attrib):
+                        src = videoNode.attrib['src']
+                        label = videoNode.attrib['label']
+                        if live:
+                            rtmp_url = base+'/'+src
+                        else:
+                            app = base[base.find('/', base.find('://') + 3) + 1:]
+                            rtmp_url = base + ' app=' + app + ' playpath=' + src
+                        print 'RTMP label=' + label + ', name=' + name + ', url=' + rtmp_url
+                        addLink(label+' '+name, rtmp_url, icon, info)
 
 
 def http_build_query(params, topkey=''):
