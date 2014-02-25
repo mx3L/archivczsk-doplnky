@@ -1,3 +1,5 @@
+2014-02-25
+ * Oprava živého přehrávání. Rozlišování typu (channel / episode) v HTTP requestu (Způsobovalo problémy u ČT24)
 2014-02-16:
  * oprava otevirani videa po zmene stranky CT
  * Pridano 'Otevřít Web URL' a 'Otevřít Web Live URL' do hlavniho menu
@@ -41,7 +43,7 @@
  * pridani casoveho udaje do seznamu poradu podle datumu
 2011-07-22:
  * nove funkce od IVO - Zobrazení podle datumu, Nejnovejsi porady, Nejsledovanejsi porady tydne, uprava parseru
- * prechod na upravenou knihovnu BeautifulSOAP - udajne ma zpracovavat dotazy o 100% rychleji, thanx to IVO ;-)
+ * prechod na upravenou knihovnu BeautifulSOAP - udajne ma zpracovavat dotazy o 100% rychleji, thanx to IVO ;-)  
 2011-07-04:
  * zmena fanart(u)
 2011-06-26:
