@@ -1,6 +1,5 @@
-[B]1.1.1[/B]
-converted icon to 8-bit png
-
+[B]1.1.3:[/B]
+- Add live streams (thanks to Kuci)
 [B]1.1.0:[/B]
 Added Senzi.sk
 
