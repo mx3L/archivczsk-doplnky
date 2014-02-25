@@ -108,7 +108,7 @@ def CAT_LIST(url):
     httpdata = response.read()
     response.close()
 
-    cat_iter_regex = '<li>.+?a class=\"toolTip\"(.+?)href=\"(?P<url>.+?)\".*?title=\"(?P<desc>.*?)\".*?>(?P<title>[^<]+)(.*?)</li>'
+    cat_iter_regex = '<li>\s+?<a\s*?(title=\"(?P<desc>[^\"]+)\"){0,1}.+?href=\"(?P<url>[^\"]+)/\">(?P<title>[^<]+)<(.+?)</li>'
     httpdata = httpdata[httpdata.find('clearfix programmesList'):]
     for m in re.finditer(cat_iter_regex, httpdata, re.DOTALL):
         link = m.group('url')
