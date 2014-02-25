@@ -66,17 +66,12 @@
   </extension>
 </addon>
 
-<addon id="plugin.video.tv.sosac.ph"
-       name="TV Sosáč"
-       version="1.0.1"
-       provider-name="Libor Zoubek">
+<addon id="plugin.video.tv.sosac.ph" name="TV Sosáč" provider-name="Libor Zoubek" version="1.0.3">
   <requires>
-    <import addon="xbmc.python" version="2.0" />
-    <import addon="script.module.stream.resolver" version="1.6.8" />
+    <import addon="xbmc.python" version="2.1.0" />
+    <import addon="script.module.stream.resolver" version="1.6.16" />
   </requires>
-  <extension point="xbmc.python.pluginsource"
-             provides="video"
-             library="default.py">
+  <extension library="default.py" point="xbmc.python.pluginsource" provides="video">
     <provides>video</provides>
   </extension>
   <extension point="xbmc.addon.metadata">
@@ -222,17 +217,12 @@
   </extension>
 </addon>
 
-<addon id="plugin.video.joj.sk"
-       name="joj.sk"
-       version="1.1.1"
-       provider-name="Maros Ondrasek">
+<addon id="plugin.video.joj.sk" name="joj.sk" provider-name="Maros Ondrasek" version="1.1.3">
   <requires>
-    <import addon="xbmc.python" version="2.0" />
-    <import addon="script.module.stream.resolver" version="1.6.6" />
+    <import addon="xbmc.python" version="2.1.0" />
+    <import addon="script.module.stream.resolver" version="1.6.16" />
   </requires>
-  <extension point="xbmc.python.pluginsource"
-             provides="video"
-             library="default.py">
+  <extension library="default.py" point="xbmc.python.pluginsource" provides="video">
     <provides>video</provides>
   </extension>
   <extension point="xbmc.addon.metadata">
@@ -382,7 +372,7 @@
   </extension>
 </addon>
 
-<addon id="script.module.stream.resolver" name="stream resolver" provider-name="Libor Zoubek" version="1.6.14">
+<addon id="script.module.stream.resolver" name="stream resolver" provider-name="Libor Zoubek" version="1.6.16">
   <requires>
     <import addon="xbmc.python" version="2.1.0" />
     <import addon="script.module.simplejson" version="2.0.10" />
@@ -421,7 +411,7 @@
 
 <addon id="plugin.video.gordon.ura.cz"
        name="Gordon Ramsay CZ"
-       version="1.0.1"
+       version="1.0.2"
        provider-name="Maros Ondrasek">
   <requires>
     <import addon="xbmc.python" version="2.0" />
