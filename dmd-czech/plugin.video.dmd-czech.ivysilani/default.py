@@ -96,9 +96,9 @@ def ABC(url):
     response = urllib2.urlopen(req)
     httpdata = response.read()
     response.close()
-    match = re.compile('<a class="pageLoadAjaxAlphabet" href="(.+?)" rel="letter=.+?"><span>(.+?)</span></a>').findall(httpdata)
+    match = re.compile('<a class=\"pageLoadAjaxAlphabet\"\s*href=\"([^\"]+)\"\s*rel=\"letter=.+?\">\s+<span>([^<]+)</span>\s+</a>').findall(httpdata)
     for link,name in match:
-        #print name,__baseurl__+link
+        print name,__baseurl__+link
         addDir(name,'http://www.ceskatelevize.cz'+link,3,icon)
 
 def CAT_LIST(url):
