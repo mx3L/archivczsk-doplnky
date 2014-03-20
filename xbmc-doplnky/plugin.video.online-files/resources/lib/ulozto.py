@@ -36,7 +36,7 @@ class UloztoContentProvider(ContentProvider):
         self.rh.location = None
         self.init_urllib()
 
-    def init_urllib(self):	
+    def init_urllib(self):
         opener = urllib2.build_opener(self.cp,self.rh)
         urllib2.install_opener(opener)
 
@@ -126,7 +126,7 @@ class UloztoContentProvider(ContentProvider):
             return []
         burl = b64decode('I2h0dHA6Ly9jcnlwdG8uamV6em92by5uZXQvZGVjcnlwdC8/a2V5PSVzJnZhbHVlPSVzCg==')
         murl = b64decode('aHR0cDovL2NyeXB0by5qZXp6b3ZvLm5ldC9kZWNyeXB0Lwo=')
-        data = util.substr(page,'<ul class=\"chessFiles','</ul>') 
+        data = util.substr(page,'<ul class=\"chessFiles','</ul>')
         result = []
         req = {'seed':keymap[key],'values':keymap}
         decr = json.loads(util.post_json(murl,req))
@@ -236,8 +236,8 @@ class UloztoContentProvider(ContentProvider):
 
     def _get_file_url_anonymous(self,page,post_url,headers,captcha_cb):
 
-        capdata = util.substr(page,'<div class=\"clearfix captchaContainer','</div>')
-        captcha = re.search('<img.+?src=\"([^\"]+)"',capdata,re.IGNORECASE | re.DOTALL).group(1)
+        capdata = json.loads(util.request(self._url('reloadXapca.php')))
+        captcha = capdata['image']
         # ask callback to provide captcha code
         self.info('Asking for captcha img %s' % captcha)
         code = captcha_cb({'id':captcha,'img': captcha})
@@ -248,14 +248,14 @@ class UloztoContentProvider(ContentProvider):
         ts = re.search('<input type=\"hidden\" name=\"ts\".+?value=\"([^\"]+)"',page,re.IGNORECASE | re.DOTALL)
         cid = re.search('<input type=\"hidden\" name=\"cid\".+?value=\"([^\"]+)"',page,re.IGNORECASE | re.DOTALL)
         sign = re.search('<input type=\"hidden\" name=\"sign\".+?value=\"([^\"]+)"',page,re.IGNORECASE | re.DOTALL)
-        has = re.search('<input type=\"hidden\" name=\"hash\".+?value=\"([^\"]+)"',page,re.IGNORECASE | re.DOTALL)
-        salt = re.search('<input type=\"hidden\" name=\"salt\".+?value=\"([^\"]+)"',page,re.IGNORECASE | re.DOTALL)
-        timestamp = re.search('<input type=\"hidden\" name=\"timestamp\".+?value=\"([^\"]+)"',page,re.IGNORECASE | re.DOTALL)
+        has = capdata['hash']
+        salt = capdata['salt']
+        timestamp = capdata['timestamp']
         token = re.search('<input type=\"hidden\" name=\"_token_\".+?value=\"([^\"]+)"',page,re.IGNORECASE | re.DOTALL)
         if not (sign and ts and cid and has and token):
             util.error('[uloz.to] - unable to parse required params from page, plugin needs fix')
             return
-        request = urllib.urlencode({'hash':has.group(1),'salt':salt.group(1),'timestamp':timestamp.group(1),'ts':ts.group(1),'cid':cid.group(1),'sign':sign.group(1),'captcha_value':code,'freeDownload':'Stáhnout','_token_':token.group(1)})
+        request = urllib.urlencode({'hash':has,'salt':salt,'timestamp':timestamp,'ts':ts.group(1),'cid':cid.group(1),'sign':sign.group(1),'captcha_value':code,'freeDownload':'Stáhnout','_token_':token.group(1)})
         req = urllib2.Request(post_url,request)
         req.add_header('User-Agent',util.UA)
         req.add_header('Referer',post_url)
@@ -288,7 +288,7 @@ class UloztoContentProvider(ContentProvider):
             raise ResolveException('Captcha failed, try again')
 
 
-    def _fix_stream_url(self,stream):	
+    def _fix_stream_url(self,stream):
         index = stream.rfind('/')
         if index > 0:
             fn = stream[index:]
