@@ -88,8 +88,8 @@ def VIDEOLINK(url,name):
     response = urllib2.urlopen(req)
     httpdata = response.read()
     response.close()
-    thumb = re.compile('<meta name="og:image" content="(.+?)" />').findall(httpdata)
-    popis = re.compile('<meta name="og:description" content="(.+?)" />').findall(httpdata)
+    thumb = re.compile('<meta property="og:image" content="(.+?)" />').findall(httpdata)
+    popis = re.compile('<meta property="og:description" content="(.+?)" />').findall(httpdata)
     config = re.compile('config.php?(.+?)"></script>', re.S).findall(httpdata)
     config = 'http://tn.nova.cz/bin/player/flowplayer/config.php'+config[0]
     try:
@@ -127,7 +127,7 @@ def VIDEOLINK(url,name):
     swfurl = 'http://voyo.nova.cz/static/shared/app/flowplayer/13-flowplayer.commercial-3.1.5-19-003.swf'
     for kvalita,odkaz in streamurl:
         rtmp_url = baseurl[0]+' playpath='+odkaz
-        addLink(name,rtmp_url,thumb[0],popis[0])
+        addLink(name,rtmp_url,thumb[0],desc)
 
 
 url=None
