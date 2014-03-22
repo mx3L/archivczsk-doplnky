@@ -17,7 +17,7 @@
 # *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 # *  http://www.gnu.org/copyleft/gpl.html
 # *
-# */ 
+# */
 
 import sys, os, re, traceback, util, xbmcutil, resolver, time
 from Plugins.Extensions.archivCZSK.engine import client
@@ -29,8 +29,8 @@ class XBMContentProvider(object):
 	'''
 	ContentProvider class provides an internet content. It should NOT have any xbmc-related imports
 	and must be testable without XBMC runtime. This is a basic/dummy implementation.
-	'''	
-	
+	'''
+
 	def __init__(self, provider, settings, addon, session):
 		'''
 		XBMContentProvider constructor
@@ -103,7 +103,7 @@ class XBMContentProvider(object):
 			params.update({'search-list':''})
 			xbmcutil.add_search_folder(xbmcutil.__lang__(30003), params, xbmcutil.icon('search.png'))
 		self.list(self.provider.categories())
-	
+
 	def play(self, params):
 		streams = self.resolve(params['play'])
 		if streams is not None:
@@ -113,14 +113,14 @@ class XBMContentProvider(object):
 						xbmcutil.add_play(params['title'], stream['title'], stream['quality'], stream['url'], subs=stream['subs'], filename=params['title'], headers=stream['headers'])
 					else:
 						xbmcutil.add_play(params['title'], stream['title'], stream['quality'], stream['url'], subs=stream['subs'], filename=params['title'], headers={})
-						
+
 			else:
 				#ulozto,bezvadata..
 				if 'headers' in streams.keys():
 					xbmcutil.add_play(params['title'], streams['title'], streams['quality'], streams['url'], subs=streams['subs'], filename=params['title'], headers=streams['headers'])
 				else:
 					xbmcutil.add_play(params['title'], streams['title'], streams['quality'], streams['url'], subs=streams['subs'], filename=params['title'], headers={})
-					
+
 
 
 	def _handle_exc(self, e):
@@ -135,7 +135,7 @@ class XBMContentProvider(object):
 					pass
 		client.showError(msg)
 
-	
+
 	def resolve(self, url):
 		item = self.provider.video_item()
 		item.update({'url':url})
@@ -147,7 +147,7 @@ class XBMContentProvider(object):
 
 	def search(self, keyword):
 		self.list(self.provider.search(keyword))
-	
+
 	def list(self, items):
 		for item in items:
 			params = self.params()
@@ -216,8 +216,8 @@ class XBMContentProvider(object):
 			item['img'],
 			infoLabels=self._extract_infolabels(item),
 			menuItems=menuItems
-		)	
-	
+		)
+
 	def categories(self):
 		self.list(self.provider.categories(keyword))
 
@@ -240,7 +240,7 @@ class XBMCMultiResolverContentProvider(XBMContentProvider):
 			return self.provider.resolve(item, select_cb=select_cb)
 		except ResolveException, e:
 			self._handle_exc(e)
-	
+
 
 class XBMCLoginRequiredContentProvider(XBMContentProvider):
 
@@ -249,16 +249,18 @@ class XBMCLoginRequiredContentProvider(XBMContentProvider):
 			client.showInfo(xbmcutil.__lang__(30011))
 		else:
 			return XBMContentProvider.root(self)
-		
+
 class XBMCLoginOptionalContentProvider(XBMContentProvider):
-	
+
 	def __init__(self, provider, settings, addon, session):
 		XBMContentProvider.__init__(self, provider, settings, addon, session)
 		self.check_setting_keys(['vip'])
 
 	def ask_for_captcha(self, params):
-		print 'captcha', params['img']
-		return client.getCaptcha(self.session, params['img'])
+		img = params['img']
+		if isinstance(img, unicode):
+			img = img.encode('utf-8')
+		return client.getCaptcha(self.session, img)
 
 	def ask_for_account_type(self):
 		if len(self.provider.username) == 0:
@@ -284,14 +286,14 @@ class XBMCLoginOptionalContentProvider(XBMContentProvider):
 		except ResolveException, e:
 			self._handle_exc(e)
 
-	
-	
+
+
 
 class XBMCLoginOptionalDelayedContentProvider(XBMCLoginOptionalContentProvider):
 
     def wait_cb(self, wait):
         left = wait
-        msg = xbmcutil.__lang__(30014).encode('utf-8') 
+        msg = xbmcutil.__lang__(30014).encode('utf-8')
         while left > 0:
             #xbmc.executebuiltin("XBMC.Notification(%s,%s,1000,%s)" %(self.provider.name,msg % str(left),''))
             left -= 1
