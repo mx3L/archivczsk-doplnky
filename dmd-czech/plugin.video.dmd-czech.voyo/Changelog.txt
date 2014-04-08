@@ -1,3 +1,5 @@
+2014-04-15:
+* oprava nacitania porady, zpravy
 2014-02-04:
 * opravene strankovanie
 

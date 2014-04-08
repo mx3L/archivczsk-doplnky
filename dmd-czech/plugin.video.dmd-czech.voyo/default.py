@@ -164,17 +164,49 @@ player_php_url = __baseurl__ + '/bin/eshop/ws/plusPlayer.php'
 
 MAX_PAGE_ENTRIES = 34
 PAGER_RE = "<span class=\'next next_set\'><a href=\'([^']+)"
-LISTING_START = 'productsList series'
+CAT_START = '<div class="productList">'
+LISTING_START =  '<div id="product-parent"'
+VIDEO_START = '<div id="group_3"'
 LISTING_END = 'productsList latestEpisodes'
 
 VIDEOLINK_LIVE_RE = "clip:.+?url:.*?\'(?P<playpath>[^']+).+?plugins:.+?netConnectionUrl:.*?\'(?P<url>[^']+)"
 CATEGORIES_ITER_RE = '<div class=\"item">.*?<div class=\"image\">.*?<img src=\"(?P<img>[^"]+).*?<div class=\"description\">.*?<a href=\"(?P<url>[^"]+).*?title=\"(?P<title>[^"]+).*?<\/div>.*?<\/div>.*?<\/div>'
 LISTING_ITER_RE = '<li class=\"item_ul\">.*?<a href=\"(?P<url>[^"]+)".*?title=\"(?P<title>[^"]+).*?<img src=\"(?P<img>[^"]+).+?<\/li>'
+LISTING_ITER_RE2 = '<li id=.+?<a href=\"(?P<url>[^\"]+)\".+?<img src=\"(?P<img>[^\"]+).+?title=\"(?P<title>[^\"]+)\".+?<\/li>'
+LISTING_ITER_RE3 ='<td><a href=\"(?P<url>[^\"]+)\"\s*title=\"(?P<title>[^\"]+)\"\s*>[^<]+</a></td><td class=\"rel-date\">(?P<date>[^<]*)</td>.+?</td>'
 LIVE_ITER_RE = '<a href=\"\?channel=(?P<channel>[^"]+).+?title=\"(?P<title>[^"]+)'
 
 
 if  (username == "" or password == "") and secret_token == "":
     showInfo('VOYO CZ archív je prístupný po zadaní použivateľského mena a hesla')
+
+
+def substr(data, start, end):
+    if isinstance(start, tuple):
+        i = 0
+        start_idx = -1
+        while start_idx == -1 and i < len(start):
+            start_str = start[i]
+            start_idx = data.find(start_str)
+            i+=1
+    else: start_idx = data.find(start)
+    if isinstance(end, tuple):
+        i = 0
+        end_idx = -1
+        while start_idx == -1 and i < len(end):
+            end_str = end[i]
+            end_idx = data.find(end_str)
+            i+=1
+    else: end_idx = data.find(end)
+
+    if start_idx != -1 and end_idx != -1:
+        data = data[start_idx:end_idx]
+    elif end_idx != -1:
+        data = data[:end_idx]
+    elif start_idx != -1:
+        data = data[start_idx:]
+    return data
+
 
 
 def OBSAH():
@@ -195,28 +227,26 @@ def VOYO_OBSAH_LIVE():
 
 def VOYO_OBSAH(url, name='', page=None):
     i = 0
-    iter1 = False
-    iter2 = False
+    iter = False
     data = voyo_read(url)
-    start = data.find(LISTING_START)
-    end = data.find(LISTING_END)
-    if start != -1 and end != -1:
-        data = data[start:end]
-    elif end != -1:
-        data = data[:end]
-    elif start != -1:
-        data = data[start:]
+    data = substr(data, (CAT_START, LISTING_START, VIDEO_START), LISTING_END)
 
-    for item in re.finditer(CATEGORIES_ITER_RE, data, re.DOTALL):
-        iter1 = True
-        i += 1
-        addDir(item.group('title'), __baseurl__ + item.group('url'), 1, item.group('img'))
-
-    if not iter1:
-        for item in re.finditer(LISTING_ITER_RE, data, re.DOTALL):
-            iter2 = True
+    for regex in [CATEGORIES_ITER_RE, LISTING_ITER_RE, LISTING_ITER_RE2, LISTING_ITER_RE3]:
+        for match in re.finditer(regex, data, re.DOTALL):
+            iter = True
             i += 1
-            addDir(item.group('title'), __baseurl__ + item.group('url'), 1, item.group('img'))
+            item = match.groupdict()
+            if 'date' in item and item['date']:
+                title = "%s (%s)"%(item['title'], item['date'])
+            else:
+                title = item['title']
+            if 'img' in item:
+                img = item['img']
+            else:
+                img = None
+            addDir(title, __baseurl__ + item['url'], 1, img)
+        if iter:
+            break
 
     if i >= MAX_PAGE_ENTRIES:
         if page is None:
@@ -229,7 +259,7 @@ def VOYO_OBSAH(url, name='', page=None):
             nexturl = url + '?page=' + str(page)
         addDir('Daľšia strana >>', nexturl, 1, nexticon, page=page)
 
-    if not iter1 and not iter2:
+    if not iter:
         if username != "":
             VIDEOLINK(url, name)
         else:
