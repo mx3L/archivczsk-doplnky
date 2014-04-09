@@ -12,7 +12,7 @@
 # */
 import re, util, decimal, random, base64, urllib, urllib2
 
-__name__ = 'netu'
+__name__ = 'hqq'
 def supports(url):
     return not _regex(url) == None
 
@@ -70,7 +70,7 @@ def _decode2(file_url):
         return a
 
     def _xc13(_arg1):
-        _lg27 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+        _lg27 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
         _local2 = ""
         _local3 = [0, 0, 0, 0]
         _local4 = [0, 0, 0]
@@ -93,7 +93,7 @@ def _decode2(file_url):
             _local5 += 4;
         return _local2
 
-    return _xc13(K12K(file_url, 'd'))
+    return _xc13(K12K(file_url, 'e'))
 
 
 def resolve(url):
@@ -102,7 +102,7 @@ def resolve(url):
         vid = m.group('vid')
         headers= {'User-Agent':'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:21.0) Gecko/20100101 Firefox/21.0',
                             'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'}
-        player_url = "http://netu.tv/player/embed_player.php?vid=%s&autoplay=no" % vid
+        player_url = "http://hqq.tv/player/embed_player.php?vid=%s&autoplay=no" % vid
         try:
             req = urllib2.Request(player_url, headers=headers)
             data = urllib2.urlopen(req).read()
@@ -129,14 +129,13 @@ def resolve(url):
                 return [{'url':file_url,'quality':'???'}]
 
 def _regex(url):
-    m1 = m2 = m3 = None
-    m1 = re.search("netu\.tv/watch_video\.php\?v=(?P<vid>[0-9A-Z]+)", url)
-    m2 = re.search('netu\.tv/player/embed_player\.php\?vid=(?P<vid>[0-9A-Z]+)', url)
+    m1 = m2 = None
+    m1 = re.search('hqq\.tv/player/embed_player\.php\?vid=(?P<vid>[0-9A-Z]+)', url)
     b64enc= re.search('data:text/javascript\;charset\=utf\-8\;base64([^\"]+)',url)
     b64dec = b64enc and base64.decodestring(b64enc.group(1))
     hash = b64dec and re.search("\'([^']+)\'", b64dec).group(1)
     if hash:
         form = _decode(hash)
-        m3  = re.search('<input name="vid"[^>]+? value="(?P<vid>[^"]+?)">', form)
-    return m1 or m2 or m3
+        m2  = re.search('<input name="vid"[^>]+? value="(?P<vid>[^"]+?)">', form)
+    return m1 or m2
 
