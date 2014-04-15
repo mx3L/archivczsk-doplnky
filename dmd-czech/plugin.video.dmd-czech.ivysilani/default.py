@@ -228,12 +228,13 @@ def VIDEO_LIST(url, video_listing= -1):
     program_multi_end = '<div id="programmeRelated">'
     single_regex = '<a href=\"(?P<url>[^"]+).*?<h2>(?P<title>[^<]+)<\/h2>.*?<p>(?P<desc>[^<]+)<\/p>'
     iter_regex = '<li class=\"itemBlock (clearfix|clearfix active).*?<a class=\"itemImage\".*?src=\"(?P<img>[^"]+).*?<a class=\"itemSetPaging\".*?href=\"(?P<url>[^"]*).+?>(?P<title>[^<]+).*?<\/li>'
-    paging_regex = '<div class=\"pagingContent clearfix\">.*?<td class=\"center\">(?P<page>[^<]+)</td>.*<td class=\"right\".*?<a.*?href=\"(?P<nexturl>[^"]+).*?<\/a>'
+    paging_regex = '<div\s*id=\"paginationControl.+?<span class=\"selected\">(?P<page>[^<]+)</span>.+?<a href=\"(?P<nexturl>[^\"]+)\".+?class=\"next\".+?</a>.+?</div>'
 
     link = url
-    if not re.search('dalsi-casti', url):
-        link = url + 'dalsi-casti/'
-
+    if not re.search('/dalsi-casti', url):
+        m = re.search('http://www.ceskatelevize.cz/ivysilani/([^/]+)/[\w,-]+', url)
+        if m:
+            url = url[:m.end(1)]
     req = urllib2.Request(link)
     req.add_header('User-Agent', _UserAgent_)
     response = urllib2.urlopen(req)
@@ -284,15 +285,15 @@ def VIDEO_LIST(url, video_listing= -1):
 
     try:
         pager = re.search(paging_regex, multidata, re.DOTALL)
-        act_page = pager.group('page').split()
+        act_page = int(pager.group('page'))
         #print act_page,next_page_i
         next_url = pager.group('nexturl')
-        next_label = 'Další strana (Zobrazena videa ' + act_page[0] + '-' + act_page[2] + ' ze ' + act_page[4] + ')'
+        next_label = '>> Další strana >>'
         #print next_label,next_url
 
         video_listing_setting = int(__settings__.get_setting('video-listing'))
         if video_listing_setting > 0:
-                next_label = 'Další strana (celkem ' + act_page[4] + ' videí)'
+            next_label = '>> Další strany >>'
         if (video_listing_setting > 0 and video_listing == -1):
                 if video_listing_setting == 3:
                         video_listing = 99999
@@ -305,7 +306,8 @@ def VIDEO_LIST(url, video_listing= -1):
         else:
                 print next_label, 'http://www.ceskatelevize.cz' + next_url
                 addDir(next_label, 'http://www.ceskatelevize.cz' + next_url, 6, nexticon)
-    except:
+    except Exception as e:
+        print e
         print 'STRANKOVANI NENALEZENO!'
 
 def BONUSY(link):
