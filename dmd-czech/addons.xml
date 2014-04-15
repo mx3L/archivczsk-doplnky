@@ -50,7 +50,7 @@
 
 <addon id="plugin.video.dmd-czech.ivysilani"
        name="iVysílání TV Archiv"
-       version="1.5.5"
+       version="1.5.6"
        provider-name="Jiri Vyhnalek">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
@@ -98,7 +98,7 @@
 
 <addon id="plugin.video.dmd-czech.voyo"
        name="Voyo TV Archiv"
-       version="2.2"
+       version="2.3"
        provider-name="Jiri Vyhnalek, mx3L">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
@@ -194,7 +194,7 @@
 
 <addon id="plugin.video.dmd-czech.stream"
        name="Stream TV Archiv"
-       version="1.1.3"
+       version="1.1.5"
        provider-name="Jiri Vyhnalek">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
