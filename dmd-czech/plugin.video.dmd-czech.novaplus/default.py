@@ -126,7 +126,7 @@ def VIDEOLINK(url,name):
     streamurl = re.compile('<media>\s<quality>(.+?)</quality>.\s<url>(.+?)</url>\s</media>').findall(httpdata)
     swfurl = 'http://voyo.nova.cz/static/shared/app/flowplayer/13-flowplayer.commercial-3.1.5-19-003.swf'
     for kvalita,odkaz in streamurl:
-        rtmp_url = baseurl[0]+' playpath='+odkaz
+        rtmp_url = baseurl[0]+'/'+odkaz
         addLink(name,rtmp_url,thumb[0],desc)
 
 
