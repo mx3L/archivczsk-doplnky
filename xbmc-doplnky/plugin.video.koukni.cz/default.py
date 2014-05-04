@@ -31,6 +31,6 @@ __scriptname__ = 'koukni.cz'
 __addon__ = ArchivCZSK.get_xbmc_addon(__scriptid__)
 __language__ = __addon__.getLocalizedString
 
-settings = {}
+settings = {'quality':__addon__.getSetting('quality')}
 
-xbmcprovider.XBMContentProvider(koukni.KoukniContentProvider(),settings,__addon__,session).run(params)
+xbmcprovider.XBMCMultiResolverContentProvider(koukni.KoukniContentProvider(),settings,__addon__, session).run(params)

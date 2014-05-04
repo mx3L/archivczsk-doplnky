@@ -59,7 +59,7 @@ class KoukniContentProvider(ContentProvider):
     def list(self,url):
         result = []
         data = util.request(self._url(url))
-        for m in re.finditer('<div class=\"row\"(.+?)<a href=\"(?P<url>[^\"]+)(.+?)src=\"(?P<logo>[^\"]+)(.+?)<h1>(?P<name>[^<]+)',data,re.IGNORECASE | re.DOTALL ):
+        for m in re.finditer('<div class=mosaic-overlay[^<]+<a.+?href=\"(?P<url>[^\"]+)[^<]+<div[^>]+>(?P<name>[^<]+)(.+?)src=\"(?P<logo>[^\"]+)',data,re.IGNORECASE | re.DOTALL ):
             item = self.video_item()
             item['title'] = m.group('name')
             item['img'] = self._url(m.group('logo'))
@@ -69,8 +69,8 @@ class KoukniContentProvider(ContentProvider):
         index = url.find('?')
         if index > 0:
             navurl = url[:index]
-        data = util.substr(data,'tecky.png','</div')
-        next = re.search('<a href=\"(?P<url>[^\"]+)\">[^<]*<img src=\".+?dalsi.png',data,re.IGNORECASE | re.DOTALL )
+        data = util.substr(data,'<div class=strana','</div')
+        next = re.search('<a href=\"(?P<url>[^\"]+)\">\(&gt;\)<',data,re.IGNORECASE | re.DOTALL )
         if next:
             item = self.dir_item()
             item['type'] = 'next'
@@ -79,9 +79,17 @@ class KoukniContentProvider(ContentProvider):
         return result
 
     def resolve(self,item,captcha_cb=None,select_cb=None):
-        data = koukniresolver.resolve(self._url(item['url']))
-        if data and len(data) > 0:
-            item = self.video_item()
-            for key in data[0].keys():
-                item[key] = data[0][key]
-            return item
+        result = []
+        resolved= koukniresolver.resolve(self._url(item['url']))
+        for r in resolved:
+            v = self.video_item()
+            v['title'] = item['title']
+            v['url'] = r['url']
+            v['surl'] = r['surl']
+            v['subs'] = r['subs']
+            v['quality'] = r['quality']
+            result.append(v)
+        if len(result)==1:
+            return result[0]
+        elif len(result) > 1 and select_cb:
+            return select_cb(result)
