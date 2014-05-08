@@ -9,6 +9,25 @@ import simplejson as json
 import httplib
 import xml.etree.ElementTree as ET
 
+def substr(data,start,end):
+        i1 = data.find(start)
+        i2 = data.find(end,i1)
+        return data[i1:i2]
+
+def substrAll(data,start,end):
+        result = ''
+        i1 = data.find(start)
+        i2 = data.find(end,i1)
+        result +=data[i1:i2]
+
+        i1 = data.find(start,i2+1)
+        while i1 >= 0:
+                i2 = data.find(end,i1+1)
+                result +=data[i1:i2]
+                i1 = data.find(start, i2 + 1)
+
+        return result
+
 
 
 __baseurl__ = 'http://www.ceskatelevize.cz/ivysilani'
@@ -127,50 +146,32 @@ def CAT_LIST(url):
 
 # vypis CT1,CT2,CT24,CT4
 def DAY_LIST(url):
-    doc = read_page(url)
-    data = doc.find("ul", {"id": "channels"})
-    items = data.findAll("li")
-    kanaly=[]
-    for ite in items:
-        rows = ite.findAll("span", attrs={'class' : 'logo'})
-        for it in rows:
-                item = it.find('img')
-                icons= item['src']
-                name = item['alt'].encode('utf-8').strip()
-                addDir(name,url,9,icons)
+    req = urllib2.Request(url)
+    req.add_header('User-Agent', _UserAgent_)
+    response = urllib2.urlopen(req)
+    httpdata = response.read()
+    response.close()
+    data = substr(httpdata,'data-type="actual-channels"','.columns.actual-channels')
+    match = re.compile('<img src="(.+?)" alt="(.+?)"').findall(data)
+    for item in match:
+            addDir(item[1],url,9,item[0])
+
 
 
 def DAY_PROGRAM_LIST( url, chnum ):
-    doc = read_page(url)
-    data = doc.find('div', {"id": "programme"})
-    items = data.findAll('ul')
-    nazvy=['ČT1', 'ČT2', 'ČT24', 'ČT sport', 'ČT :D', 'ČT Art']
-    count=-1
-    for it1 in items:
-        count += 1
-        if count != nazvy.index(chnum):
-                continue
-        it2 = it1.findAll('div',{'class': 'overlay'})
-        for it3 in it2:
-                name = it3.find('a', {'class':'title'})
-                if name == None:
-                        name = it3.find('strong', {'class':'title'})
-                name = name.getText(" ").encode('utf-8')
-
-                cas  = it3.find("span", {"class": "time"})
-                cas  = cas.getText(" ").encode('utf-8')
-                #icons = it3.find("img")
-                #icons = icon['src']
-
-                link = it3.find("a")
-                if link != None:
-                        link = str(link['href'])
-                        addDir(cas+' '+name,'http://www.ceskatelevize.cz'+link,10,icon)
-                else:
-                        name = name +' - pořad se ještě nevysílá.'
-                        thumb = 'http://img7.ceskatelevize.cz/ivysilani/gfx/empty/noLive.png'
-                        addDir(cas+' '+name, url, 10, thumb)
-
+    nazvy=['ČT1', 'ČT2', 'ČT24', 'ČT sport', 'ČT:D', 'ČT art']
+    nlink=['ct1', 'ct2', 'ct24', 'sport', 'dart', 'dart' ]
+    index = nazvy.index(chnum)
+    req = urllib2.Request(url)
+    req.add_header('User-Agent', _UserAgent_)
+    response = urllib2.urlopen(req)
+    data = response.read()
+    response.close()
+    data = substrAll(data,'programme-list channel-'+nlink[index]+'"','</ul')
+    pattern = '<a href="(.+?)" class="program-item" title=[^>]+>[\s]*?<span class="time">(.+?)</span>[\s]*?<span class="title">(.+?)</span>'
+    match = re.compile(pattern).findall(data)
+    for item in match:
+            addDir(item[1]+' '+item[2],'http://www.ceskatelevize.cz'+item[0],10,icon)
 
 def date2label(date):
      dayname = DAY_NAME[date.weekday()]
