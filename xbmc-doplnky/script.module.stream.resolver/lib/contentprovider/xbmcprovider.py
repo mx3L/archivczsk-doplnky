@@ -187,7 +187,13 @@ class XBMContentProvider(object):
 				pass
 		menuItems = {}
 		if 'menu' in item.keys():
-			menuItems.update(item['menu'])
+			for ctxtitle, value in item['menu'].iteritems():
+				if ctxtitle.find('$') == 0:
+				    try:
+				        ctxtitle = self.addon.getLocalizedString(int(ctxtitle[1:]))
+				    except:
+				        pass
+				menuItems[ctxtitle] = value
 		xbmcutil.add_dir(title, params, img, infoLabels=self._extract_infolabels(item), menuItems=menuItems)
 
 	def _extract_infolabels(self, item):
@@ -210,7 +216,13 @@ class XBMContentProvider(object):
 		title = '%s%s' % (item['title'], item['size'])
 		menuItems = {}
 		if 'menu' in item.keys():
-			menuItems.update(item['menu'])
+			for ctxtitle, value in item['menu'].iteritems():
+				if ctxtitle.find('$') == 0:
+				    try:
+				        ctxtitle = self.addon.getLocalizedString(int(ctxtitle[1:]))
+				    except:
+				        pass
+				menuItems[ctxtitle] = value
 		xbmcutil.add_video(title,
 			params,
 			item['img'],
