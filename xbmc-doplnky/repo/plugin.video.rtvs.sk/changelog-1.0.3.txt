@@ -1,0 +1,9 @@
+[B]1.0.3:[/B]
+added date listing
+added related videos listing to context menu
+
+[B]1.0.1[/B]
+converted icon to 8-bit png
+
+[B]1.0.0:[/B]
+Initial version
