@@ -24,18 +24,25 @@ sys.path.append( os.path.join ( os.path.dirname(__file__),'server') )
 
 RESOLVERS = []
 util.debug('%s searching for modules' % __name__)
+eval_modules = []
 for module in os.listdir(os.path.join(os.path.dirname(__file__),'server')):
-    if module == '__init__.py' or module[-3:] != '.py':
+    module, ext = os.path.splitext(module)
+    if ext not in ('.py','.pyc','.pyo'):
         continue
-    module = module[:-3]
+    if 'resolver' not in module:
+        continue
+    if module in eval_modules:
+        continue
     exec 'import %s' % module
     resolver = eval(module)
+    eval_modules.append(module)
     util.debug('found %s %s' % (resolver,dir(resolver)))
 
     if not hasattr(resolver,'__priority__'):
         resolver.__priority__ = 0
     RESOLVERS.append(resolver)
 del module
+del eval_modules
 RESOLVERS = sorted(RESOLVERS,key=lambda m: -m.__priority__)
 util.debug('done')
 
