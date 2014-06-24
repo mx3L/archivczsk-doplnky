@@ -28,6 +28,15 @@ from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
 
 __addon__ = ArchivCZSK.get_xbmc_addon('script.module.stream.resolver')
 __lang__ = __addon__.getLocalizedString
+
+
+client_version = 0
+if hasattr(client,'getVersion'):
+	client_version = client.getVersion()
+# compatibility for older version
+if isinstance(client_version, basestring):
+	client_version = 1
+
 ##
 # initializes urllib cookie handler
 def init_urllib():
@@ -60,7 +69,7 @@ def substr(data, start, end):
 	i1 = data.find(start)
 	i2 = data.find(end, i1)
 	return data[i1:i2]
-	
+
 def save_to_file(url, file):
 	try:
 		f = open(file, 'w')
@@ -105,7 +114,7 @@ def debug(text):
 def info(text):
         text = "xbmc_doplnky: info " + (str([text]))
         client.log.info(text)
-        
+
 def error(text):
         text = "xbmc_doplnky: error" + (str([text]))
         client.log.error(text)
@@ -161,7 +170,7 @@ def remove_search(addon, server, search):
                 f.write(json.dumps(searches, ensure_ascii=True))
                 f.close()
 
-   
+
 def add_search_item(name, params, logo=None, infoLabels={}, menuItems={}):
     name = decode_html(name)
     for key in params.keys():
@@ -171,7 +180,7 @@ def add_search_item(name, params, logo=None, infoLabels={}, menuItems={}):
     if not 'title' in infoLabels:
         infoLabels['title'] = name
     client.add_dir(name, params, image=logo, infoLabels=infoLabels, menuItems=menuItems, search_item=True)
-    
+
 def add_search_folder(name, params, logo=None, infoLabels={}, menuItems={}):
     name = decode_html(name)
     for key in params.keys():
@@ -181,7 +190,7 @@ def add_search_folder(name, params, logo=None, infoLabels={}, menuItems={}):
     if not 'title' in infoLabels:
         infoLabels['title'] = name
     client.add_dir(name, params, image=logo, infoLabels=infoLabels, menuItems=menuItems, search_folder=True)
-    
+
 def add_dir(name, params, logo=None, infoLabels={}, menuItems={}):
     name = decode_html(name)
     for key in params.keys():
@@ -202,16 +211,23 @@ def add_video(name, params={}, logo=None, infoLabels={}, menuItems={}):
 		client.add_dir(name, params, logo, infoLabels=infoLabels, menuItems=menuItems, video_item=True)
 	except Exception:
 		add_dir(name, params, logo=logo, infoLabels=infoLabels, menuItems=menuItems)
-    
+
 def add_play(title, provider_name, quality, url, subs=None, filename=None, image=None, infoLabels={}, menuItems={},headers={}):
-	name = '[%s] %s - %s' % (decode_html(quality), decode_html(provider_name), decode_html(title))
 	if not 'title' in infoLabels:
-		infoLabels['title'] = name
-		
+		infoLabels['title'] = title
+
 	settings = {"extra-headers":headers}
-	if hasattr(client, "getVersion"):
-		client.add_video(name, url, subs=subs, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems, settings=settings)
+	if client_version != 0:
+		if client_version > 1:
+			name = decode_html(title)
+			quality = decode_html(quality)
+			provider_name = decode_html(provider_name)
+			client.add_video(name, url, subs=subs, quality = quality, provider_name = provider_name, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems, settings=settings)
+		else:
+			name = '[%s] %s - %s' % (decode_html(quality), decode_html(provider_name), decode_html(title))
+			client.add_video(name, url, subs=subs, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems, settings=settings)
 	else:
+		name = '[%s] %s - %s' % (decode_html(quality), decode_html(provider_name), decode_html(title))
 		client.add_video(name, url, subs=subs, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems)
 
 def create_play_it(title, provider_name, quality, url, subs=None, filename=None, image=None, infoLabels={}, menuItems={},headers={}):
