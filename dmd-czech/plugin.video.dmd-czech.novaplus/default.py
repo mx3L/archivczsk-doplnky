@@ -62,7 +62,7 @@ def CATEGORIES(url,page):
                 continue
             url = item.a['href'].encode('utf-8')
             title = item.a.span.getText(" ").encode('utf-8')
-            match = re.compile('porad/(.+?)/', re.S).findall(url)
+            match = re.compile('porad/(.+?)').findall(url)
             thumb = 'http://static.cz.prg.cmestatic.com/static/cz/microsites/avod/img/porady/'+match[0]+'.jpg'
             addDir(title,__baseurl__ + url,2,thumb,1)
 

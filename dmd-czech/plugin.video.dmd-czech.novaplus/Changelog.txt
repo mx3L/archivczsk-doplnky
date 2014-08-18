@@ -1,3 +1,5 @@
+2014-08-12
+ * Oprava načítání kategorií
 2014-03-15
  * Oprava prehravani
 2014-02-04: 
