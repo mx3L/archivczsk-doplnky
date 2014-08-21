@@ -148,6 +148,15 @@ def VIDEOLINK(url,name):
             addLink(quality+' '+name,stream_url,'',name)
         except:
             continue
+    try:
+         show = data[u'show_url']
+         print 'show'
+         print show
+         link = __baseurl__+'get_series?show_url='+show+'&0.'+str(gen_random_decimal(9999999999999999))
+         addDir('[B]Další nabídka: [/B]','','','')
+         addDir('Další epizody pořadu',link,2,'')
+    except:
+         print 'Další epizody nenalezeny'
 
 def gen_random_decimal(d):
         return decimal.Decimal('%d' % (random.randint(0,d)))

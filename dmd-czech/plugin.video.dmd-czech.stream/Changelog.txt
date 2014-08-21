@@ -1,4 +1,6 @@
 2013-04-10:
+  * Pri spousteni videa se nyni zobrazuje nabidka na seznam vsech dilu poradu
+2013-04-10:
   * Pridan vypis vsech nejnovejsich epizod
 2013-04-04:
   * oprava nezobrazovani epizod poradu

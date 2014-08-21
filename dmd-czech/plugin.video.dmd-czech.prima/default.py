@@ -6,6 +6,7 @@ from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
 
 
 __baseurl__ = 'http://play.iprima.cz'
+__nejnovejsiurl__ = 'http://play.iprima.cz/primaplay/channel_ajax_more/'
 __cdn_url__ = 'http://cdn-dispatcher.stream.cz/?id='
 __dmdbase__ = 'http://iamm.netuje.cz/xbmc/prima/'
 _UserAgent_ = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'
@@ -14,13 +15,14 @@ __settings__ = ArchivCZSK.get_addon('plugin.video.dmd-czech.prima')
 home = __settings__.get_info('path')
 icon = os.path.join(home, 'icon.png')
 nexticon = os.path.join(home, 'nextpage.png')
-family = os.path.join(home, 'family.png')
+prima = os.path.join(home, 'family.png')
 love = os.path.join(home, 'love.png')
 cool = os.path.join(home, 'cool.png')
 zoom = os.path.join(home, 'zoom.png')
 fanart = os.path.join(home, 'fanart.jpg')
 vyvoleni = os.path.join( home, 'vyvoleni.png' )
 kvalita = __settings__.get_setting('kvalita')
+konvert_nazev = __settings__.get_setting('prevod_nazev')
 
 if kvalita == '':
     __settings__.open_settings(session)
@@ -85,24 +87,88 @@ word_dic = {
 '\\xc5\\x87': 'Ň',
 }
 
+		
+def getURL(url):
+    request = urllib2.Request(url)
+    con = urllib2.urlopen(request)
+    data = con.read()
+    con.close()
+    return data
+
+def substr(data,start,end):
+	i1 = data.find(start)
+	i2 = data.find(end,i1)
+	return data[i1:i2]
+
+
 def OBSAH():
-    addDir('Prima Family','http://play.iprima.cz/az/vse/vse/prima',4,family,0,'family')
-    addDir('Prima Cool','http://play.iprima.cz/az/vse/vse/cool',4,cool,0,'cool')
+    addDir('[B]Nejnovější videa:[/B]','','','','','')
+    addDir('Prima Family',__nejnovejsiurl__,6,prima,0,'prima')
+    addDir('Prima Cool',__nejnovejsiurl__,6,cool,0,'cool')    
+    addDir('Prima Love',__nejnovejsiurl__,6,love,0,'love')
+    addDir('Prima Zoom',__nejnovejsiurl__,6,zoom,0,'zoom')
+
+    addDir('[B]Pořady dle Abecedy:[/B]','','','','','')
+    addDir('Prima Family','http://play.iprima.cz/az/vse/vse/prima',4,prima,0,'prima')
+    addDir('Prima Cool','http://play.iprima.cz/az/vse/vse/cool',4,cool,0,'cool')    
     addDir('Prima Love','http://play.iprima.cz/az/vse/vse/love',4,love,0,'love')
     addDir('Prima Zoom','http://play.iprima.cz/az/vse/vse/zoom',4,zoom,0,'zoom')
+
+    addDir('[B]Žánry:[/B]','','','','','')	
+    addDir('Akční','http://play.iprima.cz/zanry/akcni',4,icon,0, 'akcni')
+    addDir('Cestování','http://play.iprima.cz/zanry/cestovani',4,icon,0, 'cestovani')
+    addDir('Dobrodružství','http://play.iprima.cz/zanry/dobrodruzstvi',4,icon,0, 'dobrodruzstvi')
+    addDir('Dokumenty','http://play.iprima.cz/zanry/dokumenty',4,icon,0, 'dokumenty')
+    addDir('Drama','http://play.iprima.cz/zanry/drama',4,icon,0, 'drama')
+    addDir('Fantasy','http://play.iprima.cz/zanry/fantasy',4,icon,0, 'fantasy')
+    addDir('Filmy','http://play.iprima.cz/zanry/filmy',4,icon,0, 'filmy')
+    addDir('Historie','http://play.iprima.cz/zanry/historie',4,icon,0, 'historie')
+    addDir('Hry','http://play.iprima.cz/zanry/hry',4,icon,0, 'hry')
+    addDir('Hudba','http://play.iprima.cz/zanry/hudba',4,icon,0, 'hudba')
+    addDir('Komedie','http://play.iprima.cz/zanry/komedie',4,icon,0, 'komedie')
+    addDir('Krimi','http://play.iprima.cz/zanry/krimi',4,icon,0, 'krimi')
+    addDir('Lifestyle','http://play.iprima.cz/zanry/lifestyle',4,icon,0, 'lifestyle')
+    addDir('Příroda','http://play.iprima.cz/zanry/priroda',4,icon,0, 'priroda')
+    addDir('Publicistika','http://play.iprima.cz/zanry/publicistika',4,icon,0, 'publicistika')
+    addDir('Reality','http://play.iprima.cz/zanry/reality',4,icon,0, 'reality')
+    addDir('Romantika','http://play.iprima.cz/zanry/romantika',4,icon,0, 'romantika')
+    addDir('Seriály','http://play.iprima.cz/zanry/serialy',4,icon,0, 'serialy')
+    addDir('Soutěže','http://play.iprima.cz/zanry/souteze',4,icon,0, 'souteze')
+    addDir('Sport','http://play.iprima.cz/zanry/sport',4,icon,0, 'sport')
+    addDir('Talkshow','http://play.iprima.cz/zanry/talkshow',4,icon,0, 'talkshow')
+    addDir('Telenovely','http://play.iprima.cz/zanry/telenovely',4,icon,0, 'telenovely')
+    addDir('Vaření','http://play.iprima.cz/zanry/vareni',4,icon,0, 'vareni')
+    addDir('Věda a technika','http://play.iprima.cz/zanry/veda-technika',4,icon,0, 'veda-technika')
+    addDir('Zábava','http://play.iprima.cz/zanry/zabava',4,icon,0, 'zabava')
+    addDir('Zpravodajství','http://play.iprima.cz/zanry/zpravodajstvi',4,icon,0, 'zpravodajstvi')
+
     url = 'http://play.iprima.cz/az'
     request = urllib2.Request(url)
     con = urllib2.urlopen(request)
     data = con.read()
     con.close()
-    data = data[data.find('<div class="programs-menu-genres">'):]
-    match = re.compile('<div class=\"item.+?callbackItem\"><a href=\"([^\"]+)\">([^\<]+)</a></div>').findall(data)
-    for url, jmeno in match:
-        url =__baseurl__+url
+    match = re.compile('callbackItem" data-id="(.+?)" data-alias="(.+?)"><a href="(.+?)">(.+?)</a></div>').findall(data)
+    for porad_id,data_alias,url,jmeno in match:
+        if re.search('vse', data_alias, re.U): 
+                continue
+        url = 'http://play.iprima.cz/primaplay/az_ajax?letter=vse&genres='+data_alias+'&channel=vse'
         #print porad_id,data_alias,url,jmeno
-        addDir(replace_words(jmeno, word_dic),url,4,"",0,jmeno)
+        addDir(replace_words(jmeno, word_dic),url,4,__dmdbase__+data_alias+'.jpg',0,jmeno)
 
-
+def NEJNOVEJSI(url,page,kanal):
+   
+    newurl = str(url)+''+str(page)+'/'+str(kanal)
+    data = getURL(newurl)
+    pattern = '<div class="field-image-.+?"><a href="(.+?)"><span class="container-image.+?"><img src="(.+?)" alt="(.+?)" title=""  class="image.+?class="cover">'
+    match = re.compile(pattern).findall(data)
+    for linkurl, obrazek, nazev in match:
+        print 'linkurl :'
+        print linkurl
+        addDir(nazev,__baseurl__+linkurl,10,obrazek,0,nazev)
+    nextpage = page+1
+    addDir('>> Další strana',url,6,nexticon,nextpage,kanal)
+ 
+	
 def KATEGORIE(url,page,kanal):
     if re.search('page', url, re.U):
             match = re.compile('page=([0-9]+)').findall(url)
@@ -113,29 +179,36 @@ def KATEGORIE(url,page,kanal):
     con = urllib2.urlopen(request)
     data = con.read()
     con.close()
-    match = re.compile('<div class=".+?" data-video-id=".+?" data-thumbs-count=".+?"><div class="field-image-primary"><a href="(.+?)"><span class="container-image-195x110"><img src="(.+?)" alt="(.+?)"').findall(data)
+    match = re.compile('<div class=".+?" data-video-id=".+?" data-thumbs-count=".+?"><div class="field-image-primary"><a href="(.+?)"><span class=".+?195x110"><img src="(.+?)" alt="(.+?)"').findall(data)
     for url,thumb,name in match:
         #print url,thumb,name
-        addDir(replace_words(name, word_dic),__baseurl__+url,10,thumb,0,name)
+        addDir(replace_words(name, word_dic),__baseurl__+url,10,thumb,0,name)           
     try:
         match = re.compile('<li class="pager-next last"><a href="(.+?)"').findall(data)
-        #print match[0]
+        #print match[0] 
         addDir('>> Další strana',__baseurl__+match[0],5,nexticon,'','')
     except:
         print 'strankovani nenalezeno'
 
 
 def INDEX(url,page,kanal):
-    request = urllib2.Request(url)
-    con = urllib2.urlopen(request)
-    data = con.read()
-    con.close()
-    data = data[data.find('div class="mainContent"'):]
-    for item in re.finditer('<div class="item"[^<]+<[^<]+<a href=\"(?P<url>[^\"]+)\"[^<]+<[^<]+<img src=\"(?P<img>[^\"]+)\".+?<div class="field-title"><a href="[^"]+\">(?P<title>[^<]+)</a></div>', data, re.DOTALL):
-            addDir(replace_words(item.group('title'),word_dic),__baseurl__+item.group('url'),5,item.group('img'),0,name)
-    pager = re.search('<li class=\"pager-next last"><a href=\"([^\"]+)\"',data,re.DOTALL)
-    if pager:
-        addDir('>> Další strana',__baseurl__+pager.group(1),4,nexticon,'','')
+
+    data = getURL(url)
+    
+    pattern = '<div class="field-image-primary">.+?<img.+?src="(.+?)".+?>.+?href="(.+?)">(.+?)</a>.+?>Počet videí: (.+?)</div></div>'
+    match = re.compile(pattern).findall(substr(data,'<div class="items">','<div id="rightContainer">'))
+    for item in match:
+	   #addDir(replace_words(name+' '+pocet, word_dic),__baseurl__+url,5,thumb,0,name) 
+	if konvert_nazev:
+		addDir(replace_words(item[2]+' - počet videí: '+item[3], word_dic),__baseurl__+item[1],5,item[0],0,item[2])  
+	else:
+		addDir(item[2]+' - počet videí: '+item[3],__baseurl__+item[1],5,item[0],0,item[2])  
+    try:
+	pattern = '<li class="pager-next last"><a href="(.+?)"'
+	match = re.compile(pattern).findall(data)
+	addDir('>> Další strana',__baseurl__+match[0],4,nexticon,'','')
+    except:
+        print 'strankovani nenalezeno'
 
 def VYVOLENI(url,page,kanal):
     if kanal !=1:
@@ -233,6 +306,14 @@ def VIDEOLINK(url,name):
         else:
             print 'LQ '+name,lq_url,nahled,name
             addLink('LQ '+name,lq_url,nahled,name)
+        try:
+             epizody = re.compile('<a href="(.+?)" class="videocategory-link">Celé epizody').findall(data)
+             print 'epizody'
+             print epizody[0]
+             addDir('[B]Další nabídka: [/B]','','','','','')
+             addDir('Další epizody pořadu',__baseurl__+epizody[0],5,'',0,'Další epizody pořadu')
+        except:
+             print 'Další epizody nenalezeny'
 
 
 def gen_random_decimal(d):
@@ -261,7 +342,7 @@ try:
 except:
         pass
 try:
-        kanal=int(params["kanal"])
+        kanal=str(params["kanal"])
 except:
         pass
 
@@ -298,6 +379,12 @@ elif mode==5:
         print ""+str(page)
         KATEGORIE(url,page,kanal)
 
+elif mode==6:
+        print ""+str(url)
+        print ""+str(kanal)
+        print ""+str(page)
+        NEJNOVEJSI(url,page,kanal)
+        
 elif mode==10:
         print ""+url
         VIDEOLINK(url,name)
