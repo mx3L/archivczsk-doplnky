@@ -296,7 +296,7 @@
 
 <addon id="plugin.video.mixer.cz"
        name="mixer.cz"
-       version="1.0.0"
+       version="1.0.4"
        provider-name="Maros Ondrasek">
   <requires>
     <import addon="xbmc.python" version="2.0" />
