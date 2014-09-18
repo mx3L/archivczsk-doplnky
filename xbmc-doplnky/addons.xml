@@ -78,6 +78,25 @@
   </extension>
 </addon>
 
+<addon id="plugin.video.ta3.com" name="ta3.com" provider-name="Maros Ondrasek" version="1.0.0">
+  <requires>
+    <import addon="xbmc.python" version="2.1.0" />
+    <import addon="script.module.stream.resolver" version="1.6.22" />
+  </requires>
+  <extension library="default.py" point="xbmc.python.pluginsource" provides="video">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">ta3.com</summary>
+    <summary lang="cs">ta3.com</summary>
+    <summary lang="sk">ta3.com</summary>
+    <description lang="en">Watch online TV archive from ta3.com</description>
+    <description lang="cs">Sledujte online TV archiv zo serveru ta3.com</description>
+    <description lang="sk">Sledujte online TV archív zo serveru ta3.com</description>
+    <platform>all</platform>
+  </extension>
+</addon>
+
 <addon id="plugin.video.online-files" name="Soubory Online" provider-name="Libor Zoubek" version="1.2.7">
   <requires>
     <import addon="xbmc.python" version="2.1.0" />
@@ -455,6 +474,22 @@
     <summary lang="cs">pohadkar.cz</summary>
     <description lang="en">Watch online tales mostly in czech language on pohadkar.cz</description>
     <description lang="cs">Sledujte online pohádky ze servru pohádkář.cz. Ideální pro zabavení dětí.</description>
+    <platform>all</platform>
+  </extension>
+</addon>
+
+<addon id="plugin.video.dvtv.cz" name="Drtinová Veselovský TV" version="1.2.0" provider-name="Štěpán Ort">
+  <requires>
+    <import addon="xbmc.python" version="2.1.0"/>
+    <import addon="script.module.stream.resolver" version="1.6.22" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary>DVTV - Drtinová, Veselovský TV</summary>
+	<description>Plugin to play videos from DVTV.cz</description>
+    <description lang="cs">Exkluzivní rozhovory s vlivnými lidmi české politiky a byznysu. Nejlepší profesionálové v roli moderátorů, kteří se ptají tak přímo a tak dlouho, dokud nedostanou odpověď. Reportáže z míst, kde byste neměli chybět. Klíčové kulturní a společenské události. To vše nabízí první publicistický videokanál na českém internetu.</description>
     <platform>all</platform>
   </extension>
 </addon>
