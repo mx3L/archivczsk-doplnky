@@ -109,17 +109,9 @@ class XBMContentProvider(object):
 		if streams is not None:
 			if type(streams) == type([]):
 				for stream in streams:
-					if 'headers' in stream.keys():
-						xbmcutil.add_play(params['title'], stream['title'], stream['quality'], stream['url'], subs=stream['subs'], filename=params['title'], headers=stream['headers'])
-					else:
-						xbmcutil.add_play(params['title'], stream['title'], stream['quality'], stream['url'], subs=stream['subs'], filename=params['title'], headers={})
-
+					xbmcutil.add_play(params['title'], stream['title'], stream['quality'], stream['url'], subs=stream['subs'], filename=params['title'], headers=stream.get('headers',dict()), lang=stream.get('lang',''))
 			else:
-				#ulozto,bezvadata..
-				if 'headers' in streams.keys():
-					xbmcutil.add_play(params['title'], streams['title'], streams['quality'], streams['url'], subs=streams['subs'], filename=params['title'], headers=streams['headers'])
-				else:
-					xbmcutil.add_play(params['title'], streams['title'], streams['quality'], streams['url'], subs=streams['subs'], filename=params['title'], headers={})
+				xbmcutil.add_play(params['title'], streams['title'], streams['quality'], streams['url'], subs=streams['subs'], filename=params['title'], headers=streams.get('headers',dict()), lang=streams.get('lang',''))
 
 
 

@@ -212,22 +212,28 @@ def add_video(name, params={}, logo=None, infoLabels={}, menuItems={}):
 	except Exception:
 		add_dir(name, params, logo=logo, infoLabels=infoLabels, menuItems=menuItems)
 
-def add_play(title, provider_name, quality, url, subs=None, filename=None, image=None, infoLabels={}, menuItems={},headers={}):
+def add_play(title, provider_name, quality, url, subs=None, filename=None, image=None, infoLabels={}, menuItems={},headers={}, lang=None):
 	if not 'title' in infoLabels:
 		infoLabels['title'] = title
 
 	settings = {"extra-headers":headers}
+	title = decode_html(title)
+	quality = decode_html(quality)
+	provider_name = decode_html(provider_name)
 	if client_version != 0:
 		if client_version > 1:
-			name = decode_html(title)
-			quality = decode_html(quality)
-			provider_name = decode_html(provider_name)
-			client.add_video(name, url, subs=subs, quality = quality, provider_name = provider_name, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems, settings=settings)
+			client.add_video(title, url, subs=subs, quality = quality, provider_name = provider_name, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems, settings=settings, lang=lang)
 		else:
-			name = '[%s] %s - %s' % (decode_html(quality), decode_html(provider_name), decode_html(title))
+			if lang:
+				name = '[%s][%s] %s - %s'%(quality, lang, provider_name, title)
+			else:
+				name = '[%s] %s - %s' % (quality,provider_name, title)
 			client.add_video(name, url, subs=subs, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems, settings=settings)
 	else:
-		name = '[%s] %s - %s' % (decode_html(quality), decode_html(provider_name), decode_html(title))
+		if lang:
+				name = '[%s][%s] %s - %s'%(quality, lang, provider_name, title)
+		else:
+			name = '[%s] %s - %s' % (quality, provider_name, title)
 		client.add_video(name, url, subs=subs, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems)
 
 def create_play_it(title, provider_name, quality, url, subs=None, filename=None, image=None, infoLabels={}, menuItems={},headers={}):

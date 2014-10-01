@@ -8,7 +8,7 @@
 # */
 import re,util
 import simplejson as json
-from base64 import b64decode
+from base64 import b64decode, b64encode
 
 __name__='streamujtv'
 def supports(url):
@@ -19,35 +19,45 @@ def resolve(url):
     m = _regex(url)
     if m:
         data = util.request(url)
-        streams = re.search('res0\:[^\"]*\"([^\"]+)',data,re.IGNORECASE|re.DOTALL)
-        subs = re.search('sub0\:[^>]+>(http[^\"]+)',data,re.IGNORECASE|re.DOTALL)
-        rn = re.search('rn\:[^\"]*\"([^\"]*)',data,re.IGNORECASE|re.DOTALL)
-        if streams and rn:
-            streams = streams.group(1).split(',')
-            rn = rn.group(1).split(',')
-            index = 0
-            result = []
-            headers = {'User-Agent':'Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0',
+        if data.find('Toto video neexistuje') > 0:
+            util.error('Video bylo smazano ze serveru')
+            return
+        player = 'http://www.streamuj.tv/new-flash-player/mplugin4.swf'
+        headers = {'User-Agent':'Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0',
                     'Referer':'http://www.streamuj.tv/mediaplayer/player.swf'}
-            for stream in streams:
-                print stream
-                burl = b64decode('aHR0cDovL2Z1LWNlY2gucmhjbG91ZC5jb20vcGF1dGg/cGxheWVyPWh0dHA6Ly93d3cuc3RyZWFtdWoudHYvbmV3LWZsYXNoLXBsYXllci9tcGx1Z2luMy5zd2YmbGluaz0lcwo=')
-                res = json.loads(util.request(burl % stream))
-                print res
-                stream = res['link']
-                q = rn[index]
-                if q == 'HD':
-                    q = '720p'
-                else:
-                    q = '???'
-                if subs:
-                    s = subs.group(1).replace('&','%26')
-                    s = json.loads(util.request(burl % s))['link']
-                    result.append({'url':stream,'quality':q,'subs':s,'headers':headers})
-                else:
-                    result.append({'url':stream,'quality':q,'headers':headers})
-                index+=1
-            return result
+        burl = b64decode('aHR0cDovL2Z1LWNlY2gucmhjbG91ZC5jb20vcGF1dGg=')
+        index = 0
+        result = []
+        qualities = re.search('rn\:[^\"]*\"([^\"]*)',data,re.IGNORECASE|re.DOTALL)
+        langs = re.search('langs\:[^\"]*\"([^\"]+)',data,re.IGNORECASE|re.DOTALL)
+        for lang in langs.group(1).split(','):
+            streams = re.search('res'+str(index)+'\:[^\"]*\"([^\"]+)',data,re.IGNORECASE|re.DOTALL)
+            subs = re.search('sub'+str(index)+'\:[^\"]*\"([^\"]+)',data,re.IGNORECASE|re.DOTALL)
+            if subs: 
+                subs = re.search('[^>]+>([^$]+)',subs.group(1),re.IGNORECASE|re.DOTALL)
+            if streams and qualities:
+                streams = streams.group(1).split(',')
+                rn = qualities.group(1).split(',')
+                qindex = 0
+                for stream in streams:
+                    res = json.loads(util.post_json(burl,{'link':stream,'player':player}))
+                    stream = res['link']
+                    q = rn[qindex]
+                    if q == 'HD':
+                        q = '720p'
+                    else:
+                        q = 'SD'
+                    l = ' '+lang
+                    if subs:
+                        l += ' + subs'
+                        s = subs.group(1)
+                        s = json.loads(util.post_json(burl,{'link':s,'player':player}))
+                        result.append({'url':stream,'quality':q,'subs':s['link'],'headers':headers,'lang':l})
+                    else:
+                        result.append({'url':stream,'quality':q,'headers':headers, 'lang':l})
+                    qindex+=1
+            index+=1
+        return result
 
 def _regex(url):
     return re.search('streamuj\.tv/video/',url,re.IGNORECASE | re.DOTALL)
