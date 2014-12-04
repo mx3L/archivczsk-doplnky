@@ -46,7 +46,7 @@ PUBLICISTIKA_ITER_RE = r'<option\ value=\"(?P<id>\d+)\">(?P<title>[^<]+)</option
 TLACOVE_BESEDY_URL = 'http://www.ta3.com/archiv/tlacove-besedy.html'
 ONLINE_ROZHOVORY_URL = 'http://www.ta3.com/archiv/online-rozhovory.html'
 
-TOP_START = '<div id="most-articles" class="widget">'
+TOP_START = '<div id="most-articles-wrap" class="all">'
 TOP_START_6HOURS = 'id="most-m6h"'
 TOP_START_DAY = 'id="most-m1d"'
 TOP_START_WEEK = 'id="most-m7d"'
@@ -55,11 +55,10 @@ TOP_END_DAY = TOP_START_WEEK
 TOP_END = '<div class="widget program-widget" id="program">'
 TOP_END_WEEK = TOP_END
 TOP_ITER_RE = r"""
-    <li>\s+
-        <a\ href=\"(?P<url>[^\"]+)\"><span\ class=\"video\">[^<]+</span>(?P<title>[^<]+)</a>\s+
-        <span\ class=\"tw\">\s+
-            \((?P<views>\d+)\)\s+
-        </span>\s+
+    <li[^>]+>.+?
+        <a\ href=\"(?P<url>[^\"]+)\"><span\ class=\"video\">[^<]+</span>(?P<title>[^<]+)<span\ class=\"tw\">\s+
+            \((?P<views>\d+)\)\s*
+        </span>.+?
     </li>
 """
 LISTING_START = '<div class="inside archive-filter">'
