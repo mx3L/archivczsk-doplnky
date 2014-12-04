@@ -50,28 +50,35 @@ START_DATE = '<div class="row verticalLine tvarchivDate">'
 END_DATE = START_TOP
 DATE_ITER_RE = '<div class=\"media\">\s*<a href=\"(?P<url>[^\"]+)\"[^<]+>\s*<img src=\"(?P<img>[^\"]+)\".+?</a>\s*<div class=\"media-body\">.+?<span class=\"programmeTime\">(?P<time>[^\<]+)<\/span>.+?<a class=\"link\".+?title=\"(?P<title>[^\"]+)\">.+?<\/div>'
 
-START_LISTING = '<div class="boxRight archiv">'
-END_LISTING = '<div class="boxRight soloBtn white">'
+START_LISTING = "<div class='calendar modal-body'>"
+END_LISTING = '</table>'
 LISTING_PAGER_RE = "<a class=\'prev calendarRoller' href=\'(?P<prevurl>[^\']+)\'.+?<a class=\'next calendarRoller\' href=\'(?P<nexturl>[^\']+)"
-LISTING_DATE_RE = "<div class=\'calendar-header\'>\s+<h6>(?P<date>.+?)</h6>"
-LISTING_ITER_RE = '<td class=(\"day\"|\"active day\")>\s+<a href="(?P<url>[^\"]+)\">(?P<daynum>[\d]+)</a>\s+</td>'
+LISTING_DATE_RE = '<div class=\'calendar-header\'>\s+<h6>(?P<date>[^<]+)</h6>'
+LISTING_ITER_RE = '<td class=(\"day\"|\"active day\")>\s+<a href=[\'\"](?P<url>[^\"^\']+)[\"\']>(?P<daynum>[\d]+)</a>\s+</td>'
 
 EPISODE_START = '<div class="span9">'
 EPISODE_END = '<div class="footer'
-EPISODE_RE = '<div class=\"article-header\">\s+?<h2>(?P<title>[^<]+)</h2>(.+?)<div class=\"span6">\s+?<div[^>]+?>(?P<plot>[^<]+)</div>'
+EPISODE_RE = '<div class=\"article-header\">\s+?<h2>(?P<title>[^<]+)</h2>.+?(<div class=\"span6">\s+?<div[^>]+?>(?P<plot>[^<]+)</div>)?'
 
-VIDEO_ID_RE = 'LiveboxPlayer.flash\(.+?stream_id:+.\"(.+?)\"'
+def to_unicode(text, encoding='utf-8'):
+    if isinstance(text, unicode):
+        return text
+    return unicode(text, encoding, errors='replace')
+
 
 class RtvsContentProvider(ContentProvider):
 
     def __init__(self, username=None, password=None, filter=None, tmp_dir='/tmp'):
-        ContentProvider.__init__(self, 'rtvs.sk', 'http://www.rtvs.sk', username, password, filter, tmp_dir)
+        ContentProvider.__init__(self, 'rtvs.sk', 'http://www.rtvs.sk/televizia/archiv', username, password, filter, tmp_dir)
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.LWPCookieJar()))
         urllib2.install_opener(opener)
-        self.alphabet_url = self._url('tv.archive.alphabet/')
-        self.date_url = self._url('tv.archive.date/')
         if not os.path.exists(self.tmp_dir):
             os.makedirs(self.tmp_dir)
+
+    def _fix_url(self, url):
+        if url.startswith('/json/') or url.startswith('/televizia/archiv/'):
+            return 'http://www.rtvs.sk' + url
+        return self._url(url)
 
     def capabilities(self):
         return ['categories', 'resolve', '!download']
@@ -80,32 +87,26 @@ class RtvsContentProvider(ContentProvider):
         if url.find('#az#') == 0:
             return self.az()
         elif url.find("#date#") == 0:
-            year = int(url.split("#")[2])
-            month = int(url.split("#")[3])
-            return self.date(year, month)
-        elif url.find('#new#') == 0:
-            return self.list_new(util.request(self.alphabet_url))
-        elif url.find('#top#') == 0:
-            return self.list_top(util.request(self.alphabet_url))
-        elif url.find('#listaz#') == 0:
-            url = url[8:]
-            return self.list_az(util.request(self.alphabet_url + url))
-        elif url.find('#listdate#') == 0:
-            url = url[10:]
-            return self.list_date(util.request(self.date_url + url))
+            month, year = url.split('#')[-1].split('.')
+            return self.date(int(year), int(month))
+        elif url.find('ord=az') != -1 and url.find('l=') != -1:
+            self.info('AZ listing: %s' % url)
+            return self.list_az(util.request(self._fix_url(url)))
+        elif url.find('ord=dt') != -1 and url.find('date=') != -1:
+            self.info('DATE listing: %s' % url)
+            return self.list_date(util.request(self._fix_url(url)))
+        elif url.find('/json/') != -1:
+            if url.find('snippet_archive_series_calendar.json'):
+                self.info("EPISODE listing (JSON): %s" % url)
+                return self.list_episodes(util.json.loads(util.request(self._fix_url(url)))['snippets']['snippet-calendar-calendar'])
+            else:
+                self.error("unknown JSON listing request: %s"% url)
         else:
-            return self.list_episodes(util.request(self._url(url)))
+            self.info("EPISODE listing: %s" % url)
+            return self.list_episodes(util.request(self._fix_url(url)))
 
     def categories(self):
         result = []
-        item = self.dir_item()
-        item['type'] = 'new'
-        item['url'] = "#new#"
-        result.append(item)
-        item = self.dir_item()
-        item['type'] = 'top'
-        item['url'] = "#top#"
-        result.append(item)
         item = self.dir_item()
         item['title'] = '[B]A-Z[/B]'
         item['url'] = "#az#"
@@ -113,23 +114,43 @@ class RtvsContentProvider(ContentProvider):
         item = self.dir_item()
         item['title'] = '[B]Podľa dátumu[/B]'
         d = date.today()
-        item['url'] = "#date#%d#%d" % (d.year, d.month)
+        item['url'] = "#date#%d.%d" % (d.month, d.year)
         result.append(item)
         return result
 
     def az(self):
         result = []
-        prefix = '#listaz#'
         item = self.dir_item()
         item['title'] = '0-9'
-        item['url'] = prefix + '?letter=0-9'
+        item['url'] = '?l=9&ord=az'
         self._filter(result, item)
         for c in xrange(65, 90, 1):
             chr = str(unichr(c))
             item = self.dir_item()
             item['title'] = chr
-            item['url'] = prefix + '?letter=%s' % chr.lower()
+            item['url'] = '?l=%s&ord=az' % chr.lower()
             self._filter(result, item)
+        return result
+
+    def date(self, year, month):
+        result = []
+        today = date.today()
+        prev_month = month > 0 and month - 1 or 12
+        prev_year = prev_month == 12 and year - 1 or year
+        item = self.dir_item()
+        item['type'] = 'prev'
+        item['url'] = "#date#%d.%d" % (prev_month, prev_year)
+        result.append(item)
+        for d in calendar.LocaleTextCalendar().itermonthdates(year, month):
+            if d.month != month:
+                continue
+            if d > today:
+                break
+            item = self.dir_item()
+            item['title'] = "%d.%d %d" % (d.day, d.month, d.year)
+            item['url'] = "?date=%d-%02d-%02d&ord=dt" % (d.year, d.month, d.day)
+            self._filter(result, item)
+        result.reverse()
         return result
 
     def list_az(self, page):
@@ -137,8 +158,8 @@ class RtvsContentProvider(ContentProvider):
         images = []
         page = util.substr(page, START_AZ, END_AZ)
         for m in re.finditer(AZ_ITER_RE, page, re.IGNORECASE | re.DOTALL):
-            img = {'remote':self._url(m.group('img')),
-                   'local' :self._get_image_path(self._url(m.group('img')))}
+            img = {'remote':self._fix_url(m.group('img')),
+                   'local' :self._get_image_path(self._fix_url(m.group('img')))}
             item = self.dir_item()
             semicolon = m.group('title').find(':')
             if semicolon != -1:
@@ -152,68 +173,13 @@ class RtvsContentProvider(ContentProvider):
         self._get_images(images)
         return result
 
-    def list_top(self, page):
-        result = []
-        images = []
-        page = util.substr(page, START_TOP, END_TOP)
-        for m in re.finditer(TOP_ITER_RE, page, re.IGNORECASE | re.DOTALL):
-            img = {'remote':self._url(m.group('img')),
-                   'local' :self._get_image_path(self._url(m.group('img')))}
-            item = self.video_item()
-            item['title'] = "%s (%s - %s)" % (m.group('title'), m.group('date'), m.group('time'))
-            item['img'] = img['local']
-            item['url'] = m.group('url')
-            item['menu'] = {'$30070':{'list':item['url'], 'action-type':'list'}}
-            self._filter(result, item)
-            images.append(img)
-        self._get_images(images)
-        return result
-
-    def list_new(self, page):
-        result = []
-        images = []
-        page = util.substr(page, START_NEWEST, END_NEWEST)
-        for m in re.finditer(NEWEST_ITER_RE, page, re.IGNORECASE | re.DOTALL):
-            img = {'remote':self._url(m.group('img')),
-                   'local' :self._get_image_path(self._url(m.group('img')))}
-            item = self.video_item()
-            item['title'] = "%s (%s - %s)" % (m.group('title'), m.group('date'), m.group('time'))
-            item['img'] = img['local']
-            item['url'] = m.group('url')
-            item['menu'] = {'$30070':{'list':item['url'], 'action-type':'list'}}
-            self._filter(result, item)
-            images.append(img)
-        self._get_images(images)
-        return result
-
-    def date(self, year, month):
-        result = []
-        today = date.today()
-        prev_month = month > 0 and month - 1 or 12
-        prev_year = prev_month == 12 and year - 1 or year
-        item = self.dir_item()
-        item['type'] = 'prev'
-        item['url'] = "#date#%d#%d" % (prev_year, prev_month)
-        result.append(item)
-        for d in calendar.LocaleTextCalendar().itermonthdates(year, month):
-            if d.month != month:
-                continue
-            if d > today:
-                break
-            item = self.dir_item()
-            item['title'] = "%d.%d %d" % (d.day, d.month, d.year)
-            item['url'] = "#listdate#?date=%02d.%02d.%d" % (d.day, d.month, d.year)
-            self._filter(result, item)
-        result.reverse()
-        return result
-
     def list_date(self, page):
         result = []
         images = []
         page = util.substr(page, START_DATE, END_DATE)
         for m in re.finditer(DATE_ITER_RE, page, re.IGNORECASE | re.DOTALL):
-            img = {'remote':self._url(m.group('img')),
-                   'local' :self._get_image_path(self._url(m.group('img')))}
+            img = {'remote':self._fix_url(m.group('img')),
+                   'local' :self._get_image_path(self._fix_url(m.group('img')))}
             item = self.video_item()
             item['title'] = "%s (%s)" % (m.group('title'), m.group('time'))
             item['img'] = img['local']
@@ -227,19 +193,22 @@ class RtvsContentProvider(ContentProvider):
     def list_episodes(self, page):
         result = []
         episodes = []
-        episode_page = page
         page = util.substr(page, START_LISTING, END_LISTING)
-        current_date = re.search(LISTING_DATE_RE, page, re.IGNORECASE).group('date')
+        current_date = to_unicode(re.search(LISTING_DATE_RE, page, re.IGNORECASE | re.DOTALL).group('date'))
+        self.info("<list_episodes> current_date: %s" % current_date)
         prev_url = re.search(LISTING_PAGER_RE, page, re.IGNORECASE | re.DOTALL).group('prevurl')
         prev_url = re.sub('&amp;', '&', prev_url)
+        #self.info("<list_episodes> prev_url: %s" % prev_url)
         for m in re.finditer(LISTING_ITER_RE, page, re.IGNORECASE | re.DOTALL):
-            episodes.append([self._url(re.sub('&amp;', '&', m.group('url'))), m])
+            episodes.append([self._fix_url(re.sub('&amp;', '&', m.group('url'))), m])
+        self.info("<list_episodes> found %d episodes" % len(episodes))
         res = self._request_parallel(episodes)
         for p, m in res:
             m = m[0]
+            dnum = to_unicode(m.group('daynum'))
             item = self.list_episode(p)
-            item['title'] = "%s (%s. %s)" % (item['title'], m.group('daynum'), current_date)
-            item['date'] = m.group('daynum')
+            item['title'] = "%s (%s. %s)" % (item['title'], dnum, current_date)
+            item['date'] = dnum
             item['url'] = re.sub('&amp;', '&', m.group('url'))
             self._filter(result, item)
         result.sort(key=lambda x:int(x['date']), reverse=True)
@@ -254,37 +223,28 @@ class RtvsContentProvider(ContentProvider):
         item = self.video_item()
         episode = re.search(EPISODE_RE, page, re.DOTALL)
         if episode:
-            item['title'] = episode.group('title').strip()
-            item['plot'] = episode.group('plot').strip()
+            item['title'] = to_unicode(episode.group('title').strip())
+            if episode.group('plot'):
+                item['plot'] = to_unicode(episode.group('plot').strip())
         return item
 
     def resolve(self, item, captcha_cb=None, select_cb=None):
+        result = []
         item = item.copy()
-        url = self._url(item['url'])
-        data = util.request(url)
-        video_id = re.search(VIDEO_ID_RE, data, re.IGNORECASE | re.DOTALL).group(1)
-        headers = {'Referer':url}
-        keydata = util.request("http://embed.stv.livebox.sk/v1/tv-arch.js", headers)
-        rtmp_url_regex = "'(rtmp:\/\/[^']+)'\+videoID\+'([^']+)'"
-        m3u8_url_regex = "'(http:\/\/[^']+)'\+videoID\+'([^']+)'"
-        rtmp = re.search(rtmp_url_regex, keydata, re.DOTALL)
-        m3u8 = re.search(m3u8_url_regex, keydata, re.DOTALL)
-        m3u8_url = m3u8.group(1) + video_id + m3u8.group(2)
-
-        # rtmp[t][e|s]://hostname[:port][/app[/playpath]]
-        # tcUrl=url URL of the target stream. Defaults to rtmp[t][e|s]://host[:port]/app.
-
-        # rtmp url- fix podla mponline2 projektu
-        rtmp_url = rtmp.group(1) + video_id + rtmp.group(2)
-        stream_part = 'mp4:' + video_id
-        playpath = rtmp_url[rtmp_url.find(stream_part):]
-        tcUrl = rtmp_url[:rtmp_url.find(stream_part) - 1] + rtmp_url[rtmp_url.find(stream_part) + len(stream_part):]
-        app = tcUrl[tcUrl.find('/', tcUrl.find('/') + 2) + 1:]
-
-        # rtmp_url = rtmp_url+ ' playpath=' + playpath + ' tcUrl=' + tcUrl + ' app=' + app
-        rtmp_url = rtmp_url + ' tcUrl=' + tcUrl + ' app=' + app
-        item['url'] = rtmp_url
-        return item
+        video_id = item['url'].split('/')[-1]
+        self.info("<resolve> videoid: %s" % video_id)
+        videodata = util.json.loads(util.request("http://www.rtvs.sk/json/archive.json?id=" + video_id))
+        for v in videodata['playlist']:
+            item = self.video_item()
+            item['title'] = v['details']['name']
+            item['surl'] = item['title']
+            item['url'] = "%s/%s" % (v['baseUrl'], v['url'].replace('.f4m', '.m3u8'))
+            result.append(item)
+        self.info("<resolve> playlist: %d items" % len(result))
+        map(self.info, ["<resolve> item(%d): title= '%s', url= '%s'" % (i, it['title'], it['url']) for i, it in enumerate(result)])
+        if len(result) > 0 and select_cb:
+            return select_cb(result)
+        return result
 
     def _request_parallel(self, requests):
         def fetch(req, *args):
