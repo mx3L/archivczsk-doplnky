@@ -36,7 +36,7 @@ class UloztoContentProvider(ContentProvider):
         self.rh.location = None
         self.init_urllib()
 
-    def init_urllib(self):
+    def init_urllib(self):	
         opener = urllib2.build_opener(self.cp,self.rh)
         urllib2.install_opener(opener)
 
@@ -69,7 +69,7 @@ class UloztoContentProvider(ContentProvider):
         if self.username and self.password and len(self.username)>0 and len(self.password)>0:
             self.info('Login user=%s, pass=*****' % self.username)
             self.rh.throw = False
-            page = util.request(self.base_url+'?do=web-login')
+            page = util.request(self.base_url+'login?key=logreg')
             if page.find('href="/?do=web-logout') > 0:
                 self.info('Already logged in')
                 return True
@@ -124,9 +124,9 @@ class UloztoContentProvider(ContentProvider):
         if not (j and k):
             self.error('error parsing page - unable to locate keys')
             return []
-        burl = b64decode('I2h0dHA6Ly9jcnlwdG8uamV6em92by5uZXQvZGVjcnlwdC8/a2V5PSVzJnZhbHVlPSVzCg==')
-        murl = b64decode('aHR0cDovL2NyeXB0by5qZXp6b3ZvLm5ldC9kZWNyeXB0Lwo=')
-        data = util.substr(page,'<ul class=\"chessFiles','</ul>')
+        burl = b64decode('I2h0dHA6Ly9kZWNyLWNlY2gucmhjbG91ZC5jb20vZGVjcnlwdC8/a2V5PSVzJnZhbHVlPSVz')
+        murl = b64decode('aHR0cDovL2RlY3ItY2VjaC5yaGNsb3VkLmNvbS9kZWNyeXB0Lw==')
+        data = util.substr(page,'<ul class=\"chessFiles','</ul>') 
         result = []
         req = {'seed':keymap[key],'values':keymap}
         decr = json.loads(util.post_json(murl,req))
@@ -255,8 +255,8 @@ class UloztoContentProvider(ContentProvider):
         if not (sign and ts and cid and has and token):
             util.error('[uloz.to] - unable to parse required params from page, plugin needs fix')
             return
-        request = urllib.urlencode({'hash':has,'salt':salt,'timestamp':timestamp,'ts':ts.group(1),'cid':cid.group(1),'sign':sign.group(1),'captcha_value':code,'freeDownload':'Stáhnout','_token_':token.group(1)})
-        req = urllib2.Request(post_url,request)
+        request = {'captcha_type':'xcapca','hash':has,'salt':salt,'timestamp':timestamp,'ts':ts.group(1),'cid':cid.group(1),'sign':sign.group(1),'captcha_value':code,'do':'downloadDialog-freeDownloadForm-submit','_token_':token.group(1)}
+        req = urllib2.Request(post_url,urllib.urlencode(request))
         req.add_header('User-Agent',util.UA)
         req.add_header('Referer',post_url)
         req.add_header('Accept','application/json')
@@ -265,6 +265,7 @@ class UloztoContentProvider(ContentProvider):
         for cookie in re.finditer('(ULOSESSID=[^\;]+)',headers.get('Set-Cookie'),re.IGNORECASE | re.DOTALL):
             sessid.append(cookie.group(1))
         req.add_header('Cookie','nomobile=1; uloztoid='+cid.group(1)+'uloztoid2='+cid.group(1)+'; '+sessid[-1])
+        util.info(request)
         try:
             resp = urllib2.urlopen(req)
             page = resp.read()
@@ -279,6 +280,8 @@ class UloztoContentProvider(ContentProvider):
             result = json.loads(page)
         except:
             raise ResolveException('Unexpected error, addon needs fix')
+        if not 'status' in result.keys():
+            raise ResolveException('Unexpected error, addon needs fix')
         if result['status'] == 'ok':
             return self._fix_stream_url(result['url'])
         elif result['status'] == 'error':
@@ -288,7 +291,7 @@ class UloztoContentProvider(ContentProvider):
             raise ResolveException('Captcha failed, try again')
 
 
-    def _fix_stream_url(self,stream):
+    def _fix_stream_url(self,stream):	
         index = stream.rfind('/')
         if index > 0:
             fn = stream[index:]
