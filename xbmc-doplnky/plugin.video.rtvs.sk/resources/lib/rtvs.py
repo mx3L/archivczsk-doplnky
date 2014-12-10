@@ -22,6 +22,7 @@
 
 import re
 import os
+import urllib
 import urllib2
 import shutil
 import traceback
@@ -235,11 +236,33 @@ class RtvsContentProvider(ContentProvider):
         self.info("<resolve> videoid: %s" % video_id)
         videodata = util.json.loads(util.request("http://www.rtvs.sk/json/archive.json?id=" + video_id))
         for v in videodata['playlist']:
-            item = self.video_item()
-            item['title'] = v['details']['name']
-            item['surl'] = item['title']
-            item['url'] = "%s/%s" % (v['baseUrl'], v['url'].replace('.f4m', '.m3u8'))
-            result.append(item)
+            url = "%s/%s" % (v['baseUrl'], v['url'].replace('.f4m', '.m3u8'))
+            #http://cdn.srv.rtvs.sk:1935/vod/_definst_//smil:fZGAj3tv0QN4WtoHawjZnKy35t7dUaoB.smil/manifest.m3u8
+            if '/smil:' in url:
+                manifest = util.request(url)
+                for m in re.finditer('#EXT-X-STREAM-INF:PROGRAM-ID=\d+,BANDWIDTH=\d+,RESOLUTION=(?P<resolution>\d+x\d+)\s(?P<chunklist>[^\s]+)', manifest, re.DOTALL):
+                    item = self.video_item()
+                    item['title'] = v['details']['name']
+                    item['surl'] = item['title']
+                    if m.group('resolution') == '1280x720':
+                        item['quality'] = '720p'
+                    elif m.group('resolution') == '852x480':
+                        item['quality'] = '480p'
+                    elif m.group('resolution') == '640x360':
+                        item['quality'] = '360p'
+                    elif m.group('resolution') == '426x240':
+                        item['quality'] = '240p'
+                    else:
+                        item['quality'] = '???'
+                    item['url'] = url[:url.rfind('/')+1] + m.group('chunklist')
+                    result.append(item)
+            else:
+                item = self.video_item()
+                item['title'] = v['details']['name']
+                item['surl'] = item['title']
+                item['quality'] = '???'
+                item['url'] = url
+                result.append(item)
         self.info("<resolve> playlist: %d items" % len(result))
         map(self.info, ["<resolve> item(%d): title= '%s', url= '%s'" % (i, it['title'], it['url']) for i, it in enumerate(result)])
         if len(result) > 0 and select_cb:
