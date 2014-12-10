@@ -487,7 +487,7 @@
 
 <addon id="plugin.video.rtvs.sk"
        name="rtvs.sk"
-       version="1.0.5"
+       version="1.0.6"
        provider-name="Maros Ondrasek">
   <requires>
     <import addon="xbmc.python" version="2.0" />
