@@ -1,18 +1,15 @@
 # -*- coding: utf-8 -*-
-import urllib2,urllib,re,os,random,decimal
-from parseutils import *
-from urlparse import urlparse
+import urllib2,urllib,re,os
 from util import addDir, addLink,addSearch, getSearch,showWarning
 from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
-import simplejson as json
-__baseurl__ = 'http://www.stream.cz/ajax/'
-__dmdbase__ = 'http://iamm.netuje.cz/xbmc/stream/'
-__cdn_url__ = 'http://cdn-dispatcher.stream.cz/?id='
+import json
+
+__baseurl__ = 'http://www.stream.cz/API'
 _UserAgent_ = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'
 __settings__ = ArchivCZSK.get_addon('plugin.video.dmd-czech.stream')
 home = __settings__.get_info('path')
-icon = os.path.join(home, 'icon.png')
-nexticon = os.path.join(home, 'nextpage.png')
+icon = os.path.join( home, 'icon.png' ) 
+nexticon = os.path.join( home, 'nextpage.png' )
 
 def replace_words(text, word_dic):
     rc = re.compile('|'.join(map(re.escape, word_dic)))
@@ -74,93 +71,102 @@ word_dic = {
 '\\xc5\\x87': 'Ň',
 }
 
+class loglevel:
+    LOGDEBUG, LOGERROR = range(2)
 
-def OBSAH():
-    addDir('Nejnovější videa','http://www.stream.cz//ajax/get_timeline?context=latest&0.'+str(gen_random_decimal(9999999999999999)),3,icon)
-    addDir('Všechny pořady','listShows',1,icon)
-    addDir('Komerční pořady','listCommercials',1,icon)
-    addDir('Pohádky','dreams',1,icon)
+def log(msg, level=loglevel.LOGDEBUG):
+    if type(msg).__name__=='unicode':
+        msg = msg.encode('utf-8')
+    if level == loglevel.LOGDEBUG:
+        levelstr = 'debug'
+    elif level == loglevel.LOGERROR:
+        levelstr = 'error'
+    print ("[%s][%s] %s"%("stream.cz", levelstr, msg.__str__()))
 
-def INDEX(url):
-    link = __baseurl__+'get_catalogue?0.'+str(gen_random_decimal(9999999999999999))
-    temp = 'porady'
-    if url == 'dreams':
-        link = __baseurl__+'get_catalogue?dreams&0.'+str(gen_random_decimal(9999999999999999))
-        temp = 'pohadky'
-        url = 'listShows'
-    req = urllib2.Request(link)
-    req.add_header('User-Agent', _UserAgent_)
-    response = urllib2.urlopen(req)
-    httpdata = response.read()
-    response.close()
-    match = re.compile('<ul id="'+url+'" class="shows clearfix">(.+?)</ul>', re.S).findall(httpdata)
+def logDbg(msg):
+    log(msg,level=loglevel.LOGDEBUG)
 
-    if temp == 'porady':
-        match2 = re.compile('<a href="/porady/(.+?)" class=".+?" data-show-id="(.+?)" data-action=".+?">(.+?)<img src="(.+?)"', re.S).findall(match[0])
+def logErr(msg):
+    log(msg,level=loglevel.LOGERROR)
 
-    else:
-        match2 = re.compile('<a href="/pohadky/(.+?)" class=".+?" data-show-id="(.+?)" data-action=".+?">(.+?)<img src="(.+?)"', re.S).findall(match[0])
+def makeImageUrl(rawurl):
+    return 'http:'+rawurl.replace('{width}/{height}','360/360')
 
-    for link, id, name, thumb in match2:
-            name = str.strip(name)
-            link = __baseurl__+'get_series?show_url='+link+'&0.'+str(gen_random_decimal(9999999999999999))
-            addDir(name,link,2,thumb)
-
-def LIST(url):
-    req = urllib2.Request(url)
-    req.add_header('User-Agent', _UserAgent_)
-    response = urllib2.urlopen(req)
-    httpdata = response.read()
-    response.close()
-    match = re.compile('<a href=".+?" data-action=".+?" data-params=\'\{".+?"\}\' data-episode-id="(.+?)">(.+?)</a>', re.S).findall(httpdata)
-    for id, name in match:
-            link = __baseurl__+'get_video_source?context=catalogue&id='+id+'&0.'+str(gen_random_decimal(9999999999999999))
-            addDir(name,link,10,icon)
-
-def LATESTLIST(url):
-    req = urllib2.Request(url)
-    req.add_header('User-Agent', _UserAgent_)
-    response = urllib2.urlopen(req)
-    httpdata = response.read()
-    response.close()
-    match = re.compile('<li data-episode-id="(.+?)" data-timestamp="(.+?)"> <a href=".+?<img src="//(.+?)/80/80" alt=""/> </span> <span class="texts"> <span class="h2">(.+?)</span> <span class="description">(.+?)</span>', re.S).findall(httpdata)
-    for id, timestamp, img, episodename, serialname in match:
-            link = __baseurl__+'get_video_source?context=catalogue&id='+id+'&0.'+str(gen_random_decimal(9999999999999999))
-            image = 'http://'+img+'/320'
-            print image
-            name = serialname+' | '+episodename
-            addDir(name,link,10,image)
-
-def VIDEOLINK(url,name):
+def getJsonDataFromUrl(url):
     req = urllib2.Request(url)
     req.add_header('User-Agent', _UserAgent_)
     response = urllib2.urlopen(req)
     httpdata = response.read()
     response.close()
     httpdata = replace_words(httpdata, word_dic)
-    data = json.loads(httpdata)
-    name = data[u'episode_name']
-    thumb = data[u'episode_image_original_url']
-    for item in data[u'instances']:
+    return json.loads(httpdata)
+
+def OBSAH():
+    addDir(u'Nejnovější videa',__baseurl__ + '/timeline/latest',3,icon)
+    addDir(u'Všechny pořady',__baseurl__ + '/catalogue',1,icon)
+    addDir(u'Pohádky',__baseurl__ + '/catalogue?channels=3',1,icon)
+
+def LIST_SHOWS(url):
+    data = getJsonDataFromUrl(url)
+    for item in data[u'_embedded'][u'stream:show']:
+            link = __baseurl__+item[u'_links'][u'self'][u'href']
+            image = makeImageUrl(item[u'image'])
+            name = item[u'name']
+            addDir(name,link,2,image)
+
+def LIST_SEASON(url):
+    data = getJsonDataFromUrl(url)
+    seasons = data[u'_embedded'][u'stream:season']
+    if type(seasons) is dict:
+        for item in seasons[u'_embedded'][u'stream:episode']:
+            link = __baseurl__+item[u'_links'][u'self'][u'href']
+            image = makeImageUrl(item[u'image'])
+            name = item[u'name']
+            addDir(name,link,10,image)
+    elif type(seasons) is list:
+        for season in seasons:
+            try:
+                for episode in season[u'_embedded'][u'stream:episode']:
+                    link = __baseurl__+episode[u'_links'][u'self'][u'href']
+                    image = makeImageUrl(episode[u'image'])
+                    name = season[u'name'] +' | '+ episode[u'name']
+                    addDir(name,link,10,image)
+            except:
+                continue
+    try:
+        link = __baseurl__+data[u'_links'][u'next'][u'href']
+        addDir(u'[B]Další epizody pořadu >>[/B]',link,2,nexticon)
+    except:
+        logDbg('Další epizody nenalezeny')
+
+def LIST_EPISODES(url):
+    data = getJsonDataFromUrl(url)
+    for item in data[u'_embedded'][u'stream:episode']:
+        link = __baseurl__+item[u'_links'][u'self'][u'href']
+        image = makeImageUrl(item[u'image'])
+        name = item[u'_embedded'][u'stream:show'][u'name'] + ' | ' + item[u'name']
+        addDir(name,link,10,image)
+    try:
+        link = __baseurl__+data[u'_links'][u'next'][u'href']
+        addDir(u'[B]Další epizody pořadu >>[/B]',link,3,nexticon)
+    except:
+        logDbg('Další epizody nenalezeny')
+
+def VIDEOLINK(url,name):
+    data = getJsonDataFromUrl(url)
+    name = data[u'name']
+    thumb = makeImageUrl(data[u'image'])
+    popis = data[u'detail']
+
+    for item in data[u'video_qualities']:
         try:
-            stream_url = item[u'instances'][0][u'source']
-            quality = item[u'instances'][0][u'quality']
-            addLink(quality+' '+name,stream_url,'',name)
+            for fmt in item[u'formats']:
+                if fmt[u'type'] == 'video/mp4':
+                    stream_url = fmt[u'source']
+                    quality = fmt[u'quality']
+                    addLink(quality+' '+name,stream_url,thumb,popis)
         except:
             continue
-    try:
-         show = data[u'show_url']
-         print 'show'
-         print show
-         link = __baseurl__+'get_series?show_url='+show+'&0.'+str(gen_random_decimal(9999999999999999))
-         addDir('[B]Další nabídka: [/B]','','','')
-         addDir('Další epizody pořadu',link,2,'')
-    except:
-         print 'Další epizody nenalezeny'
-
-def gen_random_decimal(d):
-        return decimal.Decimal('%d' % (random.randint(0,d)))
-
 
 url=None
 name=None
@@ -180,26 +186,21 @@ try:
 except:
         pass
 
-print "Mode: "+str(mode)
-print "URL: "+str(url)
-print "Name: "+str(name)
+logDbg("Mode: "+str(mode))
+logDbg("URL: "+str(url))
+logDbg("Name: "+name)
 
 if mode==None or url==None or len(url)<1:
-        print ""
         OBSAH()
-
+       
 elif mode==1:
-        print ""
-        INDEX(url)
+        LIST_SHOWS(url)
 
 elif mode==2:
-        print ""+url
-        LIST(url)
+        LIST_SEASON(url)
 
 elif mode==3:
-        print ""+url
-        LATESTLIST(url)
+        LIST_EPISODES(url)
 
 elif mode==10:
-        print ""+url
         VIDEOLINK(url,name)

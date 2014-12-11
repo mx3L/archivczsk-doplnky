@@ -1,3 +1,5 @@
+2014-11-12:
+ * oprava po redizajne stranok - opravil Radim Stoklasa
 2013-04-10:
   * Pri spousteni videa se nyni zobrazuje nabidka na seznam vsech dilu poradu
 2013-04-10:
