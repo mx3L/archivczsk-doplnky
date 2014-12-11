@@ -188,7 +188,8 @@ except:
 
 logDbg("Mode: "+str(mode))
 logDbg("URL: "+str(url))
-logDbg("Name: "+name)
+strname = name is None and str(name) or name
+logDbg("Name: "+ strname)
 
 if mode==None or url==None or len(url)<1:
         OBSAH()
