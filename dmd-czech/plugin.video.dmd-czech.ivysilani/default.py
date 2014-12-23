@@ -76,10 +76,35 @@ def KATEGORIE():
 
 def LIVE_OBSAH(url):
     url = url+str(time.time())
-    program=[r'ČT1 - ', r'ČT2 - ', r'ČT24 - ', r'ČT4 - ', r'ČTD/ART - ']
+    #seznam kanalu a jejich id pro zive vysilani
+    cas = datetime.datetime.now()
+    cas = cas.hour
+    #Decko a Art se stridaji, proto menim podle casu
+    if(cas < 20 and cas >= 6):
+        programctda = r'ČT:Déčko - '
+        programctdaid = r'CT5'
+    else:
+        programctda = r'ČT ART - '
+        programctdaid = r'CT6'
+    program=[r'ČT1 - ', r'ČT2 - ', r'ČT24 - ', r'ČT4 - ', programctda, r' ', r' ', r' ', r' ', r' ', r' ', r' ', r' ']
+    programid=[r'CT1', r'CT2', r'CT24', r'CT4', programctdaid, r'CT26', r'CT27', r'CT28', r'CT29', r'CT30', r'CT31', r'CT32', r'CT33']
+
+    i = 0
+    # Zjisteni hashe
+    hashurl = 'http://www.ceskatelevize.cz/ct24/zive-vysilani/'
+    req = urllib2.Request(hashurl)
+    req.add_header('User-Agent', ' Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3')
+    response = urllib2.urlopen(req)
+    httpdata = response.read()
+    link=response.read()
+    response.close()
+    match = re.compile('hash=(.+?)&').findall(httpdata)
+    hash = match[0]
+    print 'HASH :'+hash
+    
     i = 0
     request = urllib2.Request(url)
-    request.add_header("Referer",__baseurl__)
+    request.add_header("Referer",__baseurl__)    
     request.add_header("Origin","http://www.ceskatelevize.cz")
     request.add_header("Accept","*/*")
     request.add_header("X-Requested-With","XMLHttpRequest")
@@ -99,9 +124,9 @@ def LIVE_OBSAH(url):
             prehrano = prehrano[(prehrano.find('width:') + len('width:') + 1):]
             #name_a = item.find('p')
             try:
-                name_a = item.find('a')
+                name_a = item.find('a') 
                 name = program[i]+name_a.getText(" ").encode('utf-8')+'- Přehráno: '+prehrano.encode('utf-8')
-                url = 'http://www.ceskatelevize.cz'+str(item.a['href'])
+                url = 'http://www.ceskatelevize.cz/ivysilani/embed/iFramePlayerCT24.php?hash='+hash+'&videoID='+programid[i]
                 thumb = str(item.img['src'])
             except:
                 name = program[i]+'Právě teď běží pořad, který nemůžeme vysílat po internetu.'
@@ -109,6 +134,7 @@ def LIVE_OBSAH(url):
             #print name, thumb, url
             addDir(name,url,14,thumb)
             i=i+1
+
 def ABC(url):
     req = urllib2.Request(url)
     req.add_header('User-Agent', _UserAgent_)
@@ -195,28 +221,29 @@ def DATE_LIST(url):
 
 # vypis nejsledovanejsi za tyden
 def MOSTVISITED(url):
-    doc = read_page(url)
-    #items = doc.find('ul', 'clearfix content','mostWatchedBox')
-    items = doc.find(id="mostWatchedBox")
-    for item in items.findAll('a'):
-            name = item.getText(" ").encode('utf-8')
-            link = str(item['href'])
-            item = item.find('img')
-            icons = item['src']
-            #print "LINK: "+link
-            addDir(name, 'http://www.ceskatelevize.cz' + link, 10, icons)
+    req = urllib2.Request(url)
+    req.add_header('User-Agent', _UserAgent_)
+    response = urllib2.urlopen(req)
+    data = response.read()
+    response.close()
+    data = substr(data,'<ul id="mostWatchedBox"','</div>')
+    pattern = '<a href="(.+?)">[\s]*?<img src="(.+?)".*?>[\s]*?(.+?)</a'
+    match = re.compile(pattern).findall(data)
+    for item in match:
+        addDir(item[2].strip().replace('<br />',' '),'http://www.ceskatelevize.cz'+item[0],10,item[1])
+        
 
-# vypis nejnovejsich poradu
 def NEWEST(url):
-    doc = read_page(url)
-    items = doc.find(id="newestBox")
-    for item in items.findAll('a'):
-            name = item.getText(" ").encode('utf-8')
-            link = str(item['href'])
-            item = item.find('img')
-            icons = item['src']
-            #print "LINK: "+link
-            addDir(name, 'http://www.ceskatelevize.cz' + link, 10, icons)
+    req = urllib2.Request(url)
+    req.add_header('User-Agent', _UserAgent_)
+    response = urllib2.urlopen(req)
+    data = response.read()
+    response.close()
+    data = substr(data,'<ul id="newestBox"','</div>')
+    pattern = '<a href="(.+?)">[\s]*?<img src="(.+?)".*?>[\s]*?(.+?)</a'
+    match = re.compile(pattern).findall(data)
+    for item in match:
+        addDir(item[2].strip().replace('<br />',' '),'http://www.ceskatelevize.cz'+item[0],10,item[1])
 
 
 # =============================================

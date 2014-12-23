@@ -1,3 +1,22 @@
+2014-12-21
+ * Přiložený patch řeší přechod iVysilani z RTMP na HLS. Thx radek.senfeld
+2014-10-25
+ * Pridani statistik
+2014-09-24
+ * Oprava živého vysílání
+2014-08-04
+ * Oprava nahodile nefungujícího živého přehrávání
+ * Zkušebně přidány online přenosy do žívého vysílání (jednou za čas vyjimečně jede něco na ivysilani)
+ * Přepínání mezi ČT ART a ČT:Déčko
+2014-06-17
+ * Oprava živého vysílání
+ 2014-05-27
+ * oprava dle data
+2014-03-11
+ * oprava stránkování
+ * oprava nezobrazování položek, které nemají další díly
+2014-03-11
+ * Oprava zobrazení položek podle abecedy.
 2014-02-25
  * Oprava živého přehrávání. Rozlišování typu (channel / episode) v HTTP requestu (Způsobovalo problémy u ČT24)
 2014-02-16:
