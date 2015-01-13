@@ -85,7 +85,7 @@
   </extension>
 </addon>
 
-<addon id="script.module.stream.resolver" name="stream resolver" provider-name="Libor Zoubek" version="1.6.26">
+<addon id="script.module.stream.resolver" name="stream resolver" provider-name="Libor Zoubek" version="1.6.27">
   <requires>
     <import addon="xbmc.python" version="2.1.0" />
     <import addon="script.module.simplejson" version="2.0.10" />
