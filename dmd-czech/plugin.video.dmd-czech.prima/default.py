@@ -169,20 +169,36 @@ def NEJNOVEJSI(url,page,kanal):
     nextpage = page+1
     addDir('>> Další strana',url,6,nexticon,nextpage,kanal)
  
-	
-def KATEGORIE(url,page,kanal):
+def PODKATEGORIE(url,page,kanal):
     if re.search('page', url, re.U):
-            match = re.compile('page=([0-9]+)').findall(url)
-            strquery = '?page='+match[0]
-            request = urllib2.Request(url, strquery)
+        match = re.compile('page=([0-9]+)').findall(url)
+        strquery = '?page='+match[0]
+        request = urllib2.Request(url, strquery)
     else:
         request = urllib2.Request(url)
     con = urllib2.urlopen(request)
     data = con.read()
     con.close()
-    match = re.compile('<div class=".+?" data-video-id=".+?" data-thumbs-count=".+?"><div class="field-image-primary"><a href="(.+?)"><span class=".+?195x110"><img src="(.+?)" alt="(.+?) Foto: "').findall(data)
+    match = re.compile('<div class="videotypes-submenu"><div class="item item-1  active"><a href=".+?" class="active">.+?</a></div>(.+?)</div></div>').findall(data)
+    match2 = re.compile('<a href="(.+?)">(.+?)</a>').findall(match[0])
+    if len(match2) > 1:
+        for url2, name in match2:
+            addDir('[COLOR pink]'+replace_words(name, word_dic)+'[/COLOR]',__baseurl__+url2,5,prima,0,name)
+        addDir('[B][COLOR blue]Všechno dohromady:[/COLOR][/B]','','','','','')
+    KATEGORIE(url,page,kanal)
+	
+def KATEGORIE(url,page,kanal):
+    if re.search('page', url, re.U):
+        match = re.compile('page=([0-9]+)').findall(url)
+        strquery = '?page='+match[0]
+        request = urllib2.Request(url, strquery)
+    else:
+        request = urllib2.Request(url)
+    con = urllib2.urlopen(request)
+    data = con.read()
+    con.close()
+    match = re.compile('<div class=".+?" data-video-id=".+?" data-thumbs-count=".+?"><div class="field-image-primary"><a href="(.+?)"><span class=".+?195x110"><img src="(.+?)".+?<div class="field-title"><a href=".+?" title=".+?">(.+?)</a></div>').findall(data)
     for url,thumb,name in match:
-        #print url,thumb,name
         addDir(replace_words(name, word_dic),__baseurl__+url,10,thumb,0,name)           
     try:
         match = re.compile('<li class="pager-next last"><a href="(.+?)"').findall(data)
@@ -191,23 +207,21 @@ def KATEGORIE(url,page,kanal):
     except:
         print 'strankovani nenalezeno'
 
-
 def INDEX(url,page,kanal):
-
     data = getURL(url)
     
     pattern = '<div class="field-image-primary">.+?<img src="(.+?)".+?href="(.+?)">(.+?)</a></div><div class="field-video-count">(.+?) vide'
     match = re.compile(pattern).findall(substr(data,'<div class="items">','<div id="rightContainer">'))
     for item in match:
-	   #addDir(replace_words(name+' '+pocet, word_dic),__baseurl__+url,5,thumb,0,name) 
-	if konvert_nazev:
-		addDir(replace_words(item[2]+' - počet videí: '+item[3], word_dic),__baseurl__+item[1],5,item[0],0,item[2])  
-	else:
-		addDir(item[2]+' - počet videí: '+item[3],__baseurl__+item[1],5,item[0],0,item[2])  
+        #addDir(replace_words(name+' '+pocet, word_dic),__baseurl__+url,5,thumb,0,name) 
+        if konvert_nazev:
+            addDir(replace_words(item[2]+' - počet videí: '+item[3], word_dic),__baseurl__+item[1],7,item[0],0,item[2])
+        else:
+            addDir(item[2]+' - počet videí: '+item[3],__baseurl__+item[1],7,item[0],0,item[2])
     try:
-	pattern = '<li class="pager-next last"><a href="(.+?)"'
-	match = re.compile(pattern).findall(data)
-	addDir('>> Další strana',__baseurl__+match[0],4,nexticon,'','')
+        pattern = '<li class="pager-next last"><a href="(.+?)"'
+        match = re.compile(pattern).findall(data)
+        addDir('>> Další strana',__baseurl__+match[0],4,nexticon,'','')
     except:
         print 'strankovani nenalezeno'
 
@@ -385,6 +399,12 @@ elif mode==6:
         print ""+str(kanal)
         print ""+str(page)
         NEJNOVEJSI(url,page,kanal)
+
+elif mode==7:
+        print ""+str(url)
+        print ""+str(kanal)
+        print ""+str(page)
+        PODKATEGORIE(url,page,kanal)
         
 elif mode==10:
         print ""+url
