@@ -164,6 +164,14 @@ class XBMContentProvider(object):
 
 	def render_default(self, item):
 		raise Exception("Unable to render item " + item)
+	
+	def _localize(self, text):
+		def _localize(m):
+			try:
+				return self.addon.getLocalizedString(int(m.group(1)))
+			except Exception:
+				return m.group(1)
+		return re.sub(r'\$(\d{4,5})', _localize, text)
 
 	def render_dir(self, item):
 		params = self.params()
@@ -172,19 +180,11 @@ class XBMContentProvider(object):
 		img = None
 		if 'img' in item.keys():
 			img = item['img']
-		if title.find('$') == 0:
-			try:
-				title = self.addon.getLocalizedString(int(title[1:]))
-			except Exception:
-				pass
+		title = self._localize(title)
 		menuItems = {}
 		if 'menu' in item.keys():
 			for ctxtitle, value in item['menu'].iteritems():
-				if ctxtitle.find('$') == 0:
-				    try:
-				        ctxtitle = self.addon.getLocalizedString(int(ctxtitle[1:]))
-				    except:
-				        pass
+				ctxtitle = self._localize(ctxtitle)
 				menuItems[ctxtitle] = value
 		xbmcutil.add_dir(title, params, img, infoLabels=self._extract_infolabels(item), menuItems=menuItems)
 
