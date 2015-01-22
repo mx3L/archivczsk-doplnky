@@ -1,50 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addons>
-<addon id="plugin.video.dmd-czech.stream"
-       name="Stream TV Archiv"
-       version="1.1.8"
+<addon id="plugin.video.dmd-czech.btv"
+       name="Brno TV Archiv"
+       version="0.2"
        provider-name="Jiri Vyhnalek">
   <requires>
-    <import addon="xbmc.python" version="2.1.0"/>
-    <import addon="script.module.dmd-czech.common" version="1.5.0"/>
+    <import addon="xbmc.python" version="1.0"/>
+    <import addon="script.module.dmd-czech.common" version="0.3"/>
   </requires>
   <extension point="xbmc.python.pluginsource" library="default.py">
     <provides>video</provides>
   </extension>
   <extension point="xbmc.addon.metadata">
     <platform>all</platform>
-    <summary>Stream TV video-archive plugin</summary>
-    <summary lang="cs">Stream TV - archiv</summary>
+    <summary>Brno TV video-archive plugin</summary>
+    <summary lang="cs">Brno TV - archiv</summary>
     <description>
-        Plugin to play TV video archive stream.cz
+        Plugin to play TV video archive http://www.b-tv.cz
     </description>
     <description lang="cs">
-        Plugin pro přehrávání videí z archivu stream.cz
+        Plugin pro přehrávání videí z archivu http://www.b-tv.cz
     </description>
   </extension>
 </addon>
 
-<addon id="plugin.video.dmd-czech.novaplus"
-       name="Nova Plus TV Archiv"
-       version="2.0.5"
-       provider-name="Jiri Vyhnalek">
+<addon id="script.module.dmd-czech.common" name="dmd-czech common python modules" version="1.5.2" provider-name="Jiri Vyhnalek">
   <requires>
-    <import addon="xbmc.python" version="2.1.0"/>
-    <import addon="script.module.dmd-czech.common" version="1.5.0"/>
+    <import addon="xbmc.python" version="2.1.0" />
   </requires>
-  <extension point="xbmc.python.pluginsource" library="default.py">
-    <provides>video</provides>
-  </extension>
+  <extension point="xbmc.python.module" library="lib" />
   <extension point="xbmc.addon.metadata">
+    <summary>dmd-czech plugins common python modules</summary>
+    <description>Common python modules pack that is used by dmd-czech plugins</description>
+    <license>GNU GPL</license>
     <platform>all</platform>
-    <summary>Nova Plus TV video-archive plugin</summary>
-    <summary lang="cs">Nova Plus TV - archiv</summary>
-    <description>
-        Plugin to play TV video archive Novaplus.nova.cz
-    </description>
-    <description lang="cs">
-        Plugin pro přehrávání videí z archivu Novaplus.nova.cz
-    </description>
   </extension>
 </addon>
 
@@ -68,115 +57,6 @@
     </description>
     <description lang="cs">
         Plugin pro přehrávání videí z archivu Huste.tv
-    </description>
-  </extension>
-</addon>
-
-<addon id="plugin.video.dmd-czech.muvi"
-       name="Muvi TV Archiv"
-       version="0.3.1"
-       provider-name="Jiri Vyhnalek">
-  <requires>
-    <import addon="xbmc.python" version="1.0"/>
-    <import addon="script.module.dmd-czech.common" version="0.7"/>
-  </requires>
-  <extension point="xbmc.python.pluginsource" library="default.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <platform>all</platform>
-    <summary>Muvi TV video-archive plugin</summary>
-    <summary lang="cs">Muvi TV - archiv</summary>
-    <description>
-        Plugin to play TV video archive http://www.muvi.cz
-    </description>
-    <description lang="cs">
-        Plugin pro přehrávání videí z archivu http://www.muvi.cz
-    </description>
-  </extension>
-</addon>
-
-<addon id="script.module.dmd-czech.common" name="dmd-czech common python modules" version="1.5.2" provider-name="Jiri Vyhnalek">
-  <requires>
-    <import addon="xbmc.python" version="2.1.0" />
-  </requires>
-  <extension point="xbmc.python.module" library="lib" />
-  <extension point="xbmc.addon.metadata">
-    <summary>dmd-czech plugins common python modules</summary>
-    <description>Common python modules pack that is used by dmd-czech plugins</description>
-    <license>GNU GPL</license>
-    <platform>all</platform>
-  </extension>
-</addon>
-
-<addon id="plugin.video.dmd-czech.ivysilani"
-       name="iVysílání TV Archiv"
-       version="1.5.8"
-       provider-name="Jiri Vyhnalek">
-  <requires>
-    <import addon="xbmc.python" version="2.1.0"/>
-    <import addon="script.module.dmd-czech.common" version="1.5.0"/>
-  </requires>
-  <extension point="xbmc.python.pluginsource" library="default.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <platform>all</platform>
-    <summary>CT iVysilani video-archive plugin</summary>
-    <summary lang="cs">ČT iVysílání - archiv</summary>
-    <description>
-        Plugin to play TV video archive from CT iVysilani
-    </description>
-    <description lang="cs">
-        Plugin pro přehrávání videí z archivu ČT iVysílání
-    </description>
-  </extension>
-</addon>
-
-<addon id="plugin.video.dmd-czech.filmyczcom"
-       name="Filmy CZ"
-       version="1.5.1"
-       provider-name="Ivo Brhel">
-  <requires>
-    <import addon="xbmc.python" version="2.1.0"/>
-    <import addon="script.module.dmd-czech.common" version="1.5.2"/>
-  </requires>
-  <extension point="xbmc.python.pluginsource" library="default.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <platform>all</platform>
-    <summary>FilmyCZ.com</summary>
-    <summary lang="cs">FilmyCZ.com</summary>
-    <description>
-        Plugin to play videos form FilmyCZ.com
-    </description>
-    <description lang="cs">
-        Plugin pro přehrávání videí z FilmyCZ.com
-    </description>
-  </extension>
-</addon>
-
-<addon id="plugin.video.dmd-czech.voyo"
-       name="Voyo TV Archiv"
-       version="2.3"
-       provider-name="Jiri Vyhnalek, mx3L">
-  <requires>
-    <import addon="xbmc.python" version="2.1.0"/>
-    <import addon="script.module.dmd-czech.common" version="1.5.0"/>
-  </requires>
-  <extension point="xbmc.python.pluginsource" library="default.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <platform>all</platform>
-    <summary>Nova TV video-archive plugin</summary>
-    <summary lang="cs">Nova TV - archiv</summary>
-    <description>
-        Plugin to play TV video archive Voyo.cz
-    </description>
-    <description lang="cs">
-        Plugin pro přehrávání videí z archivu Voyo.cz
     </description>
   </extension>
 </addon>
@@ -205,26 +85,50 @@
   </extension>
 </addon>
 
-<addon id="plugin.video.dmd-czech.btv"
-       name="Brno TV Archiv"
-       version="0.2"
-       provider-name="Jiri Vyhnalek">
+<addon id="plugin.video.dmd-czech.filmyczcom"
+       name="Filmy CZ"
+       version="1.5.1"
+       provider-name="Ivo Brhel">
   <requires>
-    <import addon="xbmc.python" version="1.0"/>
-    <import addon="script.module.dmd-czech.common" version="0.3"/>
+    <import addon="xbmc.python" version="2.1.0"/>
+    <import addon="script.module.dmd-czech.common" version="1.5.2"/>
   </requires>
   <extension point="xbmc.python.pluginsource" library="default.py">
     <provides>video</provides>
   </extension>
   <extension point="xbmc.addon.metadata">
     <platform>all</platform>
-    <summary>Brno TV video-archive plugin</summary>
-    <summary lang="cs">Brno TV - archiv</summary>
+    <summary>FilmyCZ.com</summary>
+    <summary lang="cs">FilmyCZ.com</summary>
     <description>
-        Plugin to play TV video archive http://www.b-tv.cz
+        Plugin to play videos form FilmyCZ.com
     </description>
     <description lang="cs">
-        Plugin pro přehrávání videí z archivu http://www.b-tv.cz
+        Plugin pro přehrávání videí z FilmyCZ.com
+    </description>
+  </extension>
+</addon>
+
+<addon id="plugin.video.dmd-czech.stream"
+       name="Stream TV Archiv"
+       version="1.1.8"
+       provider-name="Jiri Vyhnalek">
+  <requires>
+    <import addon="xbmc.python" version="2.1.0"/>
+    <import addon="script.module.dmd-czech.common" version="1.5.0"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <summary>Stream TV video-archive plugin</summary>
+    <summary lang="cs">Stream TV - archiv</summary>
+    <description>
+        Plugin to play TV video archive stream.cz
+    </description>
+    <description lang="cs">
+        Plugin pro přehrávání videí z archivu stream.cz
     </description>
   </extension>
 </addon>
@@ -249,6 +153,102 @@
     </description>
     <description lang="cs">
         Plugin pro přehrávání videí z archivu Metropol.cz
+    </description>
+  </extension>
+</addon>
+
+<addon id="plugin.video.dmd-czech.novaplus"
+       name="Nova Plus TV Archiv"
+       version="2.0.5"
+       provider-name="Jiri Vyhnalek">
+  <requires>
+    <import addon="xbmc.python" version="2.1.0"/>
+    <import addon="script.module.dmd-czech.common" version="1.5.0"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <summary>Nova Plus TV video-archive plugin</summary>
+    <summary lang="cs">Nova Plus TV - archiv</summary>
+    <description>
+        Plugin to play TV video archive Novaplus.nova.cz
+    </description>
+    <description lang="cs">
+        Plugin pro přehrávání videí z archivu Novaplus.nova.cz
+    </description>
+  </extension>
+</addon>
+
+<addon id="plugin.video.dmd-czech.ivysilani"
+       name="iVysílání TV Archiv"
+       version="1.5.8"
+       provider-name="Jiri Vyhnalek">
+  <requires>
+    <import addon="xbmc.python" version="2.1.0"/>
+    <import addon="script.module.dmd-czech.common" version="1.5.0"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <summary>CT iVysilani video-archive plugin</summary>
+    <summary lang="cs">ČT iVysílání - archiv</summary>
+    <description>
+        Plugin to play TV video archive from CT iVysilani
+    </description>
+    <description lang="cs">
+        Plugin pro přehrávání videí z archivu ČT iVysílání
+    </description>
+  </extension>
+</addon>
+
+<addon id="plugin.video.dmd-czech.muvi"
+       name="Muvi TV Archiv"
+       version="0.3.1"
+       provider-name="Jiri Vyhnalek">
+  <requires>
+    <import addon="xbmc.python" version="1.0"/>
+    <import addon="script.module.dmd-czech.common" version="0.7"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <summary>Muvi TV video-archive plugin</summary>
+    <summary lang="cs">Muvi TV - archiv</summary>
+    <description>
+        Plugin to play TV video archive http://www.muvi.cz
+    </description>
+    <description lang="cs">
+        Plugin pro přehrávání videí z archivu http://www.muvi.cz
+    </description>
+  </extension>
+</addon>
+
+<addon id="plugin.video.dmd-czech.voyo"
+       name="Voyo TV Archiv"
+       version="2.3"
+       provider-name="Jiri Vyhnalek, mx3L">
+  <requires>
+    <import addon="xbmc.python" version="2.1.0"/>
+    <import addon="script.module.dmd-czech.common" version="1.5.0"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <summary>Nova TV video-archive plugin</summary>
+    <summary lang="cs">Nova TV - archiv</summary>
+    <description>
+        Plugin to play TV video archive Voyo.cz
+    </description>
+    <description lang="cs">
+        Plugin pro přehrávání videí z archivu Voyo.cz
     </description>
   </extension>
 </addon>
