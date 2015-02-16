@@ -1,5 +1,11 @@
-2014-11-12:
- * oprava po redizajne stranok - opravil Radim Stoklasa
+2015-02-15 [1.2.1]
+  * Provizorne doplnenie vyzadovaneho hesla pri pristupe k Stream API
+2014-12-12
+  * Predelani pluginu, na vyuzivani Stream API
+2014-10-31
+  * Pridani zavislosti na simplejson 
+2014-10-24
+  * Pridani sberu statistik 
 2013-04-10:
   * Pri spousteni videa se nyni zobrazuje nabidka na seznam vsech dilu poradu
 2013-04-10:

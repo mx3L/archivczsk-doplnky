@@ -3,6 +3,8 @@ import urllib2,urllib,re,os
 from util import addDir, addLink,addSearch, getSearch,showWarning
 from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
 import json
+from hashlib import md5
+from time import time
 
 __baseurl__ = 'http://www.stream.cz/API'
 _UserAgent_ = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'
@@ -95,6 +97,7 @@ def makeImageUrl(rawurl):
 def getJsonDataFromUrl(url):
     req = urllib2.Request(url)
     req.add_header('User-Agent', _UserAgent_)
+    req.add_header('Api-Password', md5('fb5f58a820353bd7095de526253c14fd'+url.split(__baseurl__)[1]+str(int(round(int(time())/3600.0/24.0)))).hexdigest())
     response = urllib2.urlopen(req)
     httpdata = response.read()
     response.close()
