@@ -26,23 +26,27 @@ import urllib2
 import shutil
 import cookielib
 import random
-from urlparse import urlparse
+import urlparse
 from xml.etree.ElementTree import fromstring
 
 import util
 from provider import ContentProvider
 
 VYSIELANE_START = '<div class="archiveList preloader">'
-VYSIELANE_ITER_RE = '<ul class=\"clearfix\">.*?<div class=\"titleBg">.*?<a href=\"(?P<url>[^"]+).*?title=\"(?P<title>[^"]+).+?<p>(?P<desc>.*?)</p>.+?</ul>'
+VYSIELANE_ITER_RE = '<ul class=\"clearfix\">.+?<div class="titleBg">.+?<a href="(?P<url>[^"]+)" title="(?P<title>[^"]+)".+?<p>(?P<desc>.*?)</p>(?P<itime>\s+<i class="icon-time"></i>)?.+?</ul>'
 NEVYSIELANE_START = '<div class="archiveNev">'
-NEVYSIELANE_END = '<div class="clearfix padSection">'
+NEVYSIELANE_END = '<footer class="mainFooter">'
 NEVYSIELANE_ITER_RE = '<li.*?><a href=\"(?P<url>[^"]+).*?title=\"(?P<title>[^"]+).*?</li>'
 EPISODE_START = '<div class="episodeListing relative overflowed">'
 EPISODE_END = '<div class="centered pagerDots"></div>'
 EPISODE_ITER_RE = '<li[^>]*>\s+?<a href=\"(?P<url>[^"]+)\" title=\"(?P<title>[^"]+)\">\s+?<span class=\"date\">(?P<date>[^<]+)</span>(.+?)<span class=\"episode\">(?P<episode>[^0]{1}[0-9]*)</span>(.+?)</li>'
+EPISODE_ITER_RE2 = '<article>.+?<a href="(?P<url>.+?)" title="(?P<title>.+?)">.+?<time.+?>(?P<date>.+?)</time>.+?</article>'
 SERIES_START = EPISODE_START
 SERIES_END = EPISODE_END
+SERIES_START2 = '<nav class="e-pager">'
+SERIES_END2 = '</nav>'
 SERIES_ITER_RE = '<option(.+?)data-ajax=\"(?P<url>[^\"]+)\">(?P<title>[^<]+)</option>'
+SERIES_ITER_RE2 = '<option value="(?P<id>\d+)">(?P<title>.+?)</option>'
 TOP_GENERAL_START = '<span class="subtitle">výber toho najlepšieho</span>'
 TOP_GENERAL_END = '</div>'
 TOP_GENERAL_ITER_RE = '<li>\s+?<a href=\"(?P<url>[^"]+)\" title=\"(?P<title>[^"]+)\">(.+?)<img src=\"(?P<img>[^"]+)\"(.+?)</li>'
@@ -52,34 +56,25 @@ NEWEST_STATION_ITER_RE = '<option(.+?)value=\"(?P<station>[^\"]+)\"(.+?)data-aja
 NEWEST_ITER_RE = '<li><a href=\"(?P<url>[^\"]+)\" title=\"(?P<title>[^\"]+)\"><span class=\"time\">(?P<time>[^<]+)</span>(.+?)</li>'
 JOJ_FILES_ITER_RE = '<file type=".+?" quality="(?P<quality>.+?)" id="(?P<id>.+?)" label=".+?" path="(?P<path>.+?)"/>'
 
-MAX_PAGE_ENTRIES = 100
-
 JOJ_URL = 'http://www.joj.sk'
 JOJ_PLUS_URL = 'http://plus.joj.sk'
-WAU_URL = 'http://wau.joj.sk/'
-SENZI_URL = 'http://senzi.joj.sk/'
+WAU_URL = 'http://wau.joj.sk'
+SENZI_URL = 'http://senzi.joj.sk'
 
-RELACIE_FIX = ['anosefe']
-SERIALY_FIX = []
-VYMENIT_LINK = {'csmatalent':'http://www.csmatalent.cz/video-cz.html'}
-CHANGE_PATH = { 'www': 'joj', 'plus': 'jojplus' }
-
-def fix_link(url):
-    if url in SERIALY_FIX:
-        url = url[:url.rfind('-')] + '-epizody.html'
-    elif url in RELACIE_FIX:
-        url = url[:url.rfind('-')] + '-archiv.html'
-    else:
-        for rel in VYMENIT_LINK.keys():
-            if rel in url:
-                return VYMENIT_LINK[rel]
-    return url
-
-def fix_path(path):
-    for rel in CHANGE_PATH.keys():
-        if rel in path:
-            return CHANGE_PATH[rel]
+def clean_path(path):
+    if path:
+        if path[0] == '/':
+             path = path[1:]
+    if path:
+        if path[-1] == '/':
+            path = path[:-1]
     return path
+
+def unfragment(parsed_url):
+    data = list(parsed_url[0:5])
+    data.append("")
+    return urlparse.urlunparse(data)
+
 
 class JojContentProvider(ContentProvider):
 
@@ -87,45 +82,115 @@ class JojContentProvider(ContentProvider):
         ContentProvider.__init__(self, 'joj.sk', 'http://www.joj.sk/', username, password, filter)
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.LWPCookieJar()))
         urllib2.install_opener(opener)
+        self.debugging = True
+        
+    def debug(self, text):
+        if self.debugging:
+            print "[DEBUG][%s] %s" %(self.name, text)
 
     def capabilities(self):
         return ['categories', 'resolve', '!download']
 
     def list(self, url):
-        if url.find('#cat#') == 0:
-            url = url[5:]
-            return self.subcategories(url)
-        if url.find('#top#') == 0:
-            return self.list_top()
-        if url.find('#subcat#') == 0:
-            url = url[8:]
-            return self.list_show(url)
-        if url.find('#series#') == 0:
-            url = url[8:]
-            result = self.list_series(url)
-            if not result:
-                result = self.list_episodes(url)
-            return result
-        if url.find('#episodes#') == 0:
-            page = int(re.search('^#episodes##([^#]+)', url).group(1))
-            url = re.search('^#episodes##[^#]+#([^$]+)', url).group(1)
-            return self.list_episodes(url, page)
-        if url.find('#new#') == 0:
-            return self.list_new()
+        self.info("list %s"%url)
+        if url.find("#cat#") == 0:
+            self.debug("listing subcategories...")
+            return self.subcategories(url[5:])
+        p_url = urlparse.urlparse(url)
+        url = unfragment(p_url)
+        s_path = clean_path(p_url.path).split("/")
+        
+        if "joj.sk" not in p_url.netloc:
+            self.error("%s is not a joj.sk url!"%(url))
+            return []
+
+        if p_url.path == "/ajax.json":
+            self.debug("listing episodes data (ajax)")
+            headers = {
+                'X-Requested-With':'XMLHttpRequest',
+                'Referer':util.substr(url, url, url.split('/')[-1])
+            }
+            data = util.request(url, headers)
+            data = util.json.loads(data)['content']
+            return self.list_episodes_data(data, 1)
+        elif "post=" in p_url.fragment:
+            self.debug("listing episodes data (post)")
+            headers = {
+                'X-Requested-With':'XMLHttpRequest',
+                'Referer':util.substr(url, url, url.split('/')[-1])
+            }
+            sid = p_url.fragment.split("post=")[1]
+            data = {"do":"archive", "series": sid}
+            data = util.post(url, data, headers)
+            return self.list_episodes_data(data, 2)
+        
+        elif len(s_path) == 1 and s_path[0]=="":
+            if p_url.fragment == "top":
+                self.debug("listing base url - top part")
+                return self.list_base_page(util.request(self.base_url), top=True)
+            elif p_url.fragment == "new":
+                self.debug("listing base url - new part")
+                return self.list_base_page(util.request(self.base_url), new=True)
+            else:
+                self.debug("listing base url")
+                return self.list_base_url(util.request(self.base_url), top=True, new=True)
+        elif len(s_path) == 1:
+            if s_path[0] not in ("archiv.html", "plus-archiv.html", 
+                "wau-archiv.html", "senzi-archiv.html"):
+                self.error("unsupported listing for url - %s" % url)
+                return []
+            if p_url.fragment == "showon":
+                self.debug("listing show archive url - showon part")
+                return self.list_archive_page(util.request(url), showoff=True)
+            elif p_url.fragment == "showoff":
+                self.debug("listing show archive url - showoff part")
+                return self.list_archive_page(util.request(url), showon=True)
+            else:
+                self.debug("listing show archive url")
+                return self.list_archive_page(util.request(url), showon=True, showoff=True)
+        elif len(s_path) == 2 or len(s_path) == 3:
+            req = urllib2.Request(url)
+            req.add_header("User-Agent", util.UA)
+            resp = urllib2.urlopen(req)
+            p_url2 = urlparse.urlparse(resp.geturl())
+            page = resp.read()
+            s_path = clean_path(p_url2.path).split("/")
+            if len(s_path) == 2 and s_path[0] == "archiv":
+                m = re.search(r'<li>[^<]+<a href="([^"]+)"\s+title="Archív".+?</li>', page, re.DOTALL)
+                url = 'http://' + p_url2.netloc + m.group(1)
+                self.debug("new url = %s"%url)
+                page = util.request(url)
+            if p_url.fragment == "episodes":
+                self.debug("listing show url - episodes part")
+                return self.list_show_page(url, page, episodes=True)
+            elif p_url.fragment == "seasons":
+                self.debug("listing show url - seasons part")
+                return self.list_show_page(url, page, seasons=True)
+            elif p_url.fragment == "season_episode":
+                self.debug("listing show url - seasons/episodes")
+                result = self.list_show_page(url, page, seasons=True)
+                if len(result) == 0:
+                    result = self.list_show_page(url, page, episodes=True)
+                return result
+            else:
+                self.debug("listing show url")
+                return self.list_show_page(url, page,  seasons=True, episodes=True)
+        else:
+            self.error("unsupported listing for url - %s" % url)
+            return []
 
     def categories(self):
         result = []
         item = self.dir_item()
         item['type'] = 'new'
-        item['url'] = "#new#"
+        item['url'] = self.base_url + "#new"
         result.append(item)
         item = self.dir_item()
         item['type'] = 'top'
-        item['url'] = '#top#' + JOJ_URL
+        item['url'] =self.base_url + "#top"
         result.append(item)
         item = self.dir_item()
         item['title'] = 'JOJ'
-        item['img'] = None  # logo..
         item['url'] = "#cat#" + JOJ_URL + '/archiv.html'
         result.append(item)
         item = self.dir_item()
@@ -144,126 +209,129 @@ class JojContentProvider(ContentProvider):
 
     def subcategories(self, url):
         result = []
-        if url.startswith(('#rel#','#ser#')):
-            url = url[5:]
-            item = self.dir_item()
-            item['title'] = 'Vysielane'
-            item['url'] = '#subcat##showon#' + url
-            result.append(item)
-            item = self.dir_item()
-            item['title'] = 'Nevysielane'
-            item['url'] = '#subcat##showoff#' + url
-            self._filter(result, item)
-        else:
-            item = self.dir_item()
-            item['title'] = 'Relacie'
-            item['url'] = "#cat##rel#" + url + '/?type=relacie'
-            self._filter(result, item)
-            item = self.dir_item()
-            item['title'] = 'Serialy'
-            item['url'] = "#cat##ser#" + url + '/?type=serialy'
-            self._filter(result, item)
-            item = self.video_item()
-            item['title'] = 'Live'
-            item['url'] = url.replace('archiv', 'live')
-            self._filter(result, item)
+        item = self.dir_item()
+        item['title'] = "Všetky"
+        item['url'] = url
+        self._filter(result, item)
+        item = self.dir_item()
+        item['title'] = 'Relácie'
+        item['url'] = url + '/?type=relacie'
+        self._filter(result, item)
+        item = self.dir_item()
+        item['title'] = 'Seriály'
+        item['url'] = url + '/?type=serialy'
+        self._filter(result, item)
+        item = self.dir_item()
+        item['title'] = "Filmy"
+        item['url'] = url + '/?type=filmy'
+        self._filter(result, item)
+        # live streams are not working
+        #item = self.video_item()
+        #item['title'] = 'Live'
+        #item['url'] = url.replace('archiv', 'live')
+        #self._filter(result, item)
         return result
-
-    def list_show(self, url):
+    
+    def list_base_page(self, base_page, top=False, new=False):
         result = []
-        prefix = "#series#"
-        if url.startswith("#showon#"):
-            page = util.request(url[8:])
-            page = util.substr(page, VYSIELANE_START, NEVYSIELANE_START)
+        if top:
+            for m_s in re.finditer(NEWEST_STATION_ITER_RE, base_page, re.DOTALL | re.IGNORECASE):
+                url = 'http://' + urlparse.urlparse(self.base_url).netloc + '/ajax.json?' + m_s.group('url')
+                headers = {'X-Requested-With':'XMLHttpRequest', 'Referer':self.base_url}
+                data = util.request(url, headers)
+                data = util.json.loads(data)['content']
+                for m_v in re.finditer(NEWEST_ITER_RE, data, re.DOTALL):
+                    item = self.video_item()
+                    item['title'] = "[%s] %s (%s)" % (m_s.group('station'), m_v.group('title'), m_v.group('time'))
+                    item['url'] = m_v.group('url')
+                    item['type'] = 'topvideo'
+                    self._filter(result, item)
+        if new:
+            page = util.substr(base_page, TOP_GENERAL_START, TOP_GENERAL_END)
+            for m in re.finditer(TOP_GENERAL_ITER_RE, page, re.DOTALL | re.IGNORECASE):
+                item = self.video_item()
+                item['title'] = m.group('title')
+                item['url'] = m.group('url')
+                item['img'] = m.group('img')
+                item['type'] = 'newvideo'
+                self._filter(result, item)
+        return result
+    
+    def list_archive_page(self, show_page, showon=False, showoff=False):
+        showonlist = []
+        if showon:
+            page = util.substr(show_page, VYSIELANE_START, NEVYSIELANE_START)
             for m in re.finditer(VYSIELANE_ITER_RE, page, re.DOTALL | re.IGNORECASE):
                 item = self.dir_item()
                 item['title'] = m.group('title')
                 item['plot'] = m.group('desc')
-                item['url'] = prefix + m.group('url')
-                self._filter(result, item)
-
-        elif url.startswith("#showoff#"):
-            page = util.request(url[9:])
-            page = util.substr(page, NEVYSIELANE_START, NEVYSIELANE_END)
+                item['url'] = m.group('url') + "#season_episode"
+                if m.group('itime') is not None:
+                    item['type'] = "showon7d"
+                else:
+                    item['type'] = "showon"
+                showonlist.append(item)
+        showonlist.sort(key=lambda x:x['title'].lower())
+        showofflist = []
+        if showoff:
+            page = util.substr(show_page, NEVYSIELANE_START, NEVYSIELANE_END)
             for m in re.finditer(NEVYSIELANE_ITER_RE, page, re.DOTALL | re.IGNORECASE):
                 item = self.dir_item()
                 item['title'] = m.group('title')
-                item['url'] = prefix + m.group('url')
-                self._filter(result, item)
-        result.sort(key=lambda x:x['title'].lower())
+                item['url'] = m.group('url') + "#season_episode"
+                item['type'] = "showoff"
+                showofflist.append(item)
+        showofflist.sort(key=lambda x:x['title'].lower())
+        result = showonlist + showofflist
         return result
 
-    def list_series(self, url):
+    def list_show_page(self, url, page, seasons=False, episodes=False):
         result = []
-        page = util.request(url)
-        page = util.substr(page, SERIES_START, SERIES_END)
-        for m in re.finditer(SERIES_ITER_RE, page, re.DOTALL | re.IGNORECASE):
-            item = self.dir_item()
-            item['title'] = m.group('title')
-            item['url'] = "#episodes##0#" + 'http://' + urlparse(url).netloc + '/ajax.json?' + m.group('url')
-            self._filter(result, item)
-        return result
-
-    def list_episodes(self, url, page=0):
-        result = []
-        if url.find('ajax.json') != -1:
-            headers = {'X-Requested-With':'XMLHttpRequest',
-                       'Referer':util.substr(url, url, url.split('/')[-1])
-                       }
-            httpdata = util.request(url, headers)
-            httpdata = util.json.loads(httpdata)['content']
+        if "/p/epizody" in url or "p/archiv" in url:
+            if seasons:
+                season_data = util.substr(page, SERIES_START2, SERIES_END2)
+                for m in re.finditer(SERIES_ITER_RE2, season_data, re.DOTALL | re.IGNORECASE):
+                    item = self.dir_item()
+                    item['title'] = m.group('title')
+                    item['url'] = url + '#post=%s'%(m.group('id'))
+                    self._filter(result, item)
+            if episodes:
+                for m in re.finditer(EPISODE_ITER_RE2, page, re.DOTALL | re.IGNORECASE):
+                    item = self.video_item()
+                    item['title']  = "%s (%s)" % (m.group('title'), m.group('date'))
+                    item['url']  = m.group('url')
+                    self._filter(result, item)
         else:
-            httpdata = util.request(url)
-            httpdata = util.substr(httpdata, EPISODE_START, EPISODE_END)
-
-        entries = 0
-        skip_entries = MAX_PAGE_ENTRIES * page
-
-        for m in re.finditer(EPISODE_ITER_RE, httpdata, re.DOTALL | re.IGNORECASE):
-            entries += 1
-            if entries < skip_entries:
-                continue
+            if seasons:
+                season_data = util.substr(page, SERIES_START, SERIES_END)
+                for m in re.finditer(SERIES_ITER_RE, season_data, re.DOTALL | re.IGNORECASE):
+                    item = self.dir_item()
+                    item['title'] = m.group('title')
+                    item['url'] = 'http://' + urlparse.urlparse(url).netloc + '/ajax.json?' + m.group('url')
+                    self._filter(result, item)
+            if episodes:
+                episodes_data = util.substr(page, EPISODE_START, EPISODE_END)
+                for m in re.finditer(EPISODE_ITER_RE, page, re.DOTALL | re.IGNORECASE):
+                    item = self.video_item()
+                    item['title'] = "%s. %s (%s)" % (m.group('episode'), m.group('title'), m.group('date'))
+                    item['url']  = m.group('url')
+                    self._filter(result, item)
+        return result
+    
+    def list_episodes_data(self, data, t):
+        result = []
+        if t==1:
+            iterre = EPISODE_ITER_RE
+        elif t==2:
+            iterre = EPISODE_ITER_RE2
+        for m in re.finditer(iterre, data, re.DOTALL):
             item = self.video_item()
-            item['title'] = "%s. %s (%s)" % (m.group('episode'), m.group('title'), m.group('date'))
+            if m.groupdict().has_key("episode"):
+                item['title'] = "%s. %s (%s)" % (m.group('episode'), m.group('title'), m.group('date'))
+            else:
+                item['title']  = "%s (%s)" % (m.group('title'), m.group('date'))
             item['url'] = m.group('url')
             self._filter(result, item)
-            if entries >= (skip_entries + MAX_PAGE_ENTRIES):
-                page += 1
-                item = self.dir_item()
-                item['type'] = 'next'
-                item['url'] = "#episodes##%d#" % (page) + url
-                self._filter(result, item)
-                break
-        return result
-
-    def list_top(self):
-        result = []
-        page = util.request(self.base_url)
-        page = util.substr(page, TOP_GENERAL_START, TOP_GENERAL_END)
-        for m in re.finditer(TOP_GENERAL_ITER_RE, page, re.DOTALL | re.IGNORECASE):
-            item = self.video_item()
-            item['title'] = m.group('title')
-            item['url'] = m.group('url')
-            item['img'] = m.group('img')
-            self._filter(result, item)
-        return result
-
-    def list_new(self):
-        result = []
-        page = util.request(self.base_url)
-        page = util.substr(page, NEWEST_STATION_START, NEWEST_STATION_END)
-        for m_s in re.finditer(NEWEST_STATION_ITER_RE, page, re.DOTALL | re.IGNORECASE):
-            url = 'http://' + urlparse(self.base_url).netloc + '/ajax.json?' + m_s.group('url')
-            headers = {'X-Requested-With':'XMLHttpRequest',
-                       'Referer':self.base_url
-                       }
-            httpdata = util.request(url, headers)
-            httpdata = util.json.loads(httpdata)['content']
-            for m_v in re.finditer(NEWEST_ITER_RE, httpdata, re.DOTALL):
-                item = self.video_item()
-                item['title'] = "[%s] %s (%s)" % (m_s.group('station'), m_v.group('title'), m_v.group('time'))
-                item['url'] = m_v.group('url')
-                self._filter(result, item)
         return result
 
     def rtmp_url(self, playpath, pageurl, type=None, balance=None):
@@ -283,7 +351,6 @@ class JojContentProvider(ContentProvider):
         swfurl = 'http://player.joj.sk/JojPlayer.swf?no_cache=137034'
         return 'rtmp://' + server + ' playpath=' + playpath + ' pageUrl=' + pageurl + ' swfUrl=' + swfurl + ' swfVfy=true'
 
-    # modified source from dmd-czech joj video plugin
     def resolve(self, item, captcha_cb=None, select_cb=None):
         result = []
         item = item.copy()
@@ -299,7 +366,7 @@ class JojContentProvider(ContentProvider):
             playerdata = re.search(r'<div\ class=\"jn-player\"(.+?)>',data).group(1)
             pageid = re.search(r'data-pageid=[\'\"]([^\'\"]+)',playerdata).group(1) 
             basepath = re.search(r'data-basepath=[\'\"]([^\'\"]+)',playerdata).group(1)
-	    videoid = re.search(r'data-id=[\'\"]([^\'\"]+)',playerdata).group(1)
+            videoid = re.search(r'data-id=[\'\"]([^\'\"]+)',playerdata).group(1)
             playlisturl = basepath + 'services/Video.php?clip=' + videoid + 'pageId=' + pageid
             playlist = fromstring(util.request(playlisturl))
             balanceurl = basepath + 'balance.xml?nc=%d' % random.randint(1000, 9999)

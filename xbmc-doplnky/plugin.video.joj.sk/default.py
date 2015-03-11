@@ -34,4 +34,16 @@ __language__   = __addon__.getLocalizedString
 settings = {'quality':__addon__.getSetting('quality')}
 provider = joj.JojContentProvider()
 
-xbmcprovider.XBMCMultiResolverContentProvider(provider,settings,__addon__,session).run(params)
+class XBMCJojContentProvider(xbmcprovider.XBMCMultiResolverContentProvider):
+    def render_default(self, item):
+        if item['type'] == 'showoff':
+            item['title'] = item['title'] + '  (Nevys)'
+        elif item['type'] == "showon7d":
+            item['title'] = item['title'] + ' (7d)'
+        if item['type'] == 'topvideo' or item['type'] == 'newvideo':
+            self.render_video(item)
+        else:
+            self.render_dir(item)
+            
+        
+XBMCJojContentProvider(provider,settings,__addon__, session).run(params)
