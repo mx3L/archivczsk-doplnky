@@ -1,7 +1,9 @@
+[B]1.2.1[/B]
+- fixed live streams (thanks to Kuci)
 [B]1.2.0[/B]
 - fixed not working resolving (panelak, x-factor)
-- added "vsetky" category
-- added "filmy" category
+- added "vsetky" subcategory
+- added "filmy" subcategory
 - simplified listing (vysielane/nevysielane put together)
 - shows for 7 day watching are now marked (7d)
 - nevysielane show are now marked (nevys)
