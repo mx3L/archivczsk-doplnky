@@ -44,7 +44,7 @@ SERIES_END = EPISODE_END
 SERIES_START2 = '<nav class="e-pager">'
 SERIES_END2 = '</nav>'
 SERIES_ITER_RE = '<option(.+?)data-ajax=\"(?P<url>[^\"]+)\">(?P<title>[^<]+)</option>'
-SERIES_ITER_RE2 = '<option value="(?P<id>\d+)">(?P<title>.+?)</option>'
+SERIES_ITER_RE2 = '<option value="(?P<id>\d+)"[^>]*>(?P<title>.+?)</option>'
 TOP_GENERAL_START = '<span class="subtitle">výber toho najlepšieho</span>'
 TOP_GENERAL_END = '</div>'
 TOP_GENERAL_ITER_RE = '<li>\s+?<a href=\"(?P<url>[^"]+)\" title=\"(?P<title>[^"]+)\">(.+?)<img src=\"(?P<img>[^"]+)\"(.+?)</li>'
