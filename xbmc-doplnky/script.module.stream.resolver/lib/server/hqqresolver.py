@@ -10,6 +10,8 @@
 # *
 # *  based on https://gitorious.org/iptv-pl-dla-openpli/ urlresolver
 # */
+from StringIO import StringIO
+import json
 import re
 import util
 import base64
@@ -65,10 +67,10 @@ def _decode(data):
 
 def _decode2(file_url):
     def K12K(a, typ='b'):
-        codec_a = ["G", "L", "M", "N", "Z", "o", "I", "t", "V", "y", "x", "p", "R", "m", "z", "u", "D", "7", "W", "v",
-                   "Q", "n", "e", "0", "b", "="]
-        codec_b = ["2", "6", "i", "k", "8", "X", "J", "B", "a", "s", "d", "H", "w", "f", "T", "3", "l", "c", "5", "Y",
-                   "g", "1", "4", "9", "U", "A"]
+        codec_a = ["G", "L", "M", "N", "Z", "o", "I", "t", "V", "y", "x", "p", "R", "m", "z", "u",
+                   "D", "7", "W", "v", "Q", "n", "e", "0", "b", "="]
+        codec_b = ["2", "6", "i", "k", "8", "X", "J", "B", "a", "s", "d", "H", "w", "f", "T", "3",
+                   "l", "c", "5", "Y", "g", "1", "4", "9", "U", "A"]
         if 'd' == typ:
             tmp = codec_a
             codec_a = codec_b
@@ -112,8 +114,7 @@ def resolve(url):
     m = _regex(url)
     if m:
         vid = m.group('vid')
-        headers = {'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:21.0) Gecko/20100101 Firefox/21.0',
-                   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        headers = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                    'Content-Type': 'text/html; charset=utf-8'}
         player_url = "http://hqq.tv/player/embed_player.php?vid=%s&autoplay=no" % vid
         data = util.request(player_url, headers)
@@ -121,7 +122,7 @@ def resolve(url):
         b64dec = b64enc and base64.decodestring(b64enc.group(1))
         enc = b64dec and re.search("\'([^']+)\'", b64dec).group(1)
         if enc:
-            data = re.compile('<input name="([^"]+?)" [^>]+? value="([^"]+?)">').findall(_decode(enc))
+            data = re.findall('<input name="([^"]+?)" [^>]+? value="([^"]+?)">', _decode(enc))
             post_data = {}
             for idx in range(len(data)):
                 post_data[data[idx][0]] = data[idx][1]
@@ -130,21 +131,24 @@ def resolve(url):
             b64dec = b64enc and base64.decodestring(b64enc.group(1))
             enc = b64dec and re.search("\'([^']+)\'", b64dec).group(1)
             if enc:
-                data = re.compile('<input name="([^"]+?)" [^>]+? value="([^"]*)">').findall(_decode(enc))
+                data = re.findall('<input name="([^"]+?)" [^>]+? value="([^"]*)">', _decode(enc))
                 post_data = {}
                 for idx in range(len(data)):
                     post_data[data[idx][0]] = data[idx][1]
-                data = urllib.unquote(
-                    util.request("http://hqq.tv/sec/player/embed_player.php?" + urllib.urlencode(post_data), headers))
+                data = urllib.unquote(util.request("http://hqq.tv/sec/player/embed_player.php?" +
+                                                   urllib.urlencode(post_data), headers))
                 vid_server = re.search(r'var\s*vid_server\s*=\s*"([^"]*?)"', data)
                 vid_link = re.search(r'var\s*vid_link\s*=\s*"([^"]*?)"', data)
                 at = re.search(r'var\s*at\s*=\s*"([^"]*?)"', data)
                 if vid_server and vid_link and at:
-                    post_data = {'server': vid_server.group(1), 'link': vid_link.group(1), 'at': at.group(1)}
-                    data = util.request("http://hqq.tv/player/get_md5.php?" + urllib.urlencode(post_data), headers)
-                    file_url = re.search(r'"file"\s*:\s*"([^"]*?)"', data)
-                    if file_url:
-                        return [{'url': _decode2(file_url.group(1)), 'quality': '???'}]
+                    get_data = {'server': vid_server.group(1),
+                                'link': re.sub(r'\?socket=?$', '.mp4.m3u8', vid_link.group(1)),
+                                'at': at.group(1),
+                                'adb': '0/'}
+                    data = json.load(StringIO(util.request("http://hqq.tv/player/get_md5.php?" +
+                                                           urllib.urlencode(get_data), headers)))
+                    if 'file' in data:
+                        return [{'url': _decode2(data['file']), 'quality': '360p'}]
     return None
 
 
@@ -155,12 +159,18 @@ def _regex(url):
     match = re.search(r'(hqq|netu)\.tv/player/embed_player\.php\?vid=(?P<vid>[0-9A-Z]+)', url)
     if match:
         return match
+    match = re.search(r'(hqq|netu)\.tv/player/hash\.php\?hash=\d+', url)
+    if match:
+        match = re.search(r'var\s+vid\s*=\s*\'(?P<vid>[^\']+)\'', urllib.unquote(util.request(url)))
+        if match:
+            return match
     b64enc = re.search(r'data:text/javascript\;charset\=utf\-8\;base64([^\"]+)', url)
     b64dec = b64enc and base64.decodestring(b64enc.group(1))
     enc = b64dec and re.search(r"\'([^']+)\'", b64dec).group(1)
     if enc:
         decoded = _decode(enc)
         match = re.search(r'<input name="vid"[^>]+? value="(?P<vid>[^"]+?)">', decoded)
-        if re.search(r'<form(.+?)action="[^"]*(hqq|netu)\.tv/player/embed_player\.php"[^>]*>', decoded) and match:
+        if re.search(r'<form(.+?)action="[^"]*(hqq|netu)\.tv/player/embed_player\.php"[^>]*>',
+                     decoded) and match:
             return match
     return None

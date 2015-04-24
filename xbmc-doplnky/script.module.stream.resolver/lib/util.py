@@ -27,32 +27,61 @@ import Queue
 from Plugins.Extensions.archivCZSK.engine import client
 from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
 UA = 'Mozilla/6.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.5) Gecko/2008092417 Firefox/3.0.3'
+LOG = 2
+sys.path.append(os.path.join(os.path.dirname(__file__), 'contentprovider'))
 
-sys.path.append(os.path.join (os.path.dirname(__file__), 'contentprovider'))
-##
-# initializes urllib cookie handler
-def init_urllib():
-	cj = cookielib.LWPCookieJar()
-	opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
-	urllib2.install_opener(opener)
+_cookie_jar = None
+
+CACHE_COOKIES = 'cookies'
+
+
+class _StringCookieJar(cookielib.LWPCookieJar):
+    def __init__(self, string=None, filename=None, delayload=False, policy=None):
+        cookielib.LWPCookieJar.__init__(self, filename, delayload, policy)
+        if string and len(string) > 0:
+            self._cookies = pickle.loads(string)
+
+    def dump(self):
+        return pickle.dumps(self._cookies)
+
+def init_urllib(cache=None):
+    """
+    Initializes urllib cookie handler
+    """
+    global _cookie_jar
+    data = None
+    if cache is not None:
+        data = cache.get(CACHE_COOKIES)
+    _cookie_jar = _StringCookieJar(data)
+    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(_cookie_jar))
+    urllib2.install_opener(opener)
+
+def cache_cookies(cache):
+    """
+    Saves cookies to cache
+    """
+    global _cookie_jar
+    if _cookie_jar:
+        cache.set(CACHE_COOKIES, _cookie_jar.dump())
 
 def request(url, headers={}):
-	debug('request: %s' % url)
-	req = urllib2.Request(url, headers=headers)
-	response = urllib2.urlopen(req)
-	data = response.read()
-	response.close()
-	debug('len(data) %s' % len(data))
-	return data
+    debug('request: %s' % url)
+    req = urllib2.Request(url, headers=headers)
+    req.add_header('User-Agent', UA)
+    response = urllib2.urlopen(req)
+    data = response.read()
+    response.close()
+    debug('len(data) %s' % len(data))
+    return data
 
 def post(url, data, headers={}):
-	postdata = urllib.urlencode(data)
-	req = urllib2.Request(url, postdata, headers)
-	req.add_header('User-Agent', UA)
-	response = urllib2.urlopen(req)
-	data = response.read()
-	response.close()
-	return data
+    postdata = urllib.urlencode(data)
+    req = urllib2.Request(url, postdata, headers)
+    req.add_header('User-Agent', UA)
+    response = urllib2.urlopen(req)
+    data = response.read()
+    response.close()
+    return data
 
 def post_json(url,data,headers={}):
     postdata = json.dumps(data)
@@ -63,7 +92,7 @@ def post_json(url,data,headers={}):
     data = response.read()
     response.close()
     return data
-   
+
 def run_parallel_in_threads(target, args_list):
     result = Queue.Queue()
     # wrapper to collect return value in a Queue
@@ -83,7 +112,7 @@ def substr(data, start, end):
 	i1 = data.find(start)
 	i2 = data.find(end, i1)
 	return data[i1:i2]
-	
+    
 
 def save_to_file(url, file):
 	try:

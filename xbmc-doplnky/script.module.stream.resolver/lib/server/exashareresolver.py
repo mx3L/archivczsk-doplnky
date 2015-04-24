@@ -19,21 +19,19 @@
 # *  http://www.gnu.org/copyleft/gpl.html
 # *
 # */
-
 import re
 import util
-import resolver
 
 __author__ = 'Lubomir Kucera'
-__name__ = 'tiivii.eu'
+__name__ = 'exashare'
 
 
 def supports(url):
-    return re.search(r'tiivii\.eu/films/[^\.]+\.html', url) is not None
+    return re.search(r'exashare\.com/embed\-[^\.]+\.html', url) is not None
 
 
 def resolve(url):
-    return resolver.findstreams(util.request(url),
-                                ['<embed(.+?)src=[\"\']?(?P<url>[^\"\']+)[\"\']?',
-                                 '<object(.+?)data=[\"\']?(?P<url>[^\"\']+)[\"\']?',
-                                 '<iframe(.+?)src=[\"\']?(?P<url>[^\"\']+)[\'\"]?'])
+    playlist = re.search(r'playlist:\s*\[.+?file:\s*\"([^\"]+)\"', util.request(url), flags=re.S)
+    if playlist:
+        return [{'url': playlist.group(1), 'quality': '???'}]
+    return None

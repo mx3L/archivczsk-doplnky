@@ -17,67 +17,51 @@
 # *  http://www.gnu.org/copyleft/gpl.html
 # *
 
-# thanks to:
-#   https://github.com/Eldorados
+import re
+from xml.etree import ElementTree
+
+import util
 
 
-import re,util,urllib2
-__name__='flashx'
+__name__ = 'flashx'
 
-pattern = 'http://((?:www.|play.)?flashx.tv)/(?:player/embed_player.php\?vid=|player/embed.php\?vid=|player/embed.php\?hash=|video/)([0-9A-Z]+)'
+
+def base36encode(number):
+    alphabet = '0123456789abcdefghijklmnopqrstuvwxyz'
+    base36 = ''
+    sign = ''
+    if number < 0:
+        sign = '-'
+        number = -number
+    if 0 <= number < len(alphabet):
+        return sign + alphabet[number]
+    while number != 0:
+        number, i = divmod(number, len(alphabet))
+        base36 = alphabet[i] + base36
+    return sign + base36
+
 
 def supports(url):
-	return not _regex(url) == None
-	
-	
-def get_url(host, media_id):
-        return 'http://www.flashx.tv/player/embed_player.php?vid=%s' % (media_id)
+    return re.search(r'flashx\.tv/embed\-[^\.]+\.html', url) is not None
 
 
-def get_host_and_id(url):
-        r = re.search(pattern, url)
-        if r:
-		return r.groups()
-        else:
-		return False
-	
-# returns the steam url
-def url(url):
-	if supports(url):
-		host,media_id=get_host_and_id(url)
-		web_url = get_url(host, media_id)
-		try:
-			data = util.request(web_url)
-		except urllib2.URLError, e:
-			print (__name__ + ': got http error %d fetching %s' % (e.code, web_url))
-			return False
-		sPatternHQ = "var hq_video_file\s*=\s*'([^']+)'"        # .mp4
-		sPatternLQ = "\?hash=([^'|&]+)"
-		r = re.search(sPatternLQ, data)
-		if r:
-			#print r.group(1)
-			media_id = r.group(1)
-			#return r.group(1)
-		try:
-			data = util.request("http://play.flashx.tv/nuevo/player/cst.php?hash="+media_id)
-		except urllib2.URLError, e:
-			print (__name__ + ': got http error %d fetching %s' % (e.code, web_url))
-			return False
-		pattern = "<file>(.*?)</file>"
-		r = re.search(pattern, data)
-		if r:
-			return [r.group(1)]
-
-		return False
-		
-		
-
-def resolve(u):
-	stream = url(u)
-	if stream:
-		return [{'name':__name__,'quality':'360p','url':stream[0],'surl':u}]
-
-def _regex(url):
-	return re.search(pattern,url,re.IGNORECASE | re.DOTALL)
-	
-	
+def resolve(url):
+    data = re.search(
+        r'<script\s*type=\"text/javascript\">.+?}\(\'(.+)\',\d+,\d+,\'([\w\|]+)\'.*</script>',
+        util.request(url), re.I | re.S)
+    if data:
+        replacements = data.group(2).split('|')
+        data = data.group(1)
+        for i in reversed(range(len(replacements))):
+            data = re.sub(r'\b' + base36encode(i) + r'\b', replacements[i], data)
+        data = re.search(r'file:\s*\"([^\"]+\.smil)\"', data)
+        if data:
+            result = []
+            tree = ElementTree.fromstring(util.request(data.group(1)))
+            base_path = tree.find('./head/meta').get('base')
+            for video in tree.findall('./body/switch/video'):
+                result.append({'url': base_path + ' playpath=' + video.get('src') + ' pageUrl=' + url +
+                               ' swfUrl=http://static.flashx.tv/player6/jwplayer.flash.swf swfVfy=true',
+                               'quality': video.get('height') + 'p'})
+            return result
+    return None

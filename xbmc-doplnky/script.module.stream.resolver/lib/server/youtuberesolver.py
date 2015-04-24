@@ -175,6 +175,7 @@ import urllib
 import cgi
 import simplejson as json
 
+
 class YoutubePlayer(object):
     fmt_value = {
             5: "240p",
@@ -185,12 +186,20 @@ class YoutubePlayer(object):
             34: "360p",
             35: "480p",
             37: "1080p",
+            38: "720p",
+            43: "360p",
+            44: "480p",
+            45: "720p",
+            46: "520p",
             59: "480",
             78: "400",
             82: "360p",
             83: "240p",
             84: "720p",
             85: "520p",
+            100: "360p",
+            101: "480p",
+            102: "720p",
             120: "hd720",
             121: "hd1080"
             }
@@ -235,7 +244,7 @@ class YoutubePlayer(object):
 
     def scrapeWebPageForVideoLinks(self, result, video):
         links = {}
-        flashvars = self.extractFlashVars(result,0)
+        flashvars = self.extractFlashVars(result, 0)
         if not flashvars.has_key(u"url_encoded_fmt_stream_map"):
             return links
 
@@ -255,7 +264,7 @@ class YoutubePlayer(object):
                 url = urllib.unquote(url_desc_map[u"url"][0])
             elif url_desc_map.has_key(u"conn") and url_desc_map.has_key(u"stream"):
                 url = urllib.unquote(url_desc_map[u"conn"][0])
-                if url.rfind("/") < len(url) -1:
+                if url.rfind("/") < len(url) - 1:
                     url = url + "/"
                 url = url + urllib.unquote(url_desc_map[u"stream"][0])
             elif url_desc_map.has_key(u"stream") and not url_desc_map.has_key(u"conn"):
@@ -277,13 +286,13 @@ class YoutubePlayer(object):
         return decryptor.decryptSignature(s, js)
 
 
-    def extractVideoLinksFromYoutube(self, url, videoid,video):
+    def extractVideoLinksFromYoutube(self, url, videoid, video):
         result = util.request(self.urls[u"video_stream"] % videoid)
         links = self.scrapeWebPageForVideoLinks(result, video)
         if len(links) == 0:
             util.error(u"Couldn't find video url- or stream-map.")
         return links
-#/*
+# /*
 # *      Copyright (C) 2011 Libor Zoubek
 # *
 # *
@@ -303,7 +312,7 @@ class YoutubePlayer(object):
 # *  http://www.gnu.org/copyleft/gpl.html
 # *
 # */
-import re,util,urllib
+import re, util, urllib
 __name__ = 'youtube'
 
 
@@ -314,11 +323,11 @@ def resolve(url):
     m = _regex(url)
     if not m == None:
         player = YoutubePlayer()
-        index = url.find('&') # strip out everytihing after &
+        video = {'title':'žádný název'}
+        index = url.find('&')  # strip out everytihing after &
         if index > 0:
             url = url[:index]
-        video = {'title':'žádný název'}
-        links = player.extractVideoLinksFromYoutube(url,m.group('id'),video)
+        links = player.extractVideoLinksFromYoutube(url, m.group('id'), video)
         resolved = []
         for q in links:
             if q in player.fmt_value.keys():
@@ -335,5 +344,4 @@ def resolve(url):
         return resolved
 
 def _regex(url):
-    return re.search('www\.youtube\.com/(watch\?v=|v/|embed/)(?P<id>.+?)(\?|$|&)',url,re.IGNORECASE | re.DOTALL)
-
+    return re.search('www\.youtube\.com/(watch\?v=|v/|embed/)(?P<id>.+?)(\?|$|&)', url, re.IGNORECASE | re.DOTALL)

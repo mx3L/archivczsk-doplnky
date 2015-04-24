@@ -19,10 +19,10 @@
 # *  http://www.gnu.org/copyleft/gpl.html
 # *
 # */
-import re, util
+import re,util
 __name__ = 'zkouknito'
 def supports(url):
-    return not _regex(url) is None
+    return not _regex(url) == None
 
 # returns the steam url
 def resolve(url):
@@ -37,6 +37,7 @@ def resolve(url):
             f = re.search("\'file\':.*?'([^']+)", data, re.IGNORECASE | re.DOTALL)
         if f:
             return [{'url':f.group(1)}] 
+
 
 def _regex(url):
     m1 = re.search('(www\.)zkouknito.cz/(.+?)vid=(?P<id>[\d]+)', url, re.IGNORECASE | re.DOTALL)
