@@ -22,7 +22,7 @@
 
 import re,os,urllib,urllib2,shutil,traceback,cookielib,HTMLParser
 import util,resolver
-from provider import ContentProvider
+from provider import ContentProvider, cached
 
 class BefunContentProvider(ContentProvider):
 
@@ -117,6 +117,7 @@ class BefunContentProvider(ContentProvider):
             result.append(item)
         return result
 
+    @cached()
     def _categories(self,page,url):
         data = util.substr(page,'<ul id=\"menu_kategorie','</ul')
         prefix = ''
@@ -130,6 +131,8 @@ class BefunContentProvider(ContentProvider):
             item['title'] = mask % m.group('name')
             item['url'] = prefix+m.group('url')
             result.append(item)
+        # sort this
+        result = sorted(result,key=lambda i:i['title'])
         if prefix == '':
             # when listing movie categories, we also list movies on 'main' page
             return result + self.list_page(page,'<!-- Movies','</section')
@@ -152,9 +155,10 @@ class BefunContentProvider(ContentProvider):
         url = self._url(item['url'])
         data = util.request(self._url(item['url']))	
         data = util.substr(data,'<div class=\"video','</div')
-        sosac = re.search('\"(http\://[\w]+\.sosac\.ph[^\"]+)',data,re.DOTALL)
+        sosac = re.search('\"(http\://[\w]+\.sosac\.[^\"]+)',data,re.DOTALL)
         if sosac:
             sosac = HTMLParser.HTMLParser().unescape(sosac.group(1))
+            self.info("Reading sosac URL "+sosac)
             data = util.request(sosac)
         result = self.findstreams(data,[
             '<embed( )*flashvars=\"file=(?P<url>[^\"]+)',
