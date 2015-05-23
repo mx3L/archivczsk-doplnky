@@ -19,9 +19,10 @@
 # *  http://www.gnu.org/copyleft/gpl.html
 # *
 # */
-import re,urllib,urllib2,urlparse,cookielib,random,util,sys,os,traceback
+import re,urllib,urllib2,urlparse,cookielib,random,util,sys,os,traceback,hashlib
 from provider import ContentProvider
 from provider import ResolveException
+from md5crypt import md5crypt
 import xml.etree.ElementTree as ET
 
 class WebshareContentProvider(ContentProvider):
@@ -30,9 +31,10 @@ class WebshareContentProvider(ContentProvider):
         ContentProvider.__init__(self,'webshare.cz','http://webshare.cz/',username,password,filter,tmp_dir)
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.LWPCookieJar()))
         urllib2.install_opener(opener)
+        self.token = ''
 
     def capabilities(self):
-        return ['search','resolve']
+        return ['login','search','resolve']
 
     def search(self,keyword):
         return self.list('what='+urllib.quote(keyword))
@@ -47,9 +49,38 @@ class WebshareContentProvider(ContentProvider):
         return headers,req
 
 
+    def login(self):
+        if not self.username and not self.password:
+            return True # fall back to free account
+        elif self.username and self.password and len(self.username)>0 and len(self.password)>0:
+            self.info('Login user=%s, pass=*****' % self.username)
+            # get salt
+            headers,req = self._create_request('',{'username_or_email':self.username})
+            data = util.post(self._url('api/salt/'),req,headers=headers)
+            xml = ET.fromstring(data)
+            if not xml.find('status').text == 'OK':
+                self.error('Server returned error status, response: %s' % data)
+                return False
+            salt = xml.find('salt').text
+            # create hashes
+            password = hashlib.sha1(md5crypt(self.password, salt)).hexdigest()
+            digest = hashlib.md5(self.username + ':Webshare:' + self.password).hexdigest()
+            # login
+            headers,req = self._create_request('',{'username_or_email':self.username,'password':password,'digest':digest,'keep_logged_in':1})
+            data = util.post(self._url('api/login/'),req,headers=headers)
+            xml = ET.fromstring(data)
+            if not xml.find('status').text == 'OK':
+                self.error('Server returned error status, response: %s' % data)
+                return False
+            self.token = xml.find('token').text
+            self.info('Login successfull')
+            return True
+        return False
+
+
     def list(self,url):
         result = []
-        headers,req = self._create_request(url,{'what':'','offset':0,'limit':25,'category':'','sort':'','wst':''})
+        headers,req = self._create_request(url,{'what':'','offset':0,'limit':25,'category':'','sort':'','wst':self.token})
         data = util.post(self._url('api/search/'),req,headers=headers)
         xml = ET.fromstring(data)
         if not xml.find('status').text == 'OK':
@@ -79,7 +110,7 @@ class WebshareContentProvider(ContentProvider):
     def resolve(self,item,captcha_cb=None,select_cb=None):
         item = item.copy()        
         util.init_urllib()
-        headers,req = self._create_request(item['url'],{'ident':''})
+        headers,req = self._create_request(item['url'],{'ident':'','wst':self.token})
         data = util.post(self._url('api/file_link/'),req,headers=headers)
         xml = ET.fromstring(data)
         if not xml.find('status').text == 'OK':
