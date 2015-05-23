@@ -317,7 +317,7 @@ class iVysilaniContentProvider(ContentProvider):
             image = "" #os.path.join(_addon_.getAddonInfo('path'), 'resources', 'media', 'logo_' + playable.ID.lower() + '_400x225.png')
         if isinstance(playable, ivysilani.Programme):
             image = playable.imageURL
-        manifest = util.request(playable.url(ivysilani.Quality("web", "flash")))
+        manifest = util.request(playable.url(ivysilani.Quality("web")))
         for m in re.finditer('#EXT-X-STREAM-INF:PROGRAM-ID=\d+,BANDWIDTH=(?P<bandwidth>\d+)\s(?P<chunklist>[^\s]+)', manifest, re.DOTALL):
             item = self.video_item()
             item['title'] = _toString(playable.title)
