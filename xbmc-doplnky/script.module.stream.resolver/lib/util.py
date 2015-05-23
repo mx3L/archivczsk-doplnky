@@ -29,6 +29,7 @@ from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
 UA = 'Mozilla/6.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.5) Gecko/2008092417 Firefox/3.0.3'
 LOG = 2
 sys.path.append(os.path.join(os.path.dirname(__file__), 'contentprovider'))
+sys.path.append( os.path.join ( os.path.dirname(__file__),'crypto') )
 
 _cookie_jar = None
 

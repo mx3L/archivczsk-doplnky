@@ -31,7 +31,14 @@ def supports(url):
 
 
 def resolve(url):
-    playlist = re.search(r'playlist:\s*\[.+?file:\s*\"([^\"]+)\"', util.request(url), flags=re.S)
+    data = util.request(url)
+    playlist = re.search(r'playlist:\s*\[.+?file:\s*\"([^\"]+)\"', data, flags=re.S)
     if playlist:
-        return [{'url': playlist.group(1), 'quality': '???'}]
+        stream = {'url': playlist.group(1), 'quality': '360p'}
+        tracks = re.search(r'tracks:\s*\[.+?file:\s*\"([^\"]+)\",\s*label:\s*\"([^\"]+)\"',
+                           data, flags=re.S)
+        if tracks:
+            stream['subs'] = tracks.group(1)
+            stream['lang'] = ' ' + tracks.group(2) + ' subtitles'
+        return [stream]
     return None
