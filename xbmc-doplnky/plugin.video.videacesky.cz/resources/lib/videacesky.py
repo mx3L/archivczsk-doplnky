@@ -184,7 +184,10 @@ class VideaceskyContentProvider(ContentProvider):
             raise ResolveException('Video nenalezeno')
         for i in resolved:
             item = self.video_item()
-            item['title'] = i['title']
+            try:
+                item['title'] = i['title']
+            except KeyError:
+                pass
             item['url'] = i['url']
             item['quality'] = i['quality']
             item['surl'] = i['surl']
