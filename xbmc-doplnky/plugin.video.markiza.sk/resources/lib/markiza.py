@@ -37,13 +37,7 @@ CATEGORIES_ITER_RE = '<li class=\"(?P<type>[^\"]+)\">\s+<a href=\"(?P<url>[^\"]+
 LISTING_START = CATEGORIES_END
 LISTING_END = '<div class="footer">'
 LISTING_ITER_RE = """
-    <div\ class=\"item\">\s*
-        <div\ class=\"image\">.+?<img.+?src=\"(?P<img>[^\"]+)\"\ />.+?</div>\s*
-        <div\ class=\"info\">\s*
-                <h2><a\ href=\"(?P<url>[^\"]+)\">(?P<title>[^<]+)</a></h2>\s*
-                <span\ class=\"date\">(?P<date>[^<]+)</span>\s*
-                <span\ class=\"length\">(?P<length>\d{2}:\d{2}:\d{2})?</span>.+?
-        </div>
+    <div\ class=\"item\s\">\s+?<div\ class=\"image\">\s+?<a\ href=\".+?\">\s+?<div\ class=\"play\">.+?</div>\s+<img.+?src=\"(?P<img>[^\"]+)\"\ />\s+?</a>\s+?</div>\s*<div\ class=\"info\">\s*<h2><a\ href=\"(?P<url>[^\"]+)\">(?P<title>[^<]+)</a></h2>\s*<span\ class=\"date\">(?P<date>[^<]+)</span>\s*<span\ class=\"length\">(?P<length>\d{2}:\d{2}:\d{2})?</span>\s+<div\ class=\".+?\"></div>\s+?</div>\s+?<div\ class=\".+?\"></div>\s+</div>
 """
 PAGER_START = '<div class="paging-bar-section ">'
 PAGER_END = '</div>'

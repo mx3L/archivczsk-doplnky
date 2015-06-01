@@ -1,3 +1,5 @@
+[B]1.0.5:[/B]
+- refactoring do funkčnej podoby (Peter Zaoral)
 [B]1.0.4:[/B]
 - oprava po redizajne stranok
 [B]1.0.3:[/B]
