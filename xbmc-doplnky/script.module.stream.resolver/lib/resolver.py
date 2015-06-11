@@ -112,7 +112,10 @@ def findstreams(data, regexes=None):
     Finds streams in given data. Respects caller add-on settings about
     quality and asks user if necessary.
 
-    :param data: A string (piece of text / HTML code) or an array of URLs
+    :param data: A string (piece of text / HTML code), an array of URLs or an
+                 array of dictionaries, where 'url' key stores actual URL and
+                 all other keys not present in item() are being copied to the
+                 resolved stream dictionary
     :param regexes: An array of strings - regular expressions, each MUST define
                     named group called 'url', which retrieves resolvable URL
                     (that one is passed to resolve operation); only used
@@ -122,6 +125,10 @@ def findstreams(data, regexes=None):
               resolvers for URLs has been found or False if none of regexes
               found anything
     """
+
+    def get_url(obj):
+        return obj['url'] if isinstance(obj, dict) else obj
+
     urls = []
     resolvables = []
     resolved = []
@@ -135,24 +142,40 @@ def findstreams(data, regexes=None):
     else:
         raise TypeError
     for url in urls:
-        url = filter_resolvable(url)
+        if isinstance(url, dict):
+            url['url'] = filter_resolvable(url['url'])
+        else:
+            url = filter_resolvable(url)
         if url and url not in resolvables:
-            util.info('Found resolvable ' + url)
+            util.info('Found resolvable ' + get_url(url))
             resolvables.append(url)
     if len(resolvables) == 0:
         util.info('No resolvables found!')
         return False
     for url in resolvables:
-        streams = resolve(url)
+        streams = resolve(get_url(url))
         if streams is None:
-            util.info('No resolver found for ' + url)
+            util.info('No resolver found for ' + get_url(url))
             not_found = True
         elif not streams:
-            util.info('There was an error resolving ' + url)
-        else:
-            if len(streams) > 0:
-                for stream in streams:
-                    resolved.append(stream)
+            util.info('There was an error resolving ' + get_url(url))
+        elif len(streams) > 0:
+            for stream in streams:
+                if isinstance(url, dict):
+                    for key in url.keys():
+                        if key not in stream:
+                            stream[key] = url[key]
+                        elif key not in item():
+                            if isinstance(stream[key], basestring) and \
+                                    isinstance(url[key], basestring):
+                                stream[key] = url[key] + ' +' + stream[key]
+                            elif isinstance(stream[key], list) and \
+                                    isinstance(url[key], list):
+                                stream[key] = url[key] + stream[key]
+                            elif isinstance(stream[key], dict) and \
+                                    isinstance(url[key], dict):
+                                stream[key].update(url[key])
+                resolved.append(stream)
     if len(resolved) == 0:
         if not_found:
             return []

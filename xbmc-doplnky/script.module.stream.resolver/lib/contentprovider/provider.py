@@ -31,13 +31,13 @@ class ResolveException(Exception):
 
 
 class ContentProvider(object):
-    '''
+    """
     ContentProvider class provides an internet content. It should NOT have any xbmc-related imports
     and must be testable without XBMC runtime. This is a basic/dummy implementation.
-    '''	
+    """
 
-    def __init__(self,name='dummy',base_url='/',username=None,password=None,filter=None,tmp_dir='.'):
-        '''
+    def __init__(self, name='dummy', base_url='/', username=None, password=None, filter=None, tmp_dir='.'):
+        """
         ContentProvider constructor
         Args:
             name (str): name of provider
@@ -46,58 +46,60 @@ class ContentProvider(object):
             password (str): login password
             filter (func{item}): function to filter results returned by search or list methods
             tmp_dir (str): temporary dir where provider can store/cache files
-        '''
-        self.name=name
-        self.username=username
-        self.password=password
+        """
+        self.name = name
+        self.username = username
+        self.password = password
         if not base_url[-1] == '/':
-            base_url = base_url+'/'
-        self.base_url=base_url
+            base_url += '/'
+        self.base_url = base_url
         self.filter = filter
         self.tmp_dir = tmp_dir
         self.cache = StorageServer.StorageServer(self.name, 24)
- 
+        self.lang = 'cs' # initialize, current language could be set by XBMContentProvider
+
     def __str__(self):
-        return 'ContentProvider'+self.name
+        return 'ContentProvider' + self.name
 
     def capabilities(self):
-        '''
+        """
         This way class defines which capabilities it provides ['login','search','resolve','categories']
         It may also contain '!download' when provider does not support downloading
-        '''
+        """
         return []
 
-    def video_item(self,url='',img='',quality='???'):
-        '''
-        returns empty video item - contains all required fields
-        '''
-        return {'type':'video','title':'','rating':0,'year':0,'size':'0MB','url':url,'img':img,'length':'','quality':quality,'subs':'','surl':''}
+    def video_item(self, url='', img='', quality='???'):
+        """
+        Returns empty video item - contains all required fields
+        """
+        return {'type': 'video', 'title': '', 'rating': 0, 'year': 0, 'size': '0MB', 'url': url, 'img': img,
+                'length': '', 'quality': quality, 'subs': '', 'surl': ''}
 
-    def dir_item(self,title='',url='',type='dir'):
-        '''
-            reutrns empty directory item
-        '''
-        return {'type':type,'title':title,'size':'0','url':url}
+    def dir_item(self, title='', url='', type='dir'):
+        """
+        Returns empty directory item
+        """
+        return {'type': type, 'title': title, 'size': '0', 'url': url}
 
     def login(self):
-        '''
+        """
         A login method returns True on successfull login, False otherwise
-        '''
+        """
         return False
 
-    def search(self,keyword):
-        '''
+    def search(self, keyword):
+        """
         Search for a keyword on a site
         Args:
                     keyword (str)
 
         returns:
             array of video or directory items
-        '''
+        """
         return []
 
-    def list(self,url):
-        '''
+    def list(self, url):
+        """
         Lists content on given url
         Args:
                     url (str): either relative or absolute provider URL
@@ -105,37 +107,40 @@ class ContentProvider(object):
         Returns:
             array of video or directory items
 
-        '''
+        """
         return []
+
     def categories(self):
-        '''
+        """
         Lists categories on provided site
 
         Returns:
             array of video or directory items
-        '''
+        """
         return []
-    def findstreams(self,data,regexes):
-        """
-        Find's streams (see resovler.findstreams for more details)
 
-        Args:
-            datai (str): data (piece of HTML for example) to search links
-            regexes (array): array of regexes to search interesting urls in data
-        Returns:
-            array of video items
+    def findstreams(self, data, regexes=None):
         """
-        resolved = resolver.findstreams(data,regexes)
-        if resolved == None:
-            raise ResolveException('Nelze ziskat video link [CR]zkontrolujte jestli video nebylo odstraneno')
-        if resolved == False:
-            raise ResolveException('Nebyl nalezen zadny video embed [CR]zkontrolujte stranku pripadne nahlaste chybu pluginu')
-        if resolved == []:
+        Finds streams in given data (see resovler.findstreams for more details)
+
+        :param data: A string (piece of HTML, for example) or an array of URLs
+        :param regexes: An array of regexes to be used for extracting URLs from
+                        'data' of type 'string'
+        :returns: An array of video items
+        """
+        resolved = resolver.findstreams(data, regexes)
+        if resolved is None:
+            raise ResolveException(
+                'Nelze ziskat video link [CR]zkontrolujte jestli video nebylo odstraneno')
+        elif isinstance(resolved, list) and not resolved:
             raise ResolveException('Video je na serveru, ktery neni podporovan')
+        elif not resolved:
+            raise ResolveException(
+                'Nebyl nalezen zadny video embed [CR]zkontrolujte stranku pripadne nahlaste chybu pluginu')
         result = []
         for j in resolved:
-            i = defaultdict(lambda:'',j)
-            item = self.video_item() 
+            i = defaultdict(lambda: '', j)
+            item = self.video_item()
             item['title'] = i['name']
             item['url'] = i['url']
             item['quality'] = i['quality']
@@ -147,8 +152,8 @@ class ContentProvider(object):
             result.append(item)
         return result
 
-    def resolve(self,item,captcha_cb=None,select_cb=None,wait_cb=None):
-        '''
+    def resolve(self, item, captcha_cb=None, select_cb=None, wait_cb=None):
+        """
         Resolves given video item  to a downloable/playable file/stream URL
 
         Args:
@@ -161,49 +166,53 @@ class ContentProvider(object):
             somewhere in future (typically in several seconds). Provider may call this and require waiting.
         Returns:
             None - if ``url`` was not resolved. Video item with 'url' key pointing to resolved target
-        '''
+        """
         return None
 
-    def _url(self,url):
-        '''
+    def _url(self, url):
+        """
         Transforms relative to absolute url based on ``base_url`` class property
-        '''
+        """
         if url.startswith('http'):
             return url
-        return self.base_url+url.lstrip('./')
+        return self.base_url + url.lstrip('./')
 
-    def _filter(self,result,item):
-        '''
+    def _filter(self, result, item):
+        """
         Applies filter, if filter passes `item` is appended to `result`
 
         Args:
             result (array) : target array
             item (obj) : item that is being applied filter on
-        '''
+        """
         if self.filter:
             if self.filter(item):
                 result.append(item)
         else:
             result.append(item)
-    def info(self,msg):
-        util.info('[%s] %s' % (self.name,msg)) 
-    def error(self,msg):
-        util.error('[%s] %s' % (self.name,msg))
+
+    def info(self, msg):
+        util.info('[%s] %s' % (self.name, msg))
+
+    def error(self, msg):
+        util.error('[%s] %s' % (self.name, msg))
+
 
 class cached(object):
-    '''
+    """
     A method decorator that can be used on any ContentProvider method
-    Having this decorator means that results of such method are going 
-    to be cached for 24hours by default. You can pass number argument 
+    Having this decorator means that results of such method are going
+    to be cached for 24hours by default. You can pass number argument
     to decorator, for example @cached(1) would cache for 1 hour.
-    '''
+    """
 
-    def __init__(self,ttl=24):
+    def __init__(self, ttl=24):
         self.ttl = ttl
 
-    def __call__(self,f):
+    def __call__(self, f):
         def wrap(*args):
             provider = args[0]
-            cache = StorageServer.StorageServer(provider.name+str(self.ttl), self.ttl)
-            return cache.cacheFunction(f,*args)
+            cache = StorageServer.StorageServer(provider.name + str(self.ttl), self.ttl)
+            return cache.cacheFunction(f, *args)
+
         return wrap
