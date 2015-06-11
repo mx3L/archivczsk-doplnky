@@ -22,26 +22,86 @@
 
 import re
 import os
-import urllib
 import urllib2
-import shutil
 import cookielib
-from urlparse import urlparse
+from HTMLParser import HTMLParser
+
 
 import util, resolver
-from provider import ContentProvider, ResolveException
+from provider import ContentProvider
 
-CATEGORIES_START='Videa ONLINE'
-CATEGORIES_END = '<li id="menu-item-1930"'
-LISTING_START ='<div id="main" class="clear">'
-LISTING_END = '<div id="main-bottom"></div>>'
-LISTING_ITER_RE= '<div id=[^<]+<div class=\"date">[^<]+<div class=\"day">(?P<day>[^<]+)</div>\s+<div class=\"month\">(?P<month>[^<]+)</div>(.+?)<h2 class=\"title\"><a href=\"(?P<url>[^\"]+)\"[^>]+>(?P<title>[^<]+)</a></h2>(.+?)<p>(<img class(.+?)src=\"(?P<img>[^\"]+)\"[^\>]+>)?(?P<plot>.+?)<a class'
-MENU_LISTING_ITER_RE= '<li id=\"(?P<id>[^\"]+)[^<]+<a href=\"(?P<url>[^\"]+)\">(?P<title>[^<]+)</a>\s+<ul class=\"sub-menu">'
 
-PAGER_START = "<div class=\'wp-pagenavi\'>"
-PAGER_END = "</div>"
-PAGER_NEXT_RE = "<a class=\"nextpostslink\" href=\"(?P<url>[^\"]+)\"[^<]+</a>"
-PAGER_PREV_RE = "<a class=\"previouspostslink\" href=\"(?P<url>[^\"]+)\"[^<]+</a>"
+CATEGORIES_START = '<a title="Titulky"'
+CATEGORIES_END = '<a title="Ostatní"'
+CATEGORIES_ITER_RE = r'<li.+?href="(?P<url>[^"]+)">(?P<title>[^<]+)'
+
+LISTING_START = '<div id="primary" class="content-area">'
+LISTING_END = '<div id="secondary"'
+
+
+
+class GordonUraParser(HTMLParser):
+    POS_NONE, POS_TITLE, POS_URL, POS_SUBS = range(-1, 3)
+
+    def __init__(self):
+        HTMLParser.__init__(self)
+        self.in_table = False
+        self.in_td = False
+        self.pos_td = self.POS_NONE
+        self.data = ""
+        self.table_count = 0
+        self.current_item = None
+        self.episodes_list = []
+
+    def is_episodes_table(self):
+        return self.in_table and self.table_count % 2 == 0
+
+    def get_episodes_list(self, data):
+        self.feed(data)
+        return self.episodes_list
+
+    def handle_charref(self, name):
+        if self.is_episodes_table() and self.in_td and self.pos_td == self.POS_TITLE:
+            if int(name) == 215:
+                self.data += "x"
+            elif int(name) == 8211:
+                self.data += "-"
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'table':
+            self.in_table = True
+            self.table_count += 1
+        elif tag == 'td':
+            self.in_td = True
+            if self.is_episodes_table():
+                self.pos_td += 1
+        elif tag == 'a' and self.is_episodes_table() and self.in_td and self.pos_td == self.POS_URL:
+                for k, v in attrs:
+                    if k == 'href':
+                        self.current_item['url'] = v
+
+    def handle_endtag(self, tag):
+        if tag == 'table':
+            self.in_table = False
+        elif tag == 'tr':
+            if self.is_episodes_table():
+                self.pos_td = self.POS_NONE
+                if self.current_item.get('url'):
+                    self.episodes_list.append(self.current_item)
+                self.current_item = None
+        elif tag == 'td':
+            self.in_td = False
+            if self.is_episodes_table() and self.pos_td == self.POS_TITLE:
+                self.current_item = {}
+                self.current_item['title'] = self.data
+                self.data = ""
+
+    def handle_data(self, data):
+        if self.is_episodes_table():
+            if self.pos_td == 0:
+                if data != "\n":
+                    self.data += data.strip()
+
 
 class GordonUraContentProvider(ContentProvider):
 
@@ -53,94 +113,59 @@ class GordonUraContentProvider(ContentProvider):
     def capabilities(self):
         return ['categories', 'resolve']
 
-    def list(self, url):
-        if url.startswith('#new#'):
-            return self.list_page(util.request(self._url('?tag=online')))
-        else:
-            return self.list_page(util.request(self._url(url)))
-
     def categories(self):
         result = []
-        item = self.dir_item()
-        item['type'] = 'new'
-        item['url'] = "#new#"
-        result.append(item)
-
-        for title, url in [('Kitchen Nightmares','?tag=KN-online'),
-         ("Ramsay's Kitchen Nightmares","?tag=rkn-online"),
-         ("Gordon's Great Escape","?tag=GGE-online"),
-         ("Cookalong Live",'?cat=19'),
-         ("MasterChef",'?tag=mc-online'),
-         ("MasterChef Junior",'?tag=mcj-online'),
-         ("Hell's Kitchen",'?tag=HK-online'),
-         ("Hotel Hell",'?tag=HH-online'),
-         ("Ramsey's Best Restaurant",'?cat=35'),
-         ('The F Word','?tag=TFW-online'),
-         ('Ostatní videa','?tag=ostatni-online')]:
+        page = util.request(self.base_url)
+        page = util.substr(page, CATEGORIES_START, CATEGORIES_END)
+        for m in re.finditer(CATEGORIES_ITER_RE, page, re.DOTALL):
             item = self.dir_item()
-            item['title'] = title
-            item['url'] = url
+            item['title'] = m.group('title')
+            item['url'] = m.group('url')
             result.append(item)
         return result
 
-    def list_page(self, page):
+    def list(self, url):
         result = []
+        page = util.request(self._url(url))
         page = util.substr(page, LISTING_START, LISTING_END)
-        for m in re.finditer(LISTING_ITER_RE, page, re.DOTALL):
+        episodes = GordonUraParser().get_episodes_list(page)
+        for e in episodes:
             item = self.video_item()
-            item['title'] = '%s (%s %s)'%(m.group('title'), m.group('day'),m.group('month'))
-            item['url'] = self._url(m.group('url'))
-            item['img'] = m.group('img') and self._url(m.group('img')) or ''
-            item['plot'] = m.group('plot')
-            self._filter(result,item)
-        page = util.substr(page, PAGER_START, PAGER_END)
-        next_m = re.search(PAGER_NEXT_RE,page,re.DOTALL)
-        prev_m = re.search(PAGER_PREV_RE,page,re.DOTALL)
-        if prev_m:
-            item = self.dir_item()
-            item['type'] = 'prev'
-            item['url'] = prev_m.group('url').replace("&amp;","&")
-            result.append(item)
-        if next_m:
-            item = self.dir_item()
-            item['type'] = 'next'
-            item['url'] = next_m.group('url').replace("&amp;","&")
+            item['title'] = e['title']
+            item['url'] = e['url']
             result.append(item)
         return result
 
     def resolve(self, item, captcha_cb=None, select_cb=None):
         result = []
         item = item.copy()
-        url = self._url(item['url'])
-        data = util.substr(util.request(url), '<div id="content">', '<div id="sidebar">')
-        embed_m = re.search('<embed.+?/>', data, re.DOTALL)
-        iframe_m = re.search('<iframe.+?/>', data, re.DOTALL)
-        resolve_data = ""
-        if embed_m:
-            resolve_data += embed_m.group()
-        if iframe_m:
-            resolve_data += iframe_m.group()
-        resolve_data = re.sub('youtu.be/','www.youtube.com/watch?v=', resolve_data)
-        resolved = resolver.findstreams(resolve_data, ['file=.*?(?P<url>http[^&]+)&','<iframe(.+?)src=[\"\'](?P<url>.+?)[\'\"]'])
-        subs_m = re.search('captions\.file=([^&]+)', resolve_data, re.DOTALL)
-        if resolved and subs_m:
-            for i in resolved:
-                i['subs'] = self._url(subs_m.group(1))
-        if not resolved:
-            raise ResolveException('Video nenalezeno')
-        for i in resolved:
-            item = self.video_item()
-            item['title'] = i['title']
-            item['url'] = i['url']
-            item['quality'] = i['quality']
-            item['surl'] = i['surl']
-            item['subs'] = i['subs']
-            item['headers'] = i['headers']
-            try:
-                item['fmt'] = i['fmt']
-            except KeyError:
-                pass
-            result.append(item)
-        if len(result)  == 0:
+        page = util.request(self._url(item['url']))
+        for m in re.finditer(r'jwplayer\("([^"]+)"\)\.setup\((.+?)\)', page, re.DOTALL):
+            jw_title, jw_data = m.group(1), m.group(2)
+            vurl_match = re.search(r'file:\s*"([^"]+)', jw_data, re.DOTALL)
+            subs_match = re.search(r'tracks:\s*\[\{\s*file:\s*"([^"]+)', jw_data, re.DOTALL)
+            if vurl_match:
+                vurl = re.sub(r'youtu.be/', r'www.youtube.com/watch?v=', vurl_match.group(1))
+                resolved = resolver.findstreams([vurl])
+                if resolved:
+                    for i in resolved:
+                        item = self.video_item()
+                        item['title'] = i['title']
+                        item['url'] = i['url']
+                        item['quality'] = i['quality']
+                        item['surl'] = i['surl']
+                        if subs_match:
+                            item['subs'] = self._url(subs_match.group(1))
+                        item['headers'] = i['headers']
+                        try:
+                            item['fmt'] = i['fmt']
+                        except KeyError:
+                            pass
+                        result.append(item)
+        if len(result) == 1:
             return result[0]
-        return select_cb(result)
+        elif len(result) >= 1:
+            if select_cb is not None:
+                return select_cb(result)
+            return result[0]
+        return None
