@@ -1,156 +1,6 @@
 # -*- coding: UTF-8 -*-
 
 import urllib2
-# source from https://github.com/rg3/youtube-dl/issues/1208
-# removed some unnecessary debug messages..
-class CVevoSignAlgoExtractor:
-    # MAX RECURSION Depth for security
-    MAX_REC_DEPTH = 5
-
-    def __init__(self):
-        self.algoCache = {}
-        self._cleanTmpVariables()
-
-    def _cleanTmpVariables(self):
-        self.fullAlgoCode = ''
-        self.allLocalFunNamesTab = []
-        self.playerData = ''
-
-    def _jsToPy(self, jsFunBody):
-        pythonFunBody = jsFunBody.replace('function', 'def').replace('{', ':\n\t').replace('}', '').replace(';', '\n\t').replace('var ', '')
-        pythonFunBody = pythonFunBody.replace('.reverse()', '[::-1]')
-
-        lines = pythonFunBody.split('\n')
-        for i in range(len(lines)):
-            # a.split("") -> list(a)
-            match = re.search('(\w+?)\.split\(""\)', lines[i])
-            if match:
-                lines[i] = lines[i].replace(match.group(0), 'list(' + match.group(1) + ')')
-            # a.length -> len(a)
-            match = re.search('(\w+?)\.length', lines[i])
-            if match:
-                lines[i] = lines[i].replace(match.group(0), 'len(' + match.group(1) + ')')
-            # a.slice(3) -> a[3:]
-            match = re.search('(\w+?)\.slice\(([0-9]+?)\)', lines[i])
-            if match:
-                lines[i] = lines[i].replace(match.group(0), match.group(1) + ('[%s:]' % match.group(2)))
-            # a.join("") -> "".join(a)
-            match = re.search('(\w+?)\.join\(("[^"]*?")\)', lines[i])
-            if match:
-                lines[i] = lines[i].replace(match.group(0), match.group(2) + '.join(' + match.group(1) + ')')
-        return "\n".join(lines)
-
-    def _getLocalFunBody(self, funName):
-        # get function body
-        match = re.search('(function %s\([^)]+?\){[^}]+?})' % funName, self.playerData)
-        if match:
-            # return jsFunBody
-            return match.group(1)
-        return ''
-
-    def _getAllLocalSubFunNames(self, mainFunBody):
-        match = re.compile('[ =(,](\w+?)\([^)]*?\)').findall(mainFunBody)
-        if len(match):
-            # first item is name of main function, so omit it
-            funNameTab = set(match[1:])
-            return funNameTab
-        return set()
-
-    def decryptSignature(self, s, playerUrl):
-        playerUrl = playerUrl[:4] != 'http' and 'http:' + playerUrl or playerUrl
-        util.debug("decrypt_signature sign_len[%d] playerUrl[%s]" % (len(s), playerUrl))
-
-        # clear local data
-        self._cleanTmpVariables()
-
-        # use algoCache
-        if playerUrl not in self.algoCache:
-            # get player HTML 5 sript
-            request = urllib2.Request(playerUrl)
-            try:
-                self.playerData = urllib2.urlopen(request).read()
-                self.playerData = self.playerData.decode('utf-8', 'ignore')
-            except:
-                util.debug('Unable to download playerUrl webpage')
-                return ''
-
-            # get main function name
-            match = re.search("signature=(\w+?)\([^)]\)", self.playerData)
-            if match:
-                mainFunName = match.group(1)
-                util.debug('Main signature function name = "%s"' % mainFunName)
-            else:
-                util.debug('Can not get main signature function name')
-                return ''
-
-            self._getfullAlgoCode(mainFunName)
-
-            # wrap all local algo function into one function extractedSignatureAlgo()
-            algoLines = self.fullAlgoCode.split('\n')
-            for i in range(len(algoLines)):
-                algoLines[i] = '\t' + algoLines[i]
-            self.fullAlgoCode = 'def extractedSignatureAlgo(param):'
-            self.fullAlgoCode += '\n'.join(algoLines)
-            self.fullAlgoCode += '\n\treturn %s(param)' % mainFunName
-            self.fullAlgoCode += '\noutSignature = extractedSignatureAlgo( inSignature )\n'
-
-            # after this function we should have all needed code in self.fullAlgoCode
-            try:
-                algoCodeObj = compile(self.fullAlgoCode, '', 'exec')
-            except:
-                util.debug('decryptSignature compile algo code EXCEPTION')
-                return ''
-        else:
-            # get algoCodeObj from algoCache
-            util.debug('Algo taken from cache')
-            algoCodeObj = self.algoCache[playerUrl]
-
-        # for security alow only flew python global function in algo code
-        vGlobals = {"__builtins__": None, 'len': len, 'list': list}
-
-        # local variable to pass encrypted sign and get decrypted sign
-        vLocals = { 'inSignature': s, 'outSignature': '' }
-
-        # execute prepared code
-        try:
-            exec(algoCodeObj, vGlobals, vLocals)
-        except:
-            util.debug('decryptSignature exec code EXCEPTION')
-            return ''
-
-        util.debug('Decrypted signature = [%s]' % vLocals['outSignature'])
-        # if algo seems ok and not in cache, add it to cache
-        if playerUrl not in self.algoCache and '' != vLocals['outSignature']:
-            util.debug('Algo from player [%s] added to cache' % playerUrl)
-            self.algoCache[playerUrl] = algoCodeObj
-
-        # free not needed data
-        self._cleanTmpVariables()
-
-        return vLocals['outSignature']
-
-    # Note, this method is using a recursion
-    def _getfullAlgoCode(self, mainFunName, recDepth=0):
-        if self.MAX_REC_DEPTH <= recDepth:
-            util.debug('_getfullAlgoCode: Maximum recursion depth exceeded')
-            return
-
-        funBody = self._getLocalFunBody(mainFunName)
-        if '' != funBody:
-            funNames = self._getAllLocalSubFunNames(funBody)
-            if len(funNames):
-                for funName in funNames:
-                    if funName not in self.allLocalFunNamesTab:
-                        self.allLocalFunNamesTab.append(funName)
-                        util.debug("Add local function %s to known functions" % mainFunName)
-                        self._getfullAlgoCode(funName, recDepth + 1)
-
-            # conver code from javascript to python
-            funBody = self._jsToPy(funBody)
-            self.fullAlgoCode += '\n' + funBody + '\n'
-        return
-
-decryptor = CVevoSignAlgoExtractor()
 
 '''
    YouTube plugin for XBMC
@@ -187,16 +37,17 @@ class YoutubePlayer(object):
             35: "480p",
             37: "1080p",
             38: "720p",
-            43: "360p",
-            44: "480p",
-            45: "720p",
-            46: "520p",
             59: "480",
             78: "400",
             82: "360p",
             83: "240p",
             84: "720p",
             85: "520p",
+            92: "240p",
+            93: "360p",
+            94: "480p",
+            95: "720p",
+            96: "1080p",
             100: "360p",
             101: "480p",
             102: "720p",
@@ -273,24 +124,38 @@ class YoutubePlayer(object):
             if url_desc_map.has_key(u"sig"):
                 url = url + u"&signature=" + url_desc_map[u"sig"][0]
             elif url_desc_map.has_key(u"s"):
-                sig = url_desc_map[u"s"][0]
-                flashvars = self.extractFlashVars(result, 1)
-                js = flashvars[u"js"]
-                url = url + u"&signature=" + self.decrypt_signature(sig, js)
+                continue
 
             links[key] = url
 
         return links
 
-    def decrypt_signature(self, s, js):
-        return decryptor.decryptSignature(s, js)
 
+    def extractYoutubeDL(self, url, video):
+        links = {}
+        try:
+            from youtube_dl.YoutubeDL import YoutubeDL, ExtractorError
+        except ImportError:
+            util.error("no youtube-dl installed!")
+            return links
+        ydl = YoutubeDL({'youtube_include_dash_manifest':False}, auto_init=False)
+        ydl.add_info_extractor(ydl.get_info_extractor("Youtube"))
+        try:
+            res = ydl.extract_info(url, False, ie_key="Youtube")
+        except ExtractorError as e:
+            util.error(str(e))
+            return links
+        for e in res['formats']:
+            links[int(e['format_id'])] = e['url']
+        return links
 
     def extractVideoLinksFromYoutube(self, url, videoid, video):
         result = util.request(self.urls[u"video_stream"] % videoid)
         links = self.scrapeWebPageForVideoLinks(result, video)
         if len(links) == 0:
-            util.error(u"Couldn't find video url- or stream-map.")
+            links = self.extractYoutubeDL(url, video)
+            if len(links) == 0:
+                util.error(u"Couldn't find video url- or stream-map.")
         return links
 # /*
 # *      Copyright (C) 2011 Libor Zoubek
