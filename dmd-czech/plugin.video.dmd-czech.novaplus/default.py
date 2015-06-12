@@ -70,16 +70,31 @@ def CATEGORIES(url,page):
 def INDEX(url,page):
     doc = read_page(url)
     items = doc.find('div', 'show_videos')
-    items = items.find('div', 'items')
-    for item in items.findAll('div','item'):
-            item2 = item.find('h3')
-            item3 = item.find('div','img')
-            url = item3.h3.a['href'].encode('utf-8')
-            title = item3.h3.a.getText(" ").encode('utf-8')
-            thumb = item3.a.img['src']
-            if re.search('voyo.nova.cz', str(url), re.U):
-                continue
-            addDir(title,__baseurl__+url,3,thumb,1)
+    if items:
+    # prvni styl stranky s poradem
+        items = items.find('div', 'items')
+        for item in items.findAll('div', 'item'):
+                item2 = item.find('h3')
+                item3 = item.find('div', 'img')
+                url = item3.h3.a['href'].encode('utf-8')
+                title = item3.h3.a.getText(" ").encode('utf-8')
+                thumb = item3.a.img['src']
+                if re.search('voyo.nova.cz', str(url), re.U):
+                    continue
+                addDir(title,__baseurl__+url,3,thumb,1)
+    else:
+    # druhy styl stranky s poradem
+        items = doc.find('div', id='extra_index')
+        items = items.find('div', 'items')
+        for item in items.findAll('div', 'item'):
+                item2 = item.find('div', 'text')
+                item3 = item.find('div', 'img')
+                url = item3.a['href'].encode('utf-8')
+                title = item2.h2.a.getText(" ").encode('utf-8')
+                thumb = item3.a.img['src']
+                if re.search('voyo.nova.cz', str(url), re.U):
+                    continue
+                addDir(title,__baseurl__+url,3,thumb,1)
 
 
 def VIDEOLINK(url,name):
@@ -90,7 +105,7 @@ def VIDEOLINK(url,name):
     response.close()
     thumb = re.compile('<meta property="og:image" content="(.+?)" />').findall(httpdata)
     popis = re.compile('<meta property="og:description" content="(.+?)" />').findall(httpdata)
-    config = re.compile('config.php?(.+?)"></script>', re.S).findall(httpdata)
+    config = re.compile('config.php?(.+?)["\'],').findall(httpdata)
     config = 'http://tn.nova.cz/bin/player/flowplayer/config.php'+config[0]
     try:
         desc = popis[0]
