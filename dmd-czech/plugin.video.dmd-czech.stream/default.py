@@ -116,6 +116,11 @@ def LIST_SHOWS(url):
             image = makeImageUrl(item[u'image'])
             name = item[u'name']
             addDir(name,link,2,image)
+    try:
+        link = __baseurl__+data[u'_links'][u'next'][u'href']
+        addDir(u'[B][COLOR blue]Další pořady >>[/COLOR][/B]',link,1,nexticon)
+    except:
+        logDbg('Další pořady nenalezeny')
 
 def LIST_SEASON(url):
     data = getJsonDataFromUrl(url)
