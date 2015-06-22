@@ -96,7 +96,7 @@ class DVTVContentProvider(ContentProvider):
                             vitem['url'] = url
                             vitem['quality'] = quality
                             result.append(vitem)
-        result.reverse()
+        result.sort(key=lambda x:x['quality'], reverse=True)
         if len(result) > 0 and select_cb:
             return select_cb(result)
         return result
