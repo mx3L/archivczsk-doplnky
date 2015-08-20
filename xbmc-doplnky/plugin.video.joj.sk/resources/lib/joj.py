@@ -155,7 +155,7 @@ class JojContentProvider(ContentProvider):
             page = resp.read()
             s_path = clean_path(p_url2.path).split("/")
             if len(s_path) == 2 and s_path[0] == "archiv":
-                m = re.search(r'<li>[^<]+<a href="([^"]+)"\s+title="Archív".+?</li>', page, re.DOTALL)
+                m = re.search(r'<li>[^<]+<a href="([^"]+)"\s+title="(Archív|Epizódy)".+?</li>', page, re.DOTALL)
                 url = 'http://' + p_url2.netloc + m.group(1)
                 self.debug("new url = %s" % url)
                 page = util.request(url)
@@ -286,7 +286,7 @@ class JojContentProvider(ContentProvider):
 
     def list_show_page(self, url, page, seasons=False, episodes=False):
         result = []
-        if "/p/epizody" in url or "p/archiv" in url:
+        if "/p/epizody" in url or "/p/epiz%C3%B3dy" in url or "p/archiv" in url:
             if seasons:
                 season_data = util.substr(page, SERIES_START2, SERIES_END2)
                 for m in re.finditer(SERIES_ITER_RE2, season_data, re.DOTALL | re.IGNORECASE):

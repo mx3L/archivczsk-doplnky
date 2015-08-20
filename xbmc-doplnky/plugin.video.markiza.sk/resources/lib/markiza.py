@@ -26,6 +26,7 @@ import re
 import urllib
 import urllib2
 from datetime import date
+from HTMLParser import HTMLParser
 
 import util
 from provider import ContentProvider
@@ -35,14 +36,151 @@ CATEGORIES_START = '<div class="left-column">'
 CATEGORIES_END = '<div class="right-column">'
 CATEGORIES_ITER_RE = '<li class=\"(?P<type>[^\"]+)\">\s+<a href=\"(?P<url>[^\"]+)\" title=\"(?P<title>[^\"]+)\">.+?</a>\s*</li>'
 LISTING_START = CATEGORIES_END
-LISTING_END = '<div class="footer">'
-LISTING_ITER_RE = """
-    <div\ class=\"item\s\">\s+?<div\ class=\"image\">\s+?<a\ href=\".+?\">\s+?<div\ class=\"play\">.+?</div>\s+<img.+?src=\"(?P<img>[^\"]+)\"\ />\s+?</a>\s+?</div>\s*<div\ class=\"info\">\s*<h2><a\ href=\"(?P<url>[^\"]+)\">(?P<title>[^<]+)</a></h2>\s*<span\ class=\"date\">(?P<date>[^<]+)</span>\s*<span\ class=\"length\">(?P<length>\d{2}:\d{2}:\d{2})?</span>\s+<div\ class=\".+?\"></div>\s+?</div>\s+?<div\ class=\".+?\"></div>\s+</div>
-"""
+LISTING_END = '<div class="bannerStip">'
 PAGER_START = '<div class="paging-bar-section ">'
 PAGER_END = '</div>'
 PAGE_NEXT_RE = '<a\s+href=\"(?P<url>[^\"]+)\".+?class=\"next\">.+?</a>'
 PAGE_PREV_RE = '<a\s+href=\"(?P<url>[^\"]+)\".+?class=\"prev\">.+?</a>'
+
+# vim uncomment prints
+# :50,$s/# print/print/g
+
+# vim comment prints
+# :50,$s/print/\# print/g
+
+class MarkizaVideoListParser(HTMLParser):
+
+    """<div class="item ">
+        <div class="image">
+                <a href="/video/ordinacia-v-ruzovej-zahrade/cele-epizody-iii/33769_ordinacia-v-ruzovej-zahrade-iii.-85">
+                        <div class="play">&nbsp;</div>
+                        <img alt="Ordinácia v ružovej záhrade III. 85" src="http://static.cdn.markiza.sk/media/a501/image/file/23/0144/VQSR.2015_08_04_ordinacia_85_1_mp4.jpg" />
+                </a>
+
+                        <span class="archiv-countdown">Zadarmo ešte 6d 22h 17 min </span>
+
+        </div>
+        <div class="info">
+                <h2><a href="/video/ordinacia-v-ruzovej-zahrade/cele-epizody-iii/33769_ordinacia-v-ruzovej-zahrade-iii.-85">Ordinácia v ružovej záhrade III. 85</a></h2>
+                <span class="date">04.august 2015</span>
+                <span class="length"></span>
+                <div class="clear"></div>
+        </div>
+        <div class="clear"></div>
+
+    </div>
+    """
+
+    def __init__(self):
+        HTMLParser.__init__(self)
+        self.in_item = False
+        self.in_item_image = False
+        self.in_item_info = False
+        self.in_title = False
+        self.in_date = False
+        self.in_length = False
+        self.ignore_div = 0
+        self.current_item = None
+        self.video_list = []
+
+    def get_video_list(self, data):
+        self.feed(data)
+        return self.video_list
+
+    def handle_div_tag(self, attrs):
+        if self.in_item and (self.in_item_image or self.in_item_info):
+            # print 'ignoring div - "%r"'%(attrs)
+            self.ignore_div += 1
+        for k, v in attrs:
+            if k == 'class':
+                if v.startswith('item'):
+                    # print '[div] in_item'
+                    self.in_item = True
+                    self.current_item = {}
+                    break
+                elif v == 'image':
+                    # print '[div] in_image'
+                    self.in_item_image = True
+                    break
+                elif v == 'info':
+                    # print '[div] in_info'
+                    self.in_item_info = True
+                    break
+        if not self.in_item and len(self.video_list):
+            # print 'ignoring div - "%r"'%(attrs)
+            self.ignore_div += 1
+
+    def handle_image_tag(self, attrs):
+        # print '[img] in_image = %s, %r'%(str(self.in_item_image), attrs)
+        if not self.in_item_image:
+            return
+        for k, v in attrs:
+            if k == 'src':
+                self.current_item['img'] = v
+
+    def handle_a_tag(self, attrs):
+        # print '[a] in_info = %s, %r'%(str(self.in_item_info), attrs)
+        if not self.in_item_info:
+            return
+        self.in_title = True
+        for k, v in attrs:
+            if k == 'href':
+                self.current_item['url'] = v
+
+    def handle_span_tag(self, attrs):
+        # print '[span] in_image = %s, in_info = %s, %r'%(str(self.in_item_image), str(self.in_item_info), attrs)
+        if not (self.in_item_image or self.in_item_info):
+            return
+        for k, v in attrs:
+            if k == 'class' and self.in_item_info:
+                if v == 'date':
+                    self.in_date = True
+                elif v == 'length':
+                    self.in_length = True
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'div':
+            self.handle_div_tag(attrs)
+        elif tag == 'span':
+           self.handle_span_tag(attrs)
+        elif tag == 'a':
+            self.handle_a_tag(attrs)
+        elif tag == 'img':
+            self.handle_image_tag(attrs)
+
+    def handle_data(self, data):
+        if self.in_title:
+            # print 'in_title, data = ', data
+            self.current_item['title'] = data
+        elif self.in_date:
+            # print 'in_date, data = ', data
+            self.current_item['date'] = data
+        elif self.in_length:
+            # print 'in_length, data = ', data
+            self.current_item['length'] = data
+
+    def handle_endtag(self, tag):
+        if tag == 'div':
+            if self.ignore_div > 0:
+                self.ignore_div -= 1
+            elif self.in_item_image:
+                self.in_item_image = False
+            elif self.in_item_info:
+                self.in_item_info = False
+            elif self.in_item:
+                # print "adding item: %s"%(self.current_item)
+                self.video_list.append(self.current_item)
+                self.current_item = None
+                self.in_item = False
+        elif tag == 'a':
+            if self.in_title:
+                self.in_title = False
+        elif tag == 'span':
+            if self.in_date:
+                self.in_date = False
+            if self.in_length:
+                self.in_length = False
+
 
 class MarkizaContentProvider(ContentProvider):
 
@@ -55,13 +193,12 @@ class MarkizaContentProvider(ContentProvider):
         return ['categories', 'resolve']
 
     def list(self, url):
-        if url.find('#subcat#') == 0:
-            url = url[8:]
-            return self.list_subcategories(util.request(self._url(url)), url)
-        elif url.find("#date#") == 0:
-            year = int(url.split("#")[2])
-            month = int(url.split("#")[3])
-            return self.date(year, month)
+        if url.find('subcat') == 0:
+            category_id = url.split("#")[1]
+            return self.list_subcategories(util.request(self.base_url), category_id)
+        elif url.find('calendar') == 0:
+            year, month = url.split("#")[1].split("|")
+            return self.calendar(int(year), int(month))
         return self.list_content(util.request(self._url(url)))
 
     def categories(self):
@@ -73,7 +210,7 @@ class MarkizaContentProvider(ContentProvider):
         item = self.dir_item()
         item['title'] = '[B]Podľa dátumu[/B]'
         d = date.today()
-        item['url'] = "#date#%d#%d" % (d.year, d.month)
+        item['url'] = 'calendar#%d|%d' % (d.year, d.month)
         result.append(item)
         data = util.request(self.base_url)
         data = util.substr(data, CATEGORIES_START, CATEGORIES_END)
@@ -83,16 +220,16 @@ class MarkizaContentProvider(ContentProvider):
             item = self.dir_item()
             item['title'] = m.group('title')
             if m.group('type').strip() == 'has-child':
-                item['url'] = "#subcat#" + m.group('url')
+                item['url'] = "subcat#" + m.group('url')
             else:
                 item['url'] = m.group('url')
             self._filter(result, item)
         return result
 
-    def list_subcategories(self, page, category_name):
+    def list_subcategories(self, page, category_id):
         result = []
         data = util.substr(page, CATEGORIES_START, CATEGORIES_END)
-        data = util.substr(data, category_name, CATEGORIES_END)
+        data = util.substr(data, category_id, CATEGORIES_END)
         for m in re.finditer(CATEGORIES_ITER_RE, data, re.IGNORECASE | re.DOTALL):
             if not m.group('type').strip().startswith('child'):
                 break
@@ -102,14 +239,14 @@ class MarkizaContentProvider(ContentProvider):
             self._filter(result, item)
         return result
 
-    def date(self, year, month):
+    def calendar(self, year, month):
         result = []
         today = date.today()
         prev_month = month > 1 and month - 1 or 12
         prev_year = prev_month == 12 and year - 1 or year
         item = self.dir_item()
         item['type'] = 'prev'
-        item['url'] = "#date#%d#%d" % (prev_year, prev_month)
+        item['url'] = 'calendar#%d|%d' % (prev_year, prev_month)
         result.append(item)
         for d in calendar.LocaleTextCalendar().itermonthdates(year, month):
             if d.month != month:
@@ -126,13 +263,11 @@ class MarkizaContentProvider(ContentProvider):
     def list_content(self, page):
         result = []
         data = util.substr(page, LISTING_START, LISTING_END)
-        for m in re.finditer(LISTING_ITER_RE, data, re.DOTALL | re.VERBOSE):
+        for i in MarkizaVideoListParser().get_video_list(data):
             item = self.video_item()
-            item['title'] = "%s - (%s)" % (m.group('title').strip(), m.group('date').strip())
-            item['img'] = m.group('img')
-            item['url'] = m.group('url')
-            if 'section_title' in m.groupdict() and 'section_url' in m.groupdict():
-                item['menu'] = {"Sekcia - "+m.group('section_title'):{'list':m.group('section_url'), 'action-type':'list'}}
+            item['title'] = "%s - (%s)" % (i['title'].strip(), i['date'].strip())
+            item['img'] = i.get('img')
+            item['url'] = i['url']
             self._filter(result, item)
         pager_data = util.substr(page, PAGER_START, PAGER_END)
         for m in re.finditer("<a.+?</a>", pager_data, re.DOTALL):
@@ -160,7 +295,7 @@ class MarkizaContentProvider(ContentProvider):
             item = self.video_item()
             item['title'] = v['title']
             item['surl'] = v['title']
-            item['url'] = "%s/%s"%(v['baseUrl'],v['url'].replace('.f4m','.m3u8'))
+            item['url'] = "%s/%s" % (v['baseUrl'], v['url'].replace('.f4m', '.m3u8'))
             result.append(item)
         if len(result) > 0 and select_cb:
             return select_cb(result)
