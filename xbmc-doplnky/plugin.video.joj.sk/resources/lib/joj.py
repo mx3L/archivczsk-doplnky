@@ -38,7 +38,7 @@ NEVYSIELANE_ITER_RE = '<li.*?><a href=\"(?P<url>[^"]+).*?title=\"(?P<title>[^"]+
 EPISODE_START = '<div class="episodeListing relative overflowed">'
 EPISODE_END = '<div class="centered pagerDots"></div>'
 EPISODE_ITER_RE = '<li[^>]*>\s+?<a href=\"(?P<url>[^"]+)\" title=\"(?P<title>[^"]+)\">\s+?<span class=\"date\">(?P<date>[^<]+)</span>(.+?)<span class=\"episode\">(?P<episode>[^0]{1}[0-9]*)</span>(.+?)</li>'
-EPISODE_ITER_RE2 = '<article>.+?<a href="(?P<url>.+?)" title="(?P<title>.+?)">.+?<time.+?>(?P<date>.+?)</time>.+?</article>'
+EPISODE_ITER_RE2 = '<article>.+?<a href="(?P<url>.+?)" title="(?P<title>.+?)">.+?<time.+?>(<.+?>|</.+?>){0,2} *(?P<date>.+?)</time>.+?</article>'
 SERIES_START = EPISODE_START
 SERIES_END = EPISODE_END
 SERIES_START2 = '<nav class="e-pager">'
@@ -366,7 +366,7 @@ class JojContentProvider(ContentProvider):
                 result.append(item)
         else:
             data = util.request(url)
-            playerdata = re.search(r'<div\ class=\"jn-player\"(.+?)>', data).group(1)
+            playerdata = re.search(r'<div\ class=\"(player )?jn-player\"(.+?)>', data, re.DOTALL).group(2).replace('\n',' ')
             pageid = re.search(r'data-pageid=[\'\"]([^\'\"]+)', playerdata).group(1)
             basepath = re.search(r'data-basepath=[\'\"]([^\'\"]+)', playerdata).group(1)
             videoid = re.search(r'data-id=[\'\"]([^\'\"]+)', playerdata).group(1)

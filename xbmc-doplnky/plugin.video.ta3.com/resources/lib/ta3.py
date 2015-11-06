@@ -19,82 +19,101 @@
 # *  http://www.gnu.org/copyleft/gpl.html
 # *
 # */
-
 import calendar
 import cookielib
 import itertools
-import re
-import urllib
-import urllib2
 import mimetools
 import mimetypes
-from datetime import date
+import re
+import urllib2
 
 import util
+from datetime import date
 from provider import ContentProvider
 
+
 SPRAVODAJSTVO_URL = 'http://www.ta3.com/archiv.html'
-SPRAVODAJSTVO_START = '<select name="category" id="articleArchivFilterSpravodajstvo-category">'
+SPRAVODAJSTVO_START = '<select id="articleArchivFilterSpravodajstvo-category" name="category"'
 SPRAVODAJSTVO_END = '</select>'
 SPRAVODAJSTVO_ITER_RE = r'<option\ value=\"(?P<id>\d+)\">(?P<title>[^<]+)</option>'
 
 PUBLICISTIKA_URL = 'http://www.ta3.com/archiv/publicistika.html'
-PUBLICISTIKA_START = '<select name="category" id="articleArchivFilterPublicistika-category">'
+PUBLICISTIKA_START = '<select id="articleArchivFilterPublicistika-category" name="category"'
 PUBLICISTIKA_END = '</select>'
 PUBLICISTIKA_ITER_RE = r'<option\ value=\"(?P<id>\d+)\">(?P<title>[^<]+)</option>'
 
 TLACOVE_BESEDY_URL = 'http://www.ta3.com/archiv/tlacove-besedy.html'
-ONLINE_ROZHOVORY_URL = 'http://www.ta3.com/archiv/online-rozhovory.html'
 
-TOP_START = '<div id="most-articles-wrap" class="all">'
-TOP_START_6HOURS = 'id="most-m6h"'
-TOP_START_DAY = 'id="most-m1d"'
-TOP_START_WEEK = 'id="most-m7d"'
+TOP_START = '<section id="most-watched"'
+TOP_START_6HOURS = '<div role="tabpanel" id="most-m6h"'
+TOP_START_DAY = '<div role="tabpanel" id="most-m1d"'
+TOP_START_WEEK = '<div role="tabpanel" id="most-m7d"'
 TOP_END_6HOURS = TOP_START_DAY
 TOP_END_DAY = TOP_START_WEEK
-TOP_END = '<div class="widget program-widget" id="program">'
+TOP_END = '</section>'
 TOP_END_WEEK = TOP_END
-TOP_ITER_RE = r"""
-    <li[^>]+>.+?
-        <a\ href=\"(?P<url>[^\"]+)\"><span\ class=\"video\">[^<]+</span>(?P<title>[^<]+)<span\ class=\"tw\">\s+
-            \((?P<views>\d+)\)\s*
-        </span>.+?
-    </li>
 """
-LISTING_START = '<div class="inside archive-filter">'
-LISTING_END = '<div id="right-column">'
+<article class="item">
+    <h3 class="title">
+    <a href="http://www.ta3.com/clanok/1070556/grecky-parlament-vyslovil-doveru-novej-vlade-premiera-tsiprasa.html"><div class="article-icons"><span class="video"><i class="ta3-icon-video" title="Článok obsahuje video"></i></span><span class="photo-icon"><i class="ta3-icon-photo" title="Článok obsahuje fotky"></i></span></div>Grécky parlament vyslovil dôveru novej vláde premiéra Tsiprasa</a>
+    </h3>
+    <div class="article-info " data-category="Zahraničie">
+    <span class="text category-color">Zahraničie</span>
+    <span class="view"><i class="ta3-icon-view" title="Počet videní"></i>78</span>
+    </div>
+</article>
+"""
+
+# TODO
+TOP_ITER_RE = r"""
+    <article\ class=\"item\">.+?
+        <a\ href=\"(?P<url>[^\"]+)".+?<i\ class="ta3-icon-video".+?>(?P<title>\w+)<.+?
+        <span\ class="view"><i\ class="ta3-icon-view"[^>]+>[^>]+>(?P<views>\d+).+?
+    </article>
+"""
+LISTING_START = '<div class="articles">'
+LISTING_END = '<div class="paginator">'
+
+
+"""
+<article class="row">
+  <div class="col-xs-12 col-sm-2 col-md-2 time">
+    <time>7:08</time>
+  </div>
+  <div class="col-xs-12 col-sm-10 col-md-10 title">
+    <h3>
+      <a href="http://www.ta3.com/clanok/1070552/burzove-spravy.html"><i class="ta3-icon-video" title="Článok obsahuje video"></i>Burzové správy</a>
+    </h3>
+  </div>
+</article>
+"""
 LISTING_ITER_RE = r"""
-    <li[^>]*>\s+
-        <span\ class=\"time\">(?P<date>[^<]+)</span>\s+
-        <a\ href=\"(?P<url>[^\"]+)\"><span\ class="vicon"></span>(?P<title>[^<]+)</a>\s+
-    </li>
+    <article\ class=\"row\">.+?
+        <a\ href=\"(?P<url>[^\"]+)\"><i\ class=\"ta3-icon-video\"[^>]+>[^>]+>(?P<title>[^<]+)</a>.+?
+    </article>
 """
 PAGER_START = '<div class="paginator">'
 PAGER_END = '</div>'
+"""
+<li>
+                  <a href="http://www.ta3.com/archiv.html?pn=9">9</a>
+                </li>
+                <li class="next">
+                  <a href="http://www.ta3.com/archiv.html?pn=2">
+                    <span class="text" title="Ďalšia">
+                      <i class="ta3-icon-arrow-right"></i>
+                    </span>
+                  </a>
+                </li>
+"""
 PAGER_ITER_RE = r"""
     <li(\s*class=\"(?P<type>[^\"]+)\")?>\s+
         <a\ href=\"(?P<url>[^\"]+)\">(\s+
-            <span\ class=\"text\">(?P<title>[^<]+)</span>)?
+            <span\ class=\"text\"\ title=\"(?P<title>[^\"]+)\".*?</span>)?
         [^<]+</a>\s+
     </li>
 """
 
-VIDEOTYPE_START = 'arrTa3VideoPlayer.push'
-VIDEOTYPE_END=  ';'
-VIDEOTYPE_RE = r'"(?P<id>[A-Z,0-9,\-]+)\"[^\"]+\"(?P<type>\d+)"'
-
-PLAYER_ONLINE_URL = 'http://embed.livebox.cz/ta3/player-live.js'
-PLAYER_OFFLINE_URL = 'http://embed.livebox.cz/ta3/player-offline.js'
-
-VIDEO_FLASHVARS_RE = r'flashvars = \{(?P<flashvars>[^\}]+)\}'
-VIDEO_LIVE_LOW_RE = r'videoID1:[^\']+\'(?P<low_id>[^\']+)'
-VIDEO_LIVE_MEDIUM_RE = r'videoID2:[^\']+\'(?P<medium_id>[^\']+)'
-VIDEO_LIVE_HIGH_RE = r'videoID3:[^\']+\'(?P<high_id>[^\']+)'
-VIDEO_PREFIX_RE = r'prefix:[^\']+\'(?P<prefix>[^\']+)'
-VIDEO_POSTFIX_RE = r'postfix:[^\']+\'(?P<postfix>[^\']+)'
-
-VIDEOTEKA_TYPE = {'undefined':'Videoteka/mp4:', '0':'Videoteka/mp4:', '1':'VideotekaEncoder/mp4:'}
-QUALITY_POSTFIX = {"576p":"_ta1d.mp4", "404p":"_ta2d.mp4", "288p":"_ta3d.mp4"}
 
 
 class TA3ContentProvider(ContentProvider):
@@ -159,10 +178,10 @@ class TA3ContentProvider(ContentProvider):
 
     def categories(self):
         result = []
-        item = self.dir_item()
-        item['type'] = 'top'
-        item['url'] = "#top#"
-        result.append(item)
+        #item = self.dir_item()
+        #item['type'] = 'top'
+        #item['url'] = "#top#"
+        #result.append(item)
         item = self.video_item()
         item['title'] = 'Live'
         item['url'] = "live.html"
@@ -174,14 +193,6 @@ class TA3ContentProvider(ContentProvider):
         item = self.dir_item()
         item['title'] = 'Publicistika'
         item['url'] = "#subcat#" + PUBLICISTIKA_URL
-        result.append(item)
-        item = self.dir_item()
-        item['title'] = 'Tlačové Besedy'
-        item['url'] = "#subcat#" + TLACOVE_BESEDY_URL
-        result.append(item)
-        item = self.dir_item()
-        item['title'] = 'Online Rozhovory'
-        item['url'] = "#subcat#" + ONLINE_ROZHOVORY_URL
         result.append(item)
         return result
 
@@ -256,7 +267,8 @@ class TA3ContentProvider(ContentProvider):
         data = util.substr(page, LISTING_START, LISTING_END)
         for m in re.finditer(LISTING_ITER_RE, data, re.DOTALL | re.VERBOSE):
             item = self.video_item()
-            item['title'] = "%s (%s)" % (m.group('title').strip(), m.group('date').strip())
+            item['title'] = m.group('title').strip()
+            #item['title'] = "%s (%s)" % (m.group('title').strip(), m.group('date').strip())
             item['url'] = m.group('url')
             self._filter(result, item)
         pager_data = util.substr(page, PAGER_START, PAGER_END)
@@ -362,42 +374,55 @@ class TA3ContentProvider(ContentProvider):
 
     def _resolve_vod(self, item):
         resolved = []
-        playerdata = util.request(PLAYER_OFFLINE_URL, {'Referer':self._url(item['url'])})
-        flashvars = re.search(VIDEO_FLASHVARS_RE, playerdata, re.DOTALL).group(1)
-        prefix = re.search(VIDEO_PREFIX_RE, flashvars).group('prefix')
-        postfix = re.search(VIDEO_POSTFIX_RE, flashvars).group('postfix').replace('.f4m', '.m3u8').replace("|", "%7C")
-        data = util.substr(util.request(self._url(item['url'])), VIDEOTYPE_START, VIDEOTYPE_END)
-        video_type_m = re.search(VIDEOTYPE_RE, data)
-        video_id = video_type_m.group('id')
-        video_type = video_type_m.group('type')
-        for quality in QUALITY_POSTFIX.keys():
-            if quality == '576p':
-                continue
+        data = util.request(self._url(item['url']))
+        video_id = re.search("LiveboxPlayer.archiv\(.+?videoId:\s*'([^']+)'", data, re.DOTALL).group(1)
+        print "video_id", video_id
+        player_data = util.request("http://embed.livebox.cz/ta3/vod-source.js", {'Referer':self._url(item['url'])})
+        print "player_data", player_data
+        url_format = re.search(r'my.embedurl = \[\{"src" : "([^"]+)"', player_data).group(1)
+        print "url_format", url_format
+        manifest_url = url_format.format(video_id)
+        print "manifest_url", manifest_url
+        manifest = util.request(manifest_url)
+        print "manifest", manifest
+        for m in re.finditer('#EXT-X-STREAM-INF:PROGRAM-ID=\d+,BANDWIDTH=(?P<bandwidth>\d+)(,RESOLUTION=(?P<resolution>\d+x\d+))?\s(?P<chunklist>[^\s]+)', manifest, re.DOTALL):
             item = self.video_item()
-            item['quality'] = quality
-            item['url'] = prefix + VIDEOTEKA_TYPE[video_type] + video_id + QUALITY_POSTFIX[quality] + postfix
+            item['surl'] = item['title']
+            if m.group('bandwidth') == '500000':
+                item['quality'] = '360p'
+            elif m.group('bandwidth') == '1000000':
+                item['quality'] = '480p'
+            elif m.group('bandwidth') == '1500000':
+                item['quality'] = '720p'
+            else:
+                item['quality'] = '???'
+            item['url'] = manifest_url[:manifest_url.rfind('/')+1] + m.group('chunklist')
             resolved.append(item)
         return resolved
- 
-    
+
+
     def _resolve_live(self, item):
         resolved = []
-        playerdata = util.request(PLAYER_ONLINE_URL, {'Referer':self._url(item['url'])})
-        flashvars = re.search(VIDEO_FLASHVARS_RE, playerdata, re.DOTALL).group(1)
-        quality_low_id = re.search(VIDEO_LIVE_LOW_RE, playerdata).group('low_id')
-        quality_medium_id = re.search(VIDEO_LIVE_MEDIUM_RE, playerdata).group('medium_id')
-        quality_high_id = re.search(VIDEO_LIVE_HIGH_RE, playerdata).group('high_id')
-        qualities = {'576p':quality_high_id,'404p':quality_medium_id,'288p':quality_low_id}
-        prefix = re.search(VIDEO_PREFIX_RE, flashvars).group('prefix')
-        postfix = re.search(VIDEO_POSTFIX_RE, flashvars).group('postfix').replace('.f4m', '.m3u8').replace("|", "%7C")
-        for quality in qualities.keys():
-            item = self.video_item()
-            item['quality'] = quality
-            item['url'] = prefix + qualities[quality] + postfix
-            resolved.append(item)
+        data = util.request(self._url(item['url']))
+        player_data = util.request("http://embed.livebox.cz/ta3/live-source.js", {'Referer':self._url(item['url'])})
+        print "player_data", player_data
+        for m_manifest in re.finditer(r'\{"src"\s*:\s*"([^"]+)"\s*\}', player_data, re.DOTALL):
+            manifest_url = m_manifest.group(1)
+            print "manifest_url", manifest_url
+            manifest = util.request(manifest_url)
+            print "manifest", manifest
+            for m in re.finditer('#EXT-X-STREAM-INF:PROGRAM-ID=\d+,BANDWIDTH=(?P<bandwidth>\d+)(,RESOLUTION=(?P<resolution>\d+x\d+))?.*\s(?P<chunklist>[^\s]+)', manifest, re.DOTALL):
+                item = self.video_item()
+                item['surl'] = item['title']
+                if m.group('resolution') == '720x404':
+                    item['quality'] = '404p'
+                else:
+                    item['quality'] = '???'
+                item['url'] = manifest_url[:manifest_url.rfind('/')+1] + m.group('chunklist')
+                resolved.append(item)
+            # only first manifest url looks to be is valid
+            break
         return resolved
-    
-
 
 # source from http://pymotw.com/2/urllib2/
 class MultiPartForm(object):

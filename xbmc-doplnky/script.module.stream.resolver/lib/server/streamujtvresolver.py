@@ -26,11 +26,17 @@ def resolve(url):
         headers = {'User-Agent':'Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0',
                     'Referer':'http://www.streamuj.tv/mediaplayer/player.swf'}
         burl = b64decode('aHR0cDovL2Z1LWNlY2gucmhjbG91ZC5jb20vcGF1dGg=')
+        key = util.request('http://www.streamuj.tv/_key.php?auth=3C27f5wk6qB3g7nZ5SDYf7P7k1572rFH1QxV0QQ')
         index = 0
         result = []
         qualities = re.search('rn\:[^\"]*\"([^\"]*)',data,re.IGNORECASE|re.DOTALL)
         langs = re.search('langs\:[^\"]*\"([^\"]+)',data,re.IGNORECASE|re.DOTALL)
-        for lang in langs.group(1).split(','):
+        languages = []
+        if not langs:
+            languages = [''] # pretend there is at least language so we read 1st stream info
+        else:
+            languages = langs.group(1).split(',')
+        for lang in languages:
             streams = re.search('res'+str(index)+'\:[^\"]*\"([^\"]+)',data,re.IGNORECASE|re.DOTALL)
             subs = re.search('sub'+str(index)+'\:[^\"]*\"([^\"]+)',data,re.IGNORECASE|re.DOTALL)
             if subs: 
@@ -40,7 +46,7 @@ def resolve(url):
                 rn = qualities.group(1).split(',')
                 qindex = 0
                 for stream in streams:
-                    res = json.loads(util.post_json(burl,{'link':stream,'player':player}))
+                    res = json.loads(util.post_json(burl,{'link':stream,'player':player,'key':key}))
                     stream = res['link']
                     q = rn[qindex]
                     if q == 'HD':
@@ -51,7 +57,7 @@ def resolve(url):
                     if subs:
                         l += ' + subs'
                         s = subs.group(1)
-                        s = json.loads(util.post_json(burl,{'link':s,'player':player}))
+                        s = json.loads(util.post_json(burl,{'link':s,'player':player, 'key':key}))
                         result.append({'url':stream,'quality':q,'subs':s['link'],'headers':headers,'lang':l})
                     else:
                         result.append({'url':stream,'quality':q,'headers':headers, 'lang':l})

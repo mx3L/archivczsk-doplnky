@@ -125,7 +125,7 @@ class RtvsContentProvider(ContentProvider):
         item['title'] = '0-9'
         item['url'] = '?l=9&ord=az'
         self._filter(result, item)
-        for c in xrange(65, 90, 1):
+        for c in xrange(65, 91, 1):
             chr = str(unichr(c))
             item = self.dir_item()
             item['title'] = chr

@@ -1,3 +1,5 @@
+[B]1.0.6:[/B]
+- fix alphabet range to include shows starting with Z/z, thanks to @pokopt
 [B]1.0.5:[/B]
 - don't use dynamic streaming
 - added quality option

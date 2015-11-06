@@ -178,7 +178,7 @@ def PODKATEGORIE(url,page,kanal):
     con = urllib2.urlopen(request)
     data = con.read()
     con.close()
-    match = re.compile('<div class="videotypes-submenu"><div class="item item-1  active"><a href=".+?" class="active">.+?</a></div>(.+?)</div></div>').findall(data)
+    match = re.compile('<div class="videotypes-submenu ' + url.split("/")[-1] + '"><div class="item item-1  active"><a href=".+?" class="active">.+?</a></div>(.+?)</div></div>').findall(data) 
     match2 = re.compile('<a href="(.+?)">(.+?)</a>').findall(match[0])
     if len(match2) > 1:
         for url2, name in match2:

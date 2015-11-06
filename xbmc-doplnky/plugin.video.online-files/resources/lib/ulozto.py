@@ -132,7 +132,7 @@ class UloztoContentProvider(ContentProvider):
         decr = json.loads(util.post_json(murl,req))
         for li in re.finditer('<li data-icon=\"(?P<key>[^\"]+)',data, re.IGNORECASE |  re.DOTALL):
             body = urllib.unquote(b64decode(decr[li.group('key')]))
-            m = re.search('<li>.+?<div data-icon=\"(?P<key>[^\"]+)[^<]+<img(.+?)src=\"(?P<logo>[^\"]+)(.+?)<div class=\"fileInfo(?P<info>.+?)</h4>',body, re.IGNORECASE |  re.DOTALL)
+            m = re.search('<li.+?<div data-icon=\"(?P<key>[^\"]+)[^<]+<img(.+?)src=\"(?P<logo>[^\"]+)(.+?)<div class=\"fileInfo(?P<info>.+?)</h4>',body, re.IGNORECASE |  re.DOTALL)
             if not m:
                 continue
             value = keymap[m.group('key')]
