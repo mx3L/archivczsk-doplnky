@@ -105,44 +105,29 @@ def VIDEOLINK(url,name):
     response.close()
     thumb = re.compile('<meta property="og:image" content="(.+?)" />').findall(httpdata)
     popis = re.compile('<meta property="og:description" content="(.+?)" />').findall(httpdata)
-    config = re.compile('config.php?(.+?)["\'],').findall(httpdata)
-    config = 'http://tn.nova.cz/bin/player/flowplayer/config.php'+config[0]
     try:
         desc = popis[0]
     except:
         desc = name
-    req = urllib2.Request(config)
+
+    #Ziskani adresy configu ze stranky poradu, zacina u parametru configUrl - jen jsem slepil vsechny parametry k sobe a nacetl
+    httpdata   = httpdata.replace("\r","").replace("\n","").replace("\t","")
+    parametry = re.compile('params = (.+?);').findall(httpdata)
+    linkgenerator = parametry[0].replace(" ","").replace("?',","?").replace("{configUrl:'","").replace(":'","=").replace("',","&").replace("'+'","").replace("'}","").replace(",","").replace(":parseInt(","")
+    req = urllib2.Request(linkgenerator)
     req.add_header('User-Agent', _UserAgent_)
     response = urllib2.urlopen(req)
     httpdata = response.read()
     response.close()
-    match = re.compile("'(.+?)';").findall(httpdata)
-    key = 'EaDUutg4ppGYXwNMFdRJsadenFSnI6gJ'
-    aes_decrypt = aes.decrypt(match[0],key,128).encode('utf-8')
-    aes_decrypt = aes_decrypt.replace('\/','/')
-    secret_token = re.compile('secret":"(.+?)"', re.S).findall(aes_decrypt)
-    mediaid = re.compile('"mediaId":(.+?),').findall(aes_decrypt)
-    datum = datetime.datetime.now()
-    timestamp = datum.strftime('%Y%m%d%H%M%S')
-    videoid = urllib.quote(nova_app_id + '|' + mediaid[0])
-    md5hash = nova_app_id + '|' + mediaid[0] + '|' + timestamp + '|' + secret_token[0]
-    try:
-        md5hash = hashlib.md5(md5hash)
-    except:
-        md5hash = md5.new(md5hash)
-    signature = urllib.quote(base64.b64encode(md5hash.digest()))
-    config = nova_service_url + '?t=' + timestamp + '&d=1&tm=nova&h=0&c='+videoid+ '&s='+signature
-    req = urllib2.Request(config)
-    req.add_header('User-Agent', _UserAgent_)
-    response = urllib2.urlopen(req)
-    httpdata = response.read()
-    response.close()
-    baseurl = re.compile('<baseUrl>(.+?)</baseUrl>').findall(httpdata)
-    streamurl = re.compile('<media>\s<quality>(.+?)</quality>.\s<url>(.+?)</url>\s</media>').findall(httpdata)
-    swfurl = 'http://voyo.nova.cz/static/shared/app/flowplayer/13-flowplayer.commercial-3.1.5-19-003.swf'
-    for kvalita,odkaz in streamurl:
-        rtmp_url = baseurl[0]+'/'+odkaz
-        addLink(name,rtmp_url,thumb[0],desc)
+
+    #Dolovani rtmp adresy z configu
+    rtmp_url = re.compile('src":"(.+?)"').findall(httpdata)
+    rtmp_url = rtmp_url[0].replace("\\","")
+    tcurlandplaypath = rtmp_url.replace("/&"," playpath=").replace("rtmp://"," tcUrl=rtmp://")
+    #Slozeni vysledneho linku, sklada se z adresy rtmp_url a pak jeste jednou z adresy rtmp_url, ale ta uz musi byt rozdelena a slouzi jako parametry playpath a tcUrl
+    #rtmp://nova-voyo-cz-pc.service.cdn.cra.cz/vod/&mp4:oldcdn/2015/11/06/1561560/2015-11-19_ulice-218_cyklus_dil_2919-b041884-np-mp4-lq.mp4?SIGV=2&IS=0&ET=1448109213&CIP=31.30.37.226&KO=1&KN=1&US=2338c0708283dbc363f88ecdbf53233c27d52ef3 tcUrl=rtmp://nova-voyo-cz-pc.service.cdn.cra.cz/vod playpath=mp4:oldcdn/2015/11/06/1561560/2015-11-19_ulice-218_cyklus_dil_2919-b041884-np-mp4-lq.mp4?SIGV=2&IS=0&ET=1448109213&CIP=31.30.37.226&KO=1&KN=1&US=2338c0708283dbc363f88ecdbf53233c27d52ef3
+    rtmp_url = rtmp_url+tcurlandplaypath
+    addLink(name,rtmp_url,thumb[0],desc)
 
 
 url=None
