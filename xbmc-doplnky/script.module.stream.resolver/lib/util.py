@@ -23,7 +23,7 @@ import os, re, sys, urllib, urllib2, traceback, cookielib, time, socket
 from htmlentitydefs import name2codepoint as n2cp
 import simplejson as json
 import threading
-import Queue 
+import Queue
 from Plugins.Extensions.archivCZSK.engine import client
 from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
 UA = 'Mozilla/6.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.5) Gecko/2008092417 Firefox/3.0.3'
@@ -104,7 +104,7 @@ def run_parallel_in_threads(target, args_list):
         t.start()
     for t in threads:
         t.join()
-    return result 
+    return result
 
 def icon(name):
 	return 'https://github.com/lzoubek/xbmc-doplnky/raw/dharma/icons/' + name
@@ -113,11 +113,10 @@ def substr(data, start, end):
 	i1 = data.find(start)
 	i2 = data.find(end, i1)
 	return data[i1:i2]
-    
 
 def save_to_file(url, file):
 	try:
-		return save_data_to_file(request(url))
+		return save_data_to_file(request(url), file)
 	except:
 		traceback.print_exc()
 
@@ -173,7 +172,7 @@ def debug(text):
 def info(text):
         text = "xbmc_doplnky: info " + (str([text]))
         client.log.info(text)
-        
+
 def error(text):
         text = "xbmc_doplnky: error" + (str([text]))
         client.log.error(text)
@@ -211,3 +210,40 @@ def replace_diacritic(string):
 	return ''.join(ret)
 
 
+def int_to_base(number, base):
+    digs = string.digits + string.letters
+    if number < 0:
+        sign = -1
+    elif number == 0:
+        return digs[0]
+    else:
+        sign = 1
+    number *= sign
+    digits = []
+    while number:
+        digits.append(digs[number % base])
+        number /= base
+    if sign < 0:
+        digits.append('-')
+    digits.reverse()
+    return ''.join(digits)
+
+
+def extract_jwplayer_setup(data):
+    """
+    Extracts jwplayer setup configuration and returns it as a dictionary.
+
+    :param data: A string to extract the setup from
+    :return: A dictionary containing the setup configuration
+    """
+    data = re.search(r'<script.+?}\(\'(.+)\',\d+,\d+,\'([\w\|]+)\'.*</script>', data, re.I | re.S)
+    if data:
+        replacements = data.group(2).split('|')
+        data = data.group(1)
+        for i in reversed(range(len(replacements))):
+            if len(replacements[i]) > 0:
+                data = re.sub(r'\b%s\b' % int_to_base(i, 36), replacements[i], data)
+        data = re.search(r'\.setup\(([^\)]+?)\);', data)
+        if data:
+            return json.decode(data.group(1).decode('string_escape'))
+    return None

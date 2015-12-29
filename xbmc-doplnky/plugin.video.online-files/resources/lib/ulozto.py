@@ -126,13 +126,13 @@ class UloztoContentProvider(ContentProvider):
             return []
         burl = b64decode('I2h0dHA6Ly9kZWNyLWNlY2gucmhjbG91ZC5jb20vZGVjcnlwdC8/a2V5PSVzJnZhbHVlPSVz')
         murl = b64decode('aHR0cDovL2RlY3ItY2VjaC5yaGNsb3VkLmNvbS9kZWNyeXB0Lw==')
-        data = util.substr(page,'<ul class=\"chessFiles','</ul>') 
+        data = util.substr(page,'<ul class=\"chessFiles','var kn =') 
         result = []
         req = {'seed':keymap[key],'values':keymap}
         decr = json.loads(util.post_json(murl,req))
         for li in re.finditer('<li data-icon=\"(?P<key>[^\"]+)',data, re.IGNORECASE |  re.DOTALL):
             body = urllib.unquote(b64decode(decr[li.group('key')]))
-            m = re.search('<li.+?<div data-icon=\"(?P<key>[^\"]+)[^<]+<img(.+?)src=\"(?P<logo>[^\"]+)(.+?)<div class=\"fileInfo(?P<info>.+?)</h4>',body, re.IGNORECASE |  re.DOTALL)
+            m = re.search('<li.+?<div data-icon=\"(?P<key>[^\"]+)[^<]+<img(.+?)src=\"(?P<logo>[^\"]+)(.+?)<i class=\"fa fa-download(?P<info>.+?)class="fileReset"',body, re.IGNORECASE |  re.DOTALL)
             if not m:
                 continue
             value = keymap[m.group('key')]
@@ -238,9 +238,14 @@ class UloztoContentProvider(ContentProvider):
 
         capdata = json.loads(util.request(self._url('reloadXapca.php')))
         captcha = capdata['image']
+        if not captcha.startswith('http'):
+            captcha = 'http:' + captcha
+        sound = capdata['sound']
+        if not sound.startswith('http'):
+            sound = 'http:' + sound
         # ask callback to provide captcha code
         self.info('Asking for captcha img %s' % captcha)
-        code = captcha_cb({'id':captcha,'img': captcha})
+        code = captcha_cb({'id':captcha,'img': captcha,'snd':sound})
         if not code:
             self.info('Captcha not provided, done')
             return

@@ -83,7 +83,7 @@ def ulozto_filter(item):
         if extension in ext_filter:
                 return False
         return True
-       
+
 def webshare_filter(item):
 	ext_filter = __settings__('webshare_ext-filter').split(',')
 	ext_filter =  ['.'+f.strip() for f in ext_filter]
@@ -91,7 +91,7 @@ def webshare_filter(item):
 	if extension in ext_filter:
 		return False
 	return True
-       
+
 class XBMCUloztoContentProvider(xbmcprovider.XBMCLoginOptionalContentProvider):
 
     def __init__(self, provider, settings, addon, session):
@@ -103,23 +103,39 @@ class XBMCUloztoContentProvider(xbmcprovider.XBMCLoginOptionalContentProvider):
         if settings['search-type'] in search_types.keys():
             search_type = search_types[settings['search-type']]
         provider.search_type = search_type
-    
+
     def resolve(self,url):
         item = self.provider.video_item()
         item.update({'url':url,'vip':True})
         if not self.ask_for_account_type():
             # user does not want to use VIP at this time
             item.update({'vip':False})
-        else:            
+        else:
             if not self.provider.login():
                 client.showInfo(xbmcutil.__lang__(30011))
                 return
         try:
-            return self.provider.resolve(item,captcha_cb=self.ask_for_captcha)
+            return self.provider.resolve(item,captcha_cb=self.solve_captcha)
         except ResolveException, e:
             self._handle_exc(e)
 
-
+    def solve_captcha(self,params):
+        snd = os.path.join(self.addon.getAddonInfo('profile'),'sound.wav')
+        util.save_to_file(params['snd'], snd)
+        try:
+            sndfile = open(snd, 'rb').read()
+            url = 'http://m217-io.appspot.com/ulozto'
+            headers = {'Content-Type': 'audio/wav'}
+            req = urllib2.Request(url, sndfile, headers)
+            response = urllib2.urlopen(req, timeout=60)
+            data = response.read()
+            response.close()
+        except urllib2.HTTPError:
+            traceback.print_exc()
+            data = ''
+        if not data:
+            return self.ask_for_captcha(params)
+        return data
 
 class XBMCHellspyContentProvider(xbmcprovider.XBMCLoginRequiredContentProvider):
 
@@ -161,7 +177,7 @@ if __settings__('ulozto_enabled'):
 	}
 	extra.update(settings)
 	providers[p.name] = XBMCUloztoContentProvider(p, extra, __addon__, session)
-	
+
 if __settings__('hellspy_enabled'):
 	p = hellspy.HellspyContentProvider(__settings__('hellspy_user'), __settings__('hellspy_pass'), site_url=__settings__('hellspy_site_url'))
 	extra = {
@@ -169,7 +185,7 @@ if __settings__('hellspy_enabled'):
 	}
 	extra.update(settings)
 	providers[p.name] = XBMCHellspyContentProvider(p, extra, __addon__, session)
-	
+
 if __settings__('fastshare_enabled'):
 	p = fastshare.FastshareContentProvider(username='', password='', tmp_dir=__addon__.getAddonInfo('profile'))
 	extra = {
@@ -178,7 +194,7 @@ if __settings__('fastshare_enabled'):
 	}
 	extra.update(settings)
 	providers[p.name] = xbmcprovider.XBMCLoginOptionalContentProvider(p, extra, __addon__, session)
-	
+
 if __settings__('webshare_enabled'):
 	p = webshare.WebshareContentProvider(username='', password='',filter=webshare_filter)
 	extra = {
