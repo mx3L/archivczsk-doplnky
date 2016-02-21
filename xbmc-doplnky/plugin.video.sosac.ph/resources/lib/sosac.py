@@ -142,7 +142,7 @@ class SosacContentProvider(ContentProvider):
 
     @staticmethod
     def particular_letter(url):
-        return "a-z" in url
+        return MOVIES_A_TO_Z_TYPE in url or TV_SHOWS_A_TO_Z_TYPE in url
 
     def has_tv_show_flag(self, url):
         return TV_SHOW_FLAG in url
