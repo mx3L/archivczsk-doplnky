@@ -24,7 +24,6 @@ import re
 import urllib
 import urllib2
 import cookielib
-from xml.etree.cElementTree import fromstring
 
 import util
 import resolver
@@ -80,8 +79,8 @@ class VideaceskyContentProvider(ContentProvider):
 
     def list_top10(self, page):
         result = []
-        data = util.substr(page, 'TOP 10 měsíce', 'class=\"sidebarBox widget_text\"')
-        pattern = '<li><a href=\"(?P<url>[^"]+)\" title=\"(?P<title>[^"]+)\"(.+?)</li>'
+        data = util.substr(page, '<div id="mosthighestratingposts-2"', '<div id="most_commented_widget-4"')
+        pattern = '<li><a href=\"(?P<url>[^"]+)\">(?P<title>[^"]+)</a></li>'
         for m in re.finditer(pattern, data, re.IGNORECASE | re.DOTALL):
             item = self.video_item()
             item['title'] = m.group('title')
@@ -158,30 +157,21 @@ class VideaceskyContentProvider(ContentProvider):
         resolved = []
         item = item.copy()
         url = self._url(item['url'])
-        data = util.substr(util.request(url), '<div class=\"postContent\"', '</div>')
-        playlist = re.search('playlistfile=(.+?\.xml)', data)
-        if playlist:
-            playlistxml = fromstring(util.request(playlist.group(1))).find('channel')
-            jwplayer_ns = '{http://developer.longtailvideo.com/}'
-            for item in playlistxml.findall('item'):
-                title = item.find('title').text
-                url = item.find(jwplayer_ns + 'file').text
-                subs = item.find(jwplayer_ns + 'captions.file')
-                subs = subs is not None and self._url(subs.text)
-                res = resolver.findstreams(url, ['(?P<url>^.+?$)']) or []
-                for i in res:
-                    i['title'] = title
-                    i['subs'] = subs
-                resolved += res[:]
-        else:
-            resolved = resolver.findstreams(data, ['file=(?P<url>[^&]+)&amp'])
-            subs = re.search('captions\.file=.*?(http[^&]+)&amp', data)
-            if resolved and subs:
-                for i in resolved:
+        data = util.substr(util.request(url), '<div class=\"postContent\"', '<div class="fb_share">')
+
+        playlist = re.findall('ihv_video_instance_..setup(?P<video_instance>.+?)events', data, re.MULTILINE | re.DOTALL)
+
+        for playlist_item in playlist:
+            video_url = resolver.findstreams(playlist_item, ['file: "(?P<url>.+?)"'])
+            subs = re.search('file: \"(?P<url>.+?.srt)', playlist_item)
+            if video_url and subs:
+                for i in video_url:
                     i['subs'] = subs.group(1)
+            resolved += video_url[:]
 
         if not resolved:
             raise ResolveException('Video nenalezeno')
+
         for i in resolved:
             item = self.video_item()
             try:
