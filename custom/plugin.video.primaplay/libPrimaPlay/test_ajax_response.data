@@ -1,0 +1,788 @@
+<?xml version="1.0"?>
+<response>
+	<status>OK</status>
+	<update target="js-tdi-items-next" append="true">
+		<![CDATA[
+<div class="l-col first">
+	
+	
+	<div id="product-p130072" class="movie-border" data-video="0%" data-ord="0">
+		<div class="movie-small">
+			<a href="http://play.iprima.cz/nejvetsi-esa-mafie-1">
+				<div class="front">
+<img data-srcset="https://static.play-backend.iprima.cz/cdn/img/coverWeb/p130078-p171651/small 1x, https://static.play-backend.iprima.cz/cdn/img/coverWeb/p130078-p171651/big 2x" width="220" height="260" class="lazyload" alt="Největší esa mafie">
+</div>
+			</a>
+<div class="back">
+						<a href="http://play.iprima.cz/nejvetsi-esa-mafie-1">
+							<div class="header">
+								<h5>Největší esa mafie</h5>
+								<p>
+									
+									1 Epizoda</p>
+</div>
+							<div class="content">
+								<p class="promo-notice">Největší esa mafie</p>
+							</div>
+						</a>
+						<div class="footer">
+							<p class="is-strong detail"><a href="http://play.iprima.cz/?genres[]=p14202">Dokumentární</a>, <a href="http://play.iprima.cz/?genres[]=p111021">Pořady</a></p>
+							<p>USA | 2013</p>
+							<div class="attributes">
+
+<form action="http://play.iprima.cz/tdi-ns/hodnoceni/hodnotit?csrfToken=41470fef3bf4fbc3dde1bbe6848a226310b4d725-1450357271087-a9dfe0fddc77965fb0211876" class="star-rating tdi" method="POST">
+<input type="radio" id="rating-5-4037" name="rating" value="5" checked="checked" disabled="disabled"><label for="rating-5-4037">5 stars</label>
+<input type="radio" id="rating-4-4037" name="rating" value="4" disabled="disabled"><label for="rating-4-4037">4 stars</label>
+<input type="radio" id="rating-3-4037" name="rating" value="3" disabled="disabled"><label for="rating-3-4037">3 stars</label>
+<input type="radio" id="rating-2-4037" name="rating" value="2" disabled="disabled"><label for="rating-2-4037">2 stars</label>
+<input type="radio" id="rating-1-4037" name="rating" value="1" disabled="disabled"><label for="rating-1-4037">1 stars</label>
+<input type="hidden" name="productId" value="p130072" />
+</form><p class="attributes-icons">
+</p>
+							</div>
+							<a href="http://play.iprima.cz/nejvetsi-esa-mafie-1" data-jnp="i.PlayLatestEpisode" class="btn btn-play js-box-link-anchor">Přehrát nejnovější epizodu</a>
+						</div>
+					</div>
+</div>
+	</div>
+</div>
+<div class="l-col">
+	
+	
+	<div id="product-p126925" class="movie-border" data-video="0%" data-ord="1">
+		<div class="movie-small">
+			<a href="http://play.iprima.cz/nejvetsi-tankove-bitvy">
+				<div class="front">
+<img data-srcset="https://static.play-backend.iprima.cz/cdn/img/coverWeb/p135683-p184036/small 1x, https://static.play-backend.iprima.cz/cdn/img/coverWeb/p135683-p184036/big 2x" width="220" height="260" class="lazyload" alt="Největší tankové bitvy">
+</div>
+			</a>
+<div class="back">
+						<a href="http://play.iprima.cz/nejvetsi-tankove-bitvy">
+							<div class="header">
+								<h5>Největší tankové bitvy</h5>
+								<p>
+									
+									6 Epizod</p>
+</div>
+							<div class="content">
+								<p class="promo-notice">Cyklus dokumentárních rekonstrukcí bitev.</p>
+							</div>
+						</a>
+						<div class="footer">
+							<p class="is-strong detail"><a href="http://play.iprima.cz/?genres[]=p111021">Pořady</a>, <a href="http://play.iprima.cz/?genres[]=p14202">Dokumentární</a></p>
+							<p>ČR</p>
+							<div class="attributes">
+
+<form action="http://play.iprima.cz/tdi-ns/hodnoceni/hodnotit?csrfToken=41470fef3bf4fbc3dde1bbe6848a226310b4d725-1450357271087-a9dfe0fddc77965fb0211876" class="star-rating tdi" method="POST">
+<input type="radio" id="rating-5-5997" name="rating" value="5" disabled="disabled"><label for="rating-5-5997">5 stars</label>
+<input type="radio" id="rating-4-5997" name="rating" value="4" disabled="disabled"><label for="rating-4-5997">4 stars</label>
+<input type="radio" id="rating-3-5997" name="rating" value="3" disabled="disabled"><label for="rating-3-5997">3 stars</label>
+<input type="radio" id="rating-2-5997" name="rating" value="2" disabled="disabled"><label for="rating-2-5997">2 stars</label>
+<input type="radio" id="rating-1-5997" name="rating" value="1" disabled="disabled"><label for="rating-1-5997">1 stars</label>
+<input type="hidden" name="productId" value="p126925" />
+</form><p class="attributes-icons">
+</p>
+							</div>
+							<a href="http://play.iprima.cz/nejvetsi-tankove-bitvy" data-jnp="i.PlayLatestEpisode" class="btn btn-play js-box-link-anchor">Přehrát nejnovější epizodu</a>
+						</div>
+					</div>
+</div>
+	</div>
+</div>
+<div class="l-col">
+	
+	
+	<div id="product-p14681" class="movie-border" data-video="0%" data-ord="2">
+		<div class="movie-small">
+			<a href="http://play.iprima.cz/neohrozeny">
+				<div class="front">
+<img data-srcset="https://static.play-backend.iprima.cz/cdn/img/coverWeb/p14682-p184107/small 1x, https://static.play-backend.iprima.cz/cdn/img/coverWeb/p14682-p184107/big 2x" width="220" height="260" class="lazyload" alt="neohroŽENY">
+</div>
+			</a>
+<div class="back">
+						<a href="http://play.iprima.cz/neohrozeny">
+							<div class="header">
+								<h5>neohroŽENY</h5>
+								<p>
+									
+									12 Epizod</p>
+</div>
+							<div class="content">
+								<p class="promo-notice">neohroŽENY</p>
+							</div>
+						</a>
+						<div class="footer">
+							<p class="is-strong detail"><a href="http://play.iprima.cz/?genres[]=p14228">Reality</a>, <a href="http://play.iprima.cz/?genres[]=p14202">Dokumentární</a></p>
+							<p>ČR | 2010</p>
+							<div class="attributes">
+
+<form action="http://play.iprima.cz/tdi-ns/hodnoceni/hodnotit?csrfToken=41470fef3bf4fbc3dde1bbe6848a226310b4d725-1450357271087-a9dfe0fddc77965fb0211876" class="star-rating tdi" method="POST">
+<input type="radio" id="rating-5-1538" name="rating" value="5" disabled="disabled"><label for="rating-5-1538">5 stars</label>
+<input type="radio" id="rating-4-1538" name="rating" value="4" disabled="disabled"><label for="rating-4-1538">4 stars</label>
+<input type="radio" id="rating-3-1538" name="rating" value="3" disabled="disabled"><label for="rating-3-1538">3 stars</label>
+<input type="radio" id="rating-2-1538" name="rating" value="2" disabled="disabled"><label for="rating-2-1538">2 stars</label>
+<input type="radio" id="rating-1-1538" name="rating" value="1" disabled="disabled"><label for="rating-1-1538">1 stars</label>
+<input type="hidden" name="productId" value="p14681" />
+</form><p class="attributes-icons">
+</p>
+							</div>
+							<a href="http://play.iprima.cz/neohrozeny" data-jnp="i.PlayLatestEpisode" class="btn btn-play js-box-link-anchor">Přehrát nejnovější epizodu</a>
+						</div>
+					</div>
+</div>
+	</div>
+</div>
+<div class="l-col">
+	
+	
+	<div id="product-p14687" class="movie-border" data-video="0%" data-ord="3">
+		<div class="movie-small">
+			<a href="http://play.iprima.cz/new-look">
+				<div class="front">
+<img data-srcset="https://static.play-backend.iprima.cz/cdn/img/coverWeb/p14688-p161824/small 1x, https://static.play-backend.iprima.cz/cdn/img/coverWeb/p14688-p161824/big 2x" width="220" height="260" class="lazyload" alt="NEW LOOK">
+</div>
+			</a>
+<div class="back">
+						<a href="http://play.iprima.cz/new-look">
+							<div class="header">
+								<h5>NEW LOOK</h5>
+								<p>
+									
+									16 Epizod</p>
+</div>
+							<div class="content">
+								<p class="promo-notice">Najděte své nové já a nechte se hýčkat. Zajímavé proměny divaček, aktuální trendy, rady a tipy odborníků, rozhovory s VIP osobnostmi. To vše na Vás čeká v novém lifestylovém týdeníku. Moderuje Eva Decastelo.</p>
+							</div>
+						</a>
+						<div class="footer">
+							<p class="is-strong detail"><a href="http://play.iprima.cz/?genres[]=p111021">Pořady</a>, <a href="http://play.iprima.cz/?genres[]=p14228">Reality</a></p>
+							<p>ČR | 2015</p>
+							<div class="attributes">
+
+<form action="http://play.iprima.cz/tdi-ns/hodnoceni/hodnotit?csrfToken=41470fef3bf4fbc3dde1bbe6848a226310b4d725-1450357271087-a9dfe0fddc77965fb0211876" class="star-rating tdi" method="POST">
+<input type="radio" id="rating-5-2580" name="rating" value="5" disabled="disabled"><label for="rating-5-2580">5 stars</label>
+<input type="radio" id="rating-4-2580" name="rating" value="4" disabled="disabled"><label for="rating-4-2580">4 stars</label>
+<input type="radio" id="rating-3-2580" name="rating" value="3" disabled="disabled"><label for="rating-3-2580">3 stars</label>
+<input type="radio" id="rating-2-2580" name="rating" value="2" disabled="disabled"><label for="rating-2-2580">2 stars</label>
+<input type="radio" id="rating-1-2580" name="rating" value="1" disabled="disabled"><label for="rating-1-2580">1 stars</label>
+<input type="hidden" name="productId" value="p14687" />
+</form><p class="attributes-icons">
+</p>
+							</div>
+							<a href="http://play.iprima.cz/new-look" data-jnp="i.PlayLatestEpisode" class="btn btn-play js-box-link-anchor">Přehrát nejnovější epizodu</a>
+						</div>
+					</div>
+</div>
+	</div>
+</div>
+<div class="l-col">
+	
+	
+	<div id="product-p126901" class="movie-border" data-video="0%" data-ord="4">
+		<div class="movie-small">
+			<a href="http://play.iprima.cz/nezkrotna-priroda-3">
+				<div class="front">
+<img data-srcset="https://static.play-backend.iprima.cz/cdn/img/coverWeb/p135744-p184109/small 1x, https://static.play-backend.iprima.cz/cdn/img/coverWeb/p135744-p184109/big 2x" width="220" height="260" class="lazyload" alt="Nezkrotná příroda">
+</div>
+			</a>
+<div class="back">
+						<a href="http://play.iprima.cz/nezkrotna-priroda-3">
+							<div class="header">
+								<h5>Nezkrotná příroda</h5>
+								<p>
+									
+									7 Epizod</p>
+</div>
+							<div class="content">
+								<p class="promo-notice">Podívejte se na neuvěřitelné záběry setkání se zvířaty.</p>
+							</div>
+						</a>
+						<div class="footer">
+							<p class="is-strong detail"><a href="http://play.iprima.cz/?genres[]=p14202">Dokumentární</a>, <a href="http://play.iprima.cz/?genres[]=p111021">Pořady</a></p>
+							<p>USA | 2015</p>
+							<div class="attributes">
+
+<form action="http://play.iprima.cz/tdi-ns/hodnoceni/hodnotit?csrfToken=41470fef3bf4fbc3dde1bbe6848a226310b4d725-1450357271087-a9dfe0fddc77965fb0211876" class="star-rating tdi" method="POST">
+<input type="radio" id="rating-5-2913" name="rating" value="5" disabled="disabled"><label for="rating-5-2913">5 stars</label>
+<input type="radio" id="rating-4-2913" name="rating" value="4" disabled="disabled"><label for="rating-4-2913">4 stars</label>
+<input type="radio" id="rating-3-2913" name="rating" value="3" disabled="disabled"><label for="rating-3-2913">3 stars</label>
+<input type="radio" id="rating-2-2913" name="rating" value="2" disabled="disabled"><label for="rating-2-2913">2 stars</label>
+<input type="radio" id="rating-1-2913" name="rating" value="1" disabled="disabled"><label for="rating-1-2913">1 stars</label>
+<input type="hidden" name="productId" value="p126901" />
+</form><p class="attributes-icons">
+</p>
+							</div>
+							<a href="http://play.iprima.cz/nezkrotna-priroda-3" data-jnp="i.PlayLatestEpisode" class="btn btn-play js-box-link-anchor">Přehrát nejnovější epizodu</a>
+						</div>
+					</div>
+</div>
+	</div>
+</div>
+<div class="l-col">
+	
+	
+	<div id="product-p14693" class="movie-border" data-video="0%" data-ord="5">
+		<div class="movie-small">
+			<a href="http://play.iprima.cz/nigella-jeji-kuchyne">
+				<div class="front">
+<img data-srcset="https://static.play-backend.iprima.cz/cdn/img/coverWeb/p14694-p14694/small 1x, https://static.play-backend.iprima.cz/cdn/img/coverWeb/p14694-p14694/big 2x" width="220" height="260" class="lazyload" alt="Nigella a její kuchyně">
+</div>
+			</a>
+<div class="back">
+						<a href="http://play.iprima.cz/nigella-jeji-kuchyne">
+							<div class="header">
+								<h5>Nigella a její kuchyně</h5>
+								<p>
+									
+									13 Epizod</p>
+</div>
+							<div class="content">
+								<p class="promo-notice">Známá britská kuchařka Nigella Lawsonová předvádí, jak uvařit nezapomenutelné pokrmy. Připravte si spolu s ní pikantní jídla, upravené exotické dobroty či jednoduché rychlovky… Britská kuchařská show (2010)</p>
+							</div>
+						</a>
+						<div class="footer">
+							<p class="is-strong detail"><a href="http://play.iprima.cz/?genres[]=p14202">Dokumentární</a>, <a href="http://play.iprima.cz/?genres[]=p111021">Pořady</a></p>
+							<p>GB | 2012</p>
+							<div class="attributes">
+
+<form action="http://play.iprima.cz/tdi-ns/hodnoceni/hodnotit?csrfToken=41470fef3bf4fbc3dde1bbe6848a226310b4d725-1450357271087-a9dfe0fddc77965fb0211876" class="star-rating tdi" method="POST">
+<input type="radio" id="rating-5-1713" name="rating" value="5" checked="checked" disabled="disabled"><label for="rating-5-1713">5 stars</label>
+<input type="radio" id="rating-4-1713" name="rating" value="4" disabled="disabled"><label for="rating-4-1713">4 stars</label>
+<input type="radio" id="rating-3-1713" name="rating" value="3" disabled="disabled"><label for="rating-3-1713">3 stars</label>
+<input type="radio" id="rating-2-1713" name="rating" value="2" disabled="disabled"><label for="rating-2-1713">2 stars</label>
+<input type="radio" id="rating-1-1713" name="rating" value="1" disabled="disabled"><label for="rating-1-1713">1 stars</label>
+<input type="hidden" name="productId" value="p14693" />
+</form><p class="attributes-icons">
+</p>
+							</div>
+							<a href="http://play.iprima.cz/nigella-jeji-kuchyne" data-jnp="i.PlayLatestEpisode" class="btn btn-play js-box-link-anchor">Přehrát nejnovější epizodu</a>
+						</div>
+					</div>
+</div>
+	</div>
+</div>
+<div class="l-col">
+	
+	
+	<div id="product-p14699" class="movie-border" data-video="0%" data-ord="6">
+		<div class="movie-small">
+			<a href="http://play.iprima.cz/nigella-vari-rychlovky">
+				<div class="front">
+<img data-srcset="https://static.play-backend.iprima.cz/cdn/img/coverWeb/p135749-p184114/small 1x, https://static.play-backend.iprima.cz/cdn/img/coverWeb/p135749-p184114/big 2x" width="220" height="260" class="lazyload" alt="Nigella vaří rychlovky">
+</div>
+			</a>
+<div class="back">
+						<a href="http://play.iprima.cz/nigella-vari-rychlovky">
+							<div class="header">
+								<h5>Nigella vaří rychlovky</h5>
+								<p>
+									
+									16 Epizod</p>
+</div>
+							<div class="content">
+								<p class="promo-notice">Známá britská kuchařka Nigella Lawsonová předvádí, jak uvařit zdravá, chutná, a hlavně rychlá jídla. Připravte si spolu s ní vynikající snídani, svačinu či občerstvení na party… Britská kuchařská show (2007)</p>
+							</div>
+						</a>
+						<div class="footer">
+							<p class="is-strong detail"><a href="http://play.iprima.cz/?genres[]=p14202">Dokumentární</a>, <a href="http://play.iprima.cz/?genres[]=p14228">Reality</a></p>
+							<p>GB | 2012</p>
+							<div class="attributes">
+
+<form action="http://play.iprima.cz/tdi-ns/hodnoceni/hodnotit?csrfToken=41470fef3bf4fbc3dde1bbe6848a226310b4d725-1450357271087-a9dfe0fddc77965fb0211876" class="star-rating tdi" method="POST">
+<input type="radio" id="rating-5-7050" name="rating" value="5" checked="checked" disabled="disabled"><label for="rating-5-7050">5 stars</label>
+<input type="radio" id="rating-4-7050" name="rating" value="4" disabled="disabled"><label for="rating-4-7050">4 stars</label>
+<input type="radio" id="rating-3-7050" name="rating" value="3" disabled="disabled"><label for="rating-3-7050">3 stars</label>
+<input type="radio" id="rating-2-7050" name="rating" value="2" disabled="disabled"><label for="rating-2-7050">2 stars</label>
+<input type="radio" id="rating-1-7050" name="rating" value="1" disabled="disabled"><label for="rating-1-7050">1 stars</label>
+<input type="hidden" name="productId" value="p14699" />
+</form><p class="attributes-icons">
+</p>
+							</div>
+							<a href="http://play.iprima.cz/nigella-vari-rychlovky" data-jnp="i.PlayLatestEpisode" class="btn btn-play js-box-link-anchor">Přehrát nejnovější epizodu</a>
+						</div>
+					</div>
+</div>
+	</div>
+</div>
+<div class="l-col">
+	
+	
+	<div id="product-p14700" class="movie-border" data-video="0%" data-ord="7">
+		<div class="movie-small">
+			<a href="http://play.iprima.cz/nikdo-neni-dokonaly">
+				<div class="front">
+<img data-srcset="https://static.play-backend.iprima.cz/cdn/img/coverWeb/p14701-p184121/small 1x, https://static.play-backend.iprima.cz/cdn/img/coverWeb/p14701-p184121/big 2x" width="220" height="260" class="lazyload" alt="Nikdo není dokonalý">
+</div>
+			</a>
+<div class="back">
+						<a href="http://play.iprima.cz/nikdo-neni-dokonaly">
+							<div class="header">
+								<h5>Nikdo není dokonalý</h5>
+								<p>3 Řady
+									 , 
+									136 Epizod</p>
+</div>
+							<div class="content">
+								<p class="promo-notice">Nevěříte? Přesvědčte se sami! Ke sledování úspěšného a oblíbeného pořadu vás zve Jiří Krampol a jeho hosté (Premiéra)</p>
+							</div>
+						</a>
+						<div class="footer">
+							<p class="is-strong detail"><a href="http://play.iprima.cz/?genres[]=p14193">Game-show</a>, <a href="http://play.iprima.cz/?genres[]=p14194">Talkshow</a></p>
+							<p>ČR | 2008</p>
+							<div class="attributes">
+
+<form action="http://play.iprima.cz/tdi-ns/hodnoceni/hodnotit?csrfToken=41470fef3bf4fbc3dde1bbe6848a226310b4d725-1450357271087-a9dfe0fddc77965fb0211876" class="star-rating tdi" method="POST">
+<input type="radio" id="rating-5-4160" name="rating" value="5" checked="checked" disabled="disabled"><label for="rating-5-4160">5 stars</label>
+<input type="radio" id="rating-4-4160" name="rating" value="4" disabled="disabled"><label for="rating-4-4160">4 stars</label>
+<input type="radio" id="rating-3-4160" name="rating" value="3" disabled="disabled"><label for="rating-3-4160">3 stars</label>
+<input type="radio" id="rating-2-4160" name="rating" value="2" disabled="disabled"><label for="rating-2-4160">2 stars</label>
+<input type="radio" id="rating-1-4160" name="rating" value="1" disabled="disabled"><label for="rating-1-4160">1 stars</label>
+<input type="hidden" name="productId" value="p14700" />
+</form><p class="attributes-icons">
+</p>
+							</div>
+							<a href="http://play.iprima.cz/nikdo-neni-dokonaly" data-jnp="i.PlayLatestEpisode" class="btn btn-play js-box-link-anchor">Přehrát nejnovější epizodu</a>
+						</div>
+					</div>
+</div>
+	</div>
+</div>
+<div class="l-col">
+	
+	
+	<div id="product-p14709" class="movie-border" data-video="0%" data-ord="8">
+		<div class="movie-small">
+			<a href="http://play.iprima.cz/ninja-faktor-po-americku">
+				<div class="front">
+<img data-srcset="https://static.play-backend.iprima.cz/cdn/img/coverWeb/p14710-p184122/small 1x, https://static.play-backend.iprima.cz/cdn/img/coverWeb/p14710-p184122/big 2x" width="220" height="260" class="lazyload" alt="Ninja faktor po americku">
+</div>
+			</a>
+<div class="back">
+						<a href="http://play.iprima.cz/ninja-faktor-po-americku">
+							<div class="header">
+								<h5>Ninja faktor po americku</h5>
+								<p>3 Řady
+									 , 
+									1 Epizoda</p>
+</div>
+							<div class="content">
+								<p class="promo-notice">Pokračuje velké finále v Las Vegas, kde je postavená mýty opředená hora Midoriyama. Tato překážkářská dráha má celkem čtyři úseky (kola). V tomto díle se 24 atletů, kteří postoupili z prvního kola, pokusí zdolat druhý úsek dráhy. Dílem provází Matt</p>
+							</div>
+						</a>
+						<div class="footer">
+							<p class="is-strong detail"><a href="http://play.iprima.cz/?genres[]=p14228">Reality</a>, <a href="http://play.iprima.cz/?genres[]=p111021">Pořady</a></p>
+							<p>ČR | 2012</p>
+							<div class="attributes">
+
+<form action="http://play.iprima.cz/tdi-ns/hodnoceni/hodnotit?csrfToken=41470fef3bf4fbc3dde1bbe6848a226310b4d725-1450357271087-a9dfe0fddc77965fb0211876" class="star-rating tdi" method="POST">
+<input type="radio" id="rating-5-6509" name="rating" value="5" checked="checked" disabled="disabled"><label for="rating-5-6509">5 stars</label>
+<input type="radio" id="rating-4-6509" name="rating" value="4" disabled="disabled"><label for="rating-4-6509">4 stars</label>
+<input type="radio" id="rating-3-6509" name="rating" value="3" disabled="disabled"><label for="rating-3-6509">3 stars</label>
+<input type="radio" id="rating-2-6509" name="rating" value="2" disabled="disabled"><label for="rating-2-6509">2 stars</label>
+<input type="radio" id="rating-1-6509" name="rating" value="1" disabled="disabled"><label for="rating-1-6509">1 stars</label>
+<input type="hidden" name="productId" value="p14709" />
+</form><p class="attributes-icons">
+</p>
+							</div>
+							<a href="http://play.iprima.cz/ninja-faktor-po-americku" data-jnp="i.PlayLatestEpisode" class="btn btn-play js-box-link-anchor">Přehrát nejnovější epizodu</a>
+						</div>
+					</div>
+</div>
+	</div>
+</div>
+<div class="l-col">
+	
+	
+	<div id="product-p14729" class="movie-border" data-video="0%" data-ord="9">
+		<div class="movie-small">
+			<a href="http://play.iprima.cz/nove-hnizdo">
+				<div class="front">
+<img data-srcset="https://static.play-backend.iprima.cz/cdn/img/coverWeb/p14730-p184127/small 1x, https://static.play-backend.iprima.cz/cdn/img/coverWeb/p14730-p184127/big 2x" width="220" height="260" class="lazyload" alt="Nové hnízdo">
+</div>
+			</a>
+<div class="back">
+						<a href="http://play.iprima.cz/nove-hnizdo">
+							<div class="header">
+								<h5>Nové hnízdo</h5>
+								<p>2 Řady
+									 , 
+									10 Epizod</p>
+</div>
+							<div class="content">
+								<p class="promo-notice">Je tu premiérový pořad Nové hnízdo, kterým diváky provede oblíbený moderátor Petr Vondráček. Spolu s týmem makléřů, designérů a odborníků bude hledat Nové hnízdo pro zájemce o lepší bydlení. V osmi tématických dílech představíme různé typy</p>
+							</div>
+						</a>
+						<div class="footer">
+							<p class="is-strong detail"><a href="http://play.iprima.cz/?genres[]=p14228">Reality</a>, <a href="http://play.iprima.cz/?genres[]=p111021">Pořady</a></p>
+							<p>ČR | 2013</p>
+							<div class="attributes">
+
+<form action="http://play.iprima.cz/tdi-ns/hodnoceni/hodnotit?csrfToken=41470fef3bf4fbc3dde1bbe6848a226310b4d725-1450357271087-a9dfe0fddc77965fb0211876" class="star-rating tdi" method="POST">
+<input type="radio" id="rating-5-8523" name="rating" value="5" disabled="disabled"><label for="rating-5-8523">5 stars</label>
+<input type="radio" id="rating-4-8523" name="rating" value="4" disabled="disabled"><label for="rating-4-8523">4 stars</label>
+<input type="radio" id="rating-3-8523" name="rating" value="3" disabled="disabled"><label for="rating-3-8523">3 stars</label>
+<input type="radio" id="rating-2-8523" name="rating" value="2" disabled="disabled"><label for="rating-2-8523">2 stars</label>
+<input type="radio" id="rating-1-8523" name="rating" value="1" disabled="disabled"><label for="rating-1-8523">1 stars</label>
+<input type="hidden" name="productId" value="p14729" />
+</form><p class="attributes-icons">
+</p>
+							</div>
+							<a href="http://play.iprima.cz/nove-hnizdo" data-jnp="i.PlayLatestEpisode" class="btn btn-play js-box-link-anchor">Přehrát nejnovější epizodu</a>
+						</div>
+					</div>
+</div>
+	</div>
+</div>
+<div class="l-col">
+	
+	
+	<div id="product-p14743" class="movie-border" data-video="0%" data-ord="10">
+		<div class="movie-small">
+			<a href="http://play.iprima.cz/ocima-josefa-klimy">
+				<div class="front">
+<img data-srcset="https://static.play-backend.iprima.cz/cdn/img/coverWeb/p14744-p190100/small 1x, https://static.play-backend.iprima.cz/cdn/img/coverWeb/p14744-p190100/big 2x" width="220" height="260" class="lazyload" alt="Očima Josefa Klímy">
+</div>
+			</a>
+<div class="back">
+						<a href="http://play.iprima.cz/ocima-josefa-klimy">
+							<div class="header">
+								<h5>Očima Josefa Klímy</h5>
+								<p>2 Řady
+									 , 
+									75 Epizod</p>
+</div>
+							<div class="content">
+								<p class="promo-notice">Publicistická show</p>
+							</div>
+						</a>
+						<div class="footer">
+							<p class="is-strong detail"><a href="http://play.iprima.cz/?genres[]=p111021">Pořady</a></p>
+							<p>ČR | 2015</p>
+							<div class="attributes">
+
+<form action="http://play.iprima.cz/tdi-ns/hodnoceni/hodnotit?csrfToken=41470fef3bf4fbc3dde1bbe6848a226310b4d725-1450357271087-a9dfe0fddc77965fb0211876" class="star-rating tdi" method="POST">
+<input type="radio" id="rating-5-6073" name="rating" value="5" checked="checked" disabled="disabled"><label for="rating-5-6073">5 stars</label>
+<input type="radio" id="rating-4-6073" name="rating" value="4" disabled="disabled"><label for="rating-4-6073">4 stars</label>
+<input type="radio" id="rating-3-6073" name="rating" value="3" disabled="disabled"><label for="rating-3-6073">3 stars</label>
+<input type="radio" id="rating-2-6073" name="rating" value="2" disabled="disabled"><label for="rating-2-6073">2 stars</label>
+<input type="radio" id="rating-1-6073" name="rating" value="1" disabled="disabled"><label for="rating-1-6073">1 stars</label>
+<input type="hidden" name="productId" value="p14743" />
+</form><p class="attributes-icons">
+</p>
+							</div>
+							<a href="http://play.iprima.cz/ocima-josefa-klimy" data-jnp="i.PlayLatestEpisode" class="btn btn-play js-box-link-anchor">Přehrát nejnovější epizodu</a>
+						</div>
+					</div>
+</div>
+	</div>
+</div>
+<div class="l-col">
+	
+	
+	<div id="product-p126904" class="movie-border" data-video="0%" data-ord="11">
+		<div class="movie-small">
+			<a href="http://play.iprima.cz/odhalena-historie">
+				<div class="front">
+<img data-srcset="https://static.play-backend.iprima.cz/cdn/img/coverWeb/p137341-p187309/small 1x, https://static.play-backend.iprima.cz/cdn/img/coverWeb/p137341-p187309/big 2x" width="220" height="260" class="lazyload" alt="Odhalená Historie">
+</div>
+			</a>
+<div class="back">
+						<a href="http://play.iprima.cz/odhalena-historie">
+							<div class="header">
+								<h5>Odhalená Historie</h5>
+								<p>
+									
+									16 Epizod</p>
+</div>
+							<div class="content">
+								<p class="promo-notice">Dějiny tak, jak je neznáte!</p>
+							</div>
+						</a>
+						<div class="footer">
+							<p class="is-strong detail"><a href="http://play.iprima.cz/?genres[]=p14202">Dokumentární</a>, <a href="http://play.iprima.cz/?genres[]=p111021">Pořady</a></p>
+							<p>USA | 2010</p>
+							<div class="attributes">
+
+<form action="http://play.iprima.cz/tdi-ns/hodnoceni/hodnotit?csrfToken=41470fef3bf4fbc3dde1bbe6848a226310b4d725-1450357271087-a9dfe0fddc77965fb0211876" class="star-rating tdi" method="POST">
+<input type="radio" id="rating-5-7794" name="rating" value="5" checked="checked" disabled="disabled"><label for="rating-5-7794">5 stars</label>
+<input type="radio" id="rating-4-7794" name="rating" value="4" disabled="disabled"><label for="rating-4-7794">4 stars</label>
+<input type="radio" id="rating-3-7794" name="rating" value="3" disabled="disabled"><label for="rating-3-7794">3 stars</label>
+<input type="radio" id="rating-2-7794" name="rating" value="2" disabled="disabled"><label for="rating-2-7794">2 stars</label>
+<input type="radio" id="rating-1-7794" name="rating" value="1" disabled="disabled"><label for="rating-1-7794">1 stars</label>
+<input type="hidden" name="productId" value="p126904" />
+</form><p class="attributes-icons">
+</p>
+							</div>
+							<a href="http://play.iprima.cz/odhalena-historie" data-jnp="i.PlayLatestEpisode" class="btn btn-play js-box-link-anchor">Přehrát nejnovější epizodu</a>
+						</div>
+					</div>
+</div>
+	</div>
+</div>
+<div class="l-col">
+	
+	
+	<div id="product-p126970" class="movie-border" data-video="0%" data-ord="12">
+		<div class="movie-small">
+			<a href="http://play.iprima.cz/odhalena-tajemstvi-staroveku-1">
+				<div class="front">
+<img data-srcset="https://static.play-backend.iprima.cz/cdn/img/coverWeb/p137346-p187314/small 1x, https://static.play-backend.iprima.cz/cdn/img/coverWeb/p137346-p187314/big 2x" width="220" height="260" class="lazyload" alt="Odhalená tajemství starověku">
+</div>
+			</a>
+<div class="back">
+						<a href="http://play.iprima.cz/odhalena-tajemstvi-staroveku-1">
+							<div class="header">
+								<h5>Odhalená tajemství starověku</h5>
+								<p>
+									
+									2 Epizody</p>
+</div>
+							<div class="content">
+								<p class="promo-notice">Starověký Egypt byl velkou a už v době své největší slávy tajuplnou říší. Některá z těchto tajemství odkrývá fascinující dokumentární seriál Odhalená tajemství starověku. Bývalí agenti FBI vyšetřují smrt nejslavnější egyptského faraona Tutanchamona.</p>
+							</div>
+						</a>
+						<div class="footer">
+							<p class="is-strong detail"><a href="http://play.iprima.cz/?genres[]=p14202">Dokumentární</a>, <a href="http://play.iprima.cz/?genres[]=p111021">Pořady</a></p>
+							<p>USA</p>
+							<div class="attributes">
+
+<form action="http://play.iprima.cz/tdi-ns/hodnoceni/hodnotit?csrfToken=41470fef3bf4fbc3dde1bbe6848a226310b4d725-1450357271087-a9dfe0fddc77965fb0211876" class="star-rating tdi" method="POST">
+<input type="radio" id="rating-5-2148" name="rating" value="5" checked="checked" disabled="disabled"><label for="rating-5-2148">5 stars</label>
+<input type="radio" id="rating-4-2148" name="rating" value="4" disabled="disabled"><label for="rating-4-2148">4 stars</label>
+<input type="radio" id="rating-3-2148" name="rating" value="3" disabled="disabled"><label for="rating-3-2148">3 stars</label>
+<input type="radio" id="rating-2-2148" name="rating" value="2" disabled="disabled"><label for="rating-2-2148">2 stars</label>
+<input type="radio" id="rating-1-2148" name="rating" value="1" disabled="disabled"><label for="rating-1-2148">1 stars</label>
+<input type="hidden" name="productId" value="p126970" />
+</form><p class="attributes-icons">
+</p>
+							</div>
+							<a href="http://play.iprima.cz/odhalena-tajemstvi-staroveku-1" data-jnp="i.PlayLatestEpisode" class="btn btn-play js-box-link-anchor">Přehrát nejnovější epizodu</a>
+						</div>
+					</div>
+</div>
+	</div>
+</div>
+<div class="l-col">
+	
+	
+	<div id="product-p14751" class="movie-border" data-video="0%" data-ord="13">
+		<div class="movie-small">
+			<a href="http://play.iprima.cz/odpoledni-zpravy">
+				<div class="front">
+<img data-srcset="https://static.play-backend.iprima.cz/cdn/img/coverWeb/p14752-p162746/small 1x, https://static.play-backend.iprima.cz/cdn/img/coverWeb/p14752-p162746/big 2x" width="220" height="260" class="lazyload" alt="Odpolední zprávy">
+</div>
+			</a>
+<div class="back">
+						<a href="http://play.iprima.cz/odpoledni-zpravy">
+							<div class="header">
+								<h5>Odpolední zprávy</h5>
+								<p>3 Řady
+									 , 
+									28 Epizod</p>
+</div>
+							<div class="content">
+								<p class="promo-notice">Ty nejdůležitější informace z Česka!</p>
+							</div>
+						</a>
+						<div class="footer">
+							<p class="is-strong detail"><a href="http://play.iprima.cz/?genres[]=p111021">Pořady</a></p>
+							<p>ČR | 2015</p>
+							<div class="attributes">
+
+<form action="http://play.iprima.cz/tdi-ns/hodnoceni/hodnotit?csrfToken=41470fef3bf4fbc3dde1bbe6848a226310b4d725-1450357271087-a9dfe0fddc77965fb0211876" class="star-rating tdi" method="POST">
+<input type="radio" id="rating-5-5465" name="rating" value="5" disabled="disabled"><label for="rating-5-5465">5 stars</label>
+<input type="radio" id="rating-4-5465" name="rating" value="4" disabled="disabled"><label for="rating-4-5465">4 stars</label>
+<input type="radio" id="rating-3-5465" name="rating" value="3" disabled="disabled"><label for="rating-3-5465">3 stars</label>
+<input type="radio" id="rating-2-5465" name="rating" value="2" disabled="disabled"><label for="rating-2-5465">2 stars</label>
+<input type="radio" id="rating-1-5465" name="rating" value="1" disabled="disabled"><label for="rating-1-5465">1 stars</label>
+<input type="hidden" name="productId" value="p14751" />
+</form><p class="attributes-icons">
+</p>
+							</div>
+							<a href="http://play.iprima.cz/odpoledni-zpravy" data-jnp="i.PlayLatestEpisode" class="btn btn-play js-box-link-anchor">Přehrát nejnovější epizodu</a>
+						</div>
+					</div>
+</div>
+	</div>
+</div>
+<div class="l-col">
+	
+	
+	<div id="product-p126966" class="movie-border" data-video="0%" data-ord="14">
+		<div class="movie-small">
+			<a href="http://play.iprima.cz/osmane-proti-krestanum-1">
+				<div class="front">
+<img data-srcset="https://static.play-backend.iprima.cz/cdn/img/coverWeb/p136506-p186072/small 1x, https://static.play-backend.iprima.cz/cdn/img/coverWeb/p136506-p186072/big 2x" width="220" height="260" class="lazyload" alt="Osmané proti křesťanům">
+</div>
+			</a>
+<div class="back">
+						<a href="http://play.iprima.cz/osmane-proti-krestanum-1">
+							<div class="header">
+								<h5>Osmané proti křesťanům</h5>
+								<p>
+									
+									3 Epizody</p>
+</div>
+							<div class="content">
+								<p class="promo-notice">Moderátor Julian Davison s pomocí historiků a herců, kteří ztvární historické rekonstrukce, odhalí nejdůležitější momenty tohoto legendárního střetu civilizací</p>
+							</div>
+						</a>
+						<div class="footer">
+							<p class="is-strong detail"><a href="http://play.iprima.cz/?genres[]=p111021">Pořady</a>, <a href="http://play.iprima.cz/?genres[]=p14202">Dokumentární</a></p>
+							<p>USA | 2015</p>
+							<div class="attributes">
+
+<form action="http://play.iprima.cz/tdi-ns/hodnoceni/hodnotit?csrfToken=41470fef3bf4fbc3dde1bbe6848a226310b4d725-1450357271087-a9dfe0fddc77965fb0211876" class="star-rating tdi" method="POST">
+<input type="radio" id="rating-5-5523" name="rating" value="5" checked="checked" disabled="disabled"><label for="rating-5-5523">5 stars</label>
+<input type="radio" id="rating-4-5523" name="rating" value="4" disabled="disabled"><label for="rating-4-5523">4 stars</label>
+<input type="radio" id="rating-3-5523" name="rating" value="3" disabled="disabled"><label for="rating-3-5523">3 stars</label>
+<input type="radio" id="rating-2-5523" name="rating" value="2" disabled="disabled"><label for="rating-2-5523">2 stars</label>
+<input type="radio" id="rating-1-5523" name="rating" value="1" disabled="disabled"><label for="rating-1-5523">1 stars</label>
+<input type="hidden" name="productId" value="p126966" />
+</form><p class="attributes-icons">
+</p>
+							</div>
+							<a href="http://play.iprima.cz/osmane-proti-krestanum-1" data-jnp="i.PlayLatestEpisode" class="btn btn-play js-box-link-anchor">Přehrát nejnovější epizodu</a>
+						</div>
+					</div>
+</div>
+	</div>
+</div>
+<div class="l-col">
+	
+	
+	<div id="product-p14760" class="movie-border" data-video="0%" data-ord="15">
+		<div class="movie-small">
+			<a href="http://play.iprima.cz/particka">
+				<div class="front">
+<img data-srcset="https://static.play-backend.iprima.cz/cdn/img/coverWeb/p14761-p182784/small 1x, https://static.play-backend.iprima.cz/cdn/img/coverWeb/p14761-p182784/big 2x" width="220" height="260" class="lazyload" alt="Partička">
+</div>
+			</a>
+<div class="back">
+						<a href="http://play.iprima.cz/particka">
+							<div class="header">
+								<h5>Partička</h5>
+								<p>
+									
+									115 Epizod</p>
+</div>
+							<div class="content">
+								<p class="promo-notice">Vtrhne na vaše obrazovky jako uragán! Kdo? No přece Partička s Michalem Suchánkem, Richardem Genzerem, Igorem Chmelou, Ondřejem Sokolem a Danielem Danglem.</p>
+							</div>
+						</a>
+						<div class="footer">
+							<p class="is-strong detail"><a href="http://play.iprima.cz/?genres[]=p14193">Game-show</a>, <a href="http://play.iprima.cz/?genres[]=p14228">Reality</a></p>
+							<p>ČR</p>
+							<div class="attributes">
+
+<form action="http://play.iprima.cz/tdi-ns/hodnoceni/hodnotit?csrfToken=41470fef3bf4fbc3dde1bbe6848a226310b4d725-1450357271087-a9dfe0fddc77965fb0211876" class="star-rating tdi" method="POST">
+<input type="radio" id="rating-5-6933" name="rating" value="5" disabled="disabled"><label for="rating-5-6933">5 stars</label>
+<input type="radio" id="rating-4-6933" name="rating" value="4" checked="checked" disabled="disabled"><label for="rating-4-6933">4 stars</label>
+<input type="radio" id="rating-3-6933" name="rating" value="3" disabled="disabled"><label for="rating-3-6933">3 stars</label>
+<input type="radio" id="rating-2-6933" name="rating" value="2" disabled="disabled"><label for="rating-2-6933">2 stars</label>
+<input type="radio" id="rating-1-6933" name="rating" value="1" disabled="disabled"><label for="rating-1-6933">1 stars</label>
+<input type="hidden" name="productId" value="p14760" />
+</form><p class="attributes-icons">
+</p>
+							</div>
+							<a href="http://play.iprima.cz/particka" data-jnp="i.PlayLatestEpisode" class="btn btn-play js-box-link-anchor">Přehrát nejnovější epizodu</a>
+						</div>
+					</div>
+</div>
+	</div>
+</div>
+<div class="l-col">
+	
+	
+	<div id="product-p126935" class="movie-border" data-video="0%" data-ord="16">
+		<div class="movie-small">
+			<a href="http://play.iprima.cz/planeta-jidla-2">
+				<div class="front">
+<img data-srcset="https://static.play-backend.iprima.cz/cdn/img/coverWeb/p136511-p186078/small 1x, https://static.play-backend.iprima.cz/cdn/img/coverWeb/p136511-p186078/big 2x" width="220" height="260" class="lazyload" alt="Planeta Jídla">
+</div>
+			</a>
+<div class="back">
+						<a href="http://play.iprima.cz/planeta-jidla-2">
+							<div class="header">
+								<h5>Planeta Jídla</h5>
+								<p>
+									
+									2 Epizody</p>
+</div>
+							<div class="content">
+								<p class="promo-notice">Planeta nabídne nesčetně druhů ryb, od běžně dostupných až po ty, které jsou téměř neznámé. S putováním po rybích specialitách začneme v Japonsku, kde si osvojíme přípravu speciálního sushi. V Turecku se naučíme osmanskou nadívanou makrelu. V</p>
+							</div>
+						</a>
+						<div class="footer">
+							<p class="is-strong detail"><a href="http://play.iprima.cz/?genres[]=p14202">Dokumentární</a>, <a href="http://play.iprima.cz/?genres[]=p111021">Pořady</a></p>
+							<p>USA | 2015</p>
+							<div class="attributes">
+
+<form action="http://play.iprima.cz/tdi-ns/hodnoceni/hodnotit?csrfToken=41470fef3bf4fbc3dde1bbe6848a226310b4d725-1450357271087-a9dfe0fddc77965fb0211876" class="star-rating tdi" method="POST">
+<input type="radio" id="rating-5-154" name="rating" value="5" disabled="disabled"><label for="rating-5-154">5 stars</label>
+<input type="radio" id="rating-4-154" name="rating" value="4" disabled="disabled"><label for="rating-4-154">4 stars</label>
+<input type="radio" id="rating-3-154" name="rating" value="3" disabled="disabled"><label for="rating-3-154">3 stars</label>
+<input type="radio" id="rating-2-154" name="rating" value="2" disabled="disabled"><label for="rating-2-154">2 stars</label>
+<input type="radio" id="rating-1-154" name="rating" value="1" disabled="disabled"><label for="rating-1-154">1 stars</label>
+<input type="hidden" name="productId" value="p126935" />
+</form><p class="attributes-icons">
+</p>
+							</div>
+							<a href="http://play.iprima.cz/planeta-jidla-2" data-jnp="i.PlayLatestEpisode" class="btn btn-play js-box-link-anchor">Přehrát nejnovější epizodu</a>
+						</div>
+					</div>
+</div>
+	</div>
+</div>
+<div class="l-col">
+	
+	
+	<div id="product-p14821" class="movie-border" data-video="0%" data-ord="17">
+		<div class="movie-small">
+			<a href="http://play.iprima.cz/podvadis-me">
+				<div class="front">
+<img data-srcset="https://static.play-backend.iprima.cz/cdn/img/coverWeb/p14822-p186083/small 1x, https://static.play-backend.iprima.cz/cdn/img/coverWeb/p14822-p186083/big 2x" width="220" height="260" class="lazyload" alt="Podvádíš mě!">
+</div>
+			</a>
+<div class="back">
+						<a href="http://play.iprima.cz/podvadis-me">
+							<div class="header">
+								<h5>Podvádíš mě!</h5>
+								<p>2 Řady
+									 , 
+									6 Epizod</p>
+</div>
+							<div class="content">
+								<p class="promo-notice">Důvěra je ve vztahu to nejdůležitější, co když je ale jeden z parnterů nevěrný? Reality show z USA!</p>
+							</div>
+						</a>
+						<div class="footer">
+							<p class="is-strong detail"><a href="http://play.iprima.cz/?genres[]=p14228">Reality</a>, <a href="http://play.iprima.cz/?genres[]=p111021">Pořady</a></p>
+							<p>USA | 2010</p>
+							<div class="attributes">
+
+<form action="http://play.iprima.cz/tdi-ns/hodnoceni/hodnotit?csrfToken=41470fef3bf4fbc3dde1bbe6848a226310b4d725-1450357271087-a9dfe0fddc77965fb0211876" class="star-rating tdi" method="POST">
+<input type="radio" id="rating-5-8873" name="rating" value="5" checked="checked" disabled="disabled"><label for="rating-5-8873">5 stars</label>
+<input type="radio" id="rating-4-8873" name="rating" value="4" disabled="disabled"><label for="rating-4-8873">4 stars</label>
+<input type="radio" id="rating-3-8873" name="rating" value="3" disabled="disabled"><label for="rating-3-8873">3 stars</label>
+<input type="radio" id="rating-2-8873" name="rating" value="2" disabled="disabled"><label for="rating-2-8873">2 stars</label>
+<input type="radio" id="rating-1-8873" name="rating" value="1" disabled="disabled"><label for="rating-1-8873">1 stars</label>
+<input type="hidden" name="productId" value="p14821" />
+</form><p class="attributes-icons">
+</p>
+							</div>
+							<a href="http://play.iprima.cz/podvadis-me" data-jnp="i.PlayLatestEpisode" class="btn btn-play js-box-link-anchor">Přehrát nejnovější epizodu</a>
+						</div>
+					</div>
+</div>
+	</div>
+</div>
+		]]>
+	</update>
+<script>
+			<![CDATA[		
+				$('.js-tdi-items-filter-and-items .infinity-scroll').data('href', 'https://play.iprima.cz/tdi/dalsi?filter=allShows&sort[]=title&offset=72');
+				picturefill();
+			]]>
+		</script>	
+</response>
