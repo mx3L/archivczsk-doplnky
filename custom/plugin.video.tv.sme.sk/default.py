@@ -3,17 +3,33 @@ import urllib2,urllib,re,os
 
 __baseurl__ = 'http://tv.sme.sk'
 _UserAgent_ = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'
-from util import addDir, addLink
-from util import log as ACZSKLog
+
 from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
+from Plugins.Extensions.archivCZSK.engine.client import add_dir, add_video
+from Plugins.Extensions.archivCZSK.engine.client import log as ACZSKLog
+
+def addDir(name, url, mode, image, page=None, kanal=None, infoLabels={}, menuItems={}, video_item=False):
+    params = {'name':name, 'url':url, 'mode':mode, 'page':page, 'kanal':kanal}
+    add_dir(name, params, image, infoLabels=infoLabels, menuItems=menuItems, video_item = video_item)
+
+def addLink(name, url, image, *args, **kwargs):
+    add_video(name, url, None, image)
+
 import HTMLParser
 from datetime import datetime,timedelta
 
-__settings__ = ArchivCZSK.get_xbmc_addon('plugin.video.tv.sme.sk')
-__cwd__ = __settings__.getAddonInfo('path')
+__baseurl__ = 'http://tv.sme.sk'
+__piano_d__ = '?piano_d=1'
+__addon__ = ArchivCZSK.get_xbmc_addon('plugin.video.tv.sme.sk')
+__cwd__ = __addon__.getAddonInfo('path')
 __scriptname__ = 'plugin.video.tv.sme.sk'
 icon = os.path.join(__cwd__, 'icon.png')
 nexticon = os.path.join(__cwd__, 'nextpage.png') 
+video_quality = int(__addon__.getSetting('quality'))
+
+VQ_SELECT = 0
+VQ_SD = 1
+VQ_HD = 2
 
 
 def log(msg, level='debug'):
@@ -31,6 +47,20 @@ def logDbg(msg):
 def logErr(msg):
 	log(msg,level='error')
 
+def getDataFromUrl(url):
+	req = urllib2.Request(url)
+	req.add_header('User-Agent', 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3')
+	response = urllib2.urlopen(req)
+	data = response.read()
+	response.close()
+	return data
+
+def getHtmlFromUrl(url):
+	return getDataFromUrl(url).decode("windows-1250")
+
+def getXmlFromUrl(url):
+	return getDataFromUrl(url).decode("utf-8")
+
 def listCategories():
 	logDbg("listCategories()")
 	addDir(u'[B]Všetky videá[/B]',__baseurl__+'/hs/',3,icon,'')
@@ -40,32 +70,12 @@ def listCategories():
 	addDir(u'[B]Zoznam relácií (aktívne)[/B]',__baseurl__+'/relacie/',1,icon,'')
 	addDir(u'[B]Zoznam relácií (archív)[/B]',__baseurl__+'/relacie/',2,icon,'')
 
-def listActiveShows(url):
-	logDbg("listActiveShows()")
-	req = urllib2.Request(__baseurl__+'/relacie/')
-	req.add_header('User-Agent', _UserAgent_)
-	response = urllib2.urlopen(req)
-	httpdata = response.read().decode("windows-1250")
-	response.close()
-	match = re.compile(u'<h2 class="light">Aktívne</h2>(.+?)<h2 class="light">Archív</h2>', re.S).findall(httpdata)
+def listShows(url,section):
+	logDbg("listShows("+section+")")
+	httpdata = getHtmlFromUrl(url)
+	match = re.compile(u'<h2 class="light">'+section+'</h2>(.+?)<div class="cb"></div></div>', re.DOTALL).findall(httpdata)
 	if match:
-		items = re.compile('img src="(.*?)" alt=.+?<h2><a href="(.+?)">(.+?)</a></h2>', re.S).findall(match[0])
-		for img,link,name in items:
-			link = __baseurl__+link
-			addDir(name,link,3,img,'') #!!! doplnit desc
-	else:
-		logErr("List of TV shows not found!")
-
-def listArchiveShows(url):
-	logDbg("listArchiveShows()")
-	req = urllib2.Request(__baseurl__+'/relacie/')
-	req.add_header('User-Agent', _UserAgent_)
-	response = urllib2.urlopen(req)
-	httpdata = response.read().decode("windows-1250")
-	response.close()
-	match = re.compile(u'<h2 class="light">Archív</h2>(.+?)<div class="cb"></div></div>', re.S).findall(httpdata)
-	if match:
-		items = re.compile('img src="(.*?)" alt=.+?<h2><a href="(.+?)">(.+?)</a></h2>', re.S).findall(match[0])
+		items = re.compile('img src="(.*?)" alt=.+?<h2><a href="(.+?)">(.+?)</a></h2>', re.DOTALL).findall(match[0])
 		for img,link,name in items:
 			link = __baseurl__+link
 			addDir(name,link,3,img,'')
@@ -74,31 +84,26 @@ def listArchiveShows(url):
 
 def listEpisodes(url):
 	logDbg("listEpisodes()")
-	req = urllib2.Request(url)
-	req.add_header('User-Agent', _UserAgent_)
-	response = urllib2.urlopen(req)
-	httpdata = response.read().decode("windows-1250")
-	response.close()
-	match = re.compile('<div class="list">(.+?)<div id="otherartw" class="pages"', re.S).findall(httpdata)
+	httpdata = getHtmlFromUrl(url)
+	match = re.compile('<div class="list">(.+?)<div id="otherartw" class="pages"', re.DOTALL).findall(httpdata)
 	if match:
-		items = re.compile('src="(.*?)" alt=.+?<h2>.*?<a href="(.+?)">(.+?)</a>.+?<div class="time">(.+?)</div>(.*?)</div>', re.S).findall(match[0])
+		items = re.compile('src="(.*?)" alt=.+?<h2>.*?<a href="(.+?)">(.+?)</a>.+?<div class="time">(.+?)</div>(.*?)</div>', re.DOTALL).findall(match[0])
 		for img,link,name,date,desc in items:
 			link = __baseurl__+link
 			# remove new lines
 			desc=desc.replace("\n", "")
 			if len(desc):
-				match = re.compile('<p>(.+?)</p>', re.S).findall(desc)
+				match = re.compile('<p>(.+?)</p>', re.DOTALL).findall(desc)
 				if match:
 					desc = match[0]
 					# remove optional <span>...</span> tag
 					if "<span" in desc:
-						logDbg("span found")
-						match = re.compile('<span.*</span>(.*)', re.S).findall(desc)
+						match = re.compile('<span.*</span>(.*)', re.DOTALL).findall(desc)
 						if match:
 							desc = match[0]
 							logDbg("new desc: "+desc)
-			addDir('('+date+') '+name,link,4,img,desc)
-		items = re.compile('<div class="otherart r"><h5><a href="(.+?)">(.+?)</a>', re.S).findall(httpdata)
+			addDir('('+date+') '+name,link,5,img,desc, video_item=True)
+		items = re.compile('<div class="otherart r"><h5><a href="(.+?)">(.+?)</a>', re.DOTALL).findall(httpdata)
 		if items:
 			link, name = items[0]
 			link = __baseurl__+link
@@ -107,47 +112,41 @@ def listEpisodes(url):
 	else:
 		logErr("List of episodes not found!")
 
-def getVideoLink(url,prefix,name,desc):
-	logDbg("getVideoLink()")
-	req = urllib2.Request(url)
-	req.add_header('User-Agent', _UserAgent_)
-	response = urllib2.urlopen(req)
-	httpdata = response.read().decode("windows-1250")
-	response.close()
-	match = re.compile('_fn\(t\)(.+?)</script>', re.S).findall(httpdata)
+def getVideoUrl(url):
+	logDbg("getVideoUrl()")
+	logDbg("\tPage url="+url)
+	httpdata = getHtmlFromUrl(url)
+	match = re.compile('_fn\(t\)(.+?)</script>', re.DOTALL).findall(httpdata)
 	if match:
-		items = re.compile('var rev=(.+?);.+?"file", escape\("(.+?)"\+ rev \+"(.+?)"\)\);', re.S).findall(match[0])
+		items = re.compile('var rev=(.+?);.+?"file", escape\("(.+?)"\+ rev \+"(.+?)"\)\);', re.DOTALL).findall(match[0])
 		if items:
 			rev,link1,link2 = items[0]
 			link = link1+str(rev)+link2
-			req = urllib2.Request(link)
-			req.add_header('User-Agent', _UserAgent_)
-			response = urllib2.urlopen(req)
-			httpdata = response.read().decode("utf-8")
-			response.close()
-			item = re.compile('<title>(.+?)</title>.+?<location>(.+?)</location>.+?<image>(.+?)</image>', re.S).findall(httpdata)
+			logDbg("\tPlaylist url="+link)
+			xmldata = getXmlFromUrl(link)
+			item = re.compile('<title>(.+?)</title>.+?<location>(.+?)</location>.+?<image>(.+?)</image>', re.DOTALL).findall(xmldata)
 			if item:
 				title, link, img = item[0]
-				addLink(prefix+name,link,img,desc)
+				logDbg("\tVideo url="+link)
+				return link
 			else:
 				logErr("Video location not found!")
 		else:
 			logErr("Video informations not found!")
 	else:
 		logErr("Player script not found!")
+	return None
 
-def listVideoLink(url1,name,desc):
-	logDbg("listVideoLink()")
+def playEpisode(url1):
+	logDbg("playEpisode()")
+	logDbg("\turl="+url1)
+	logDbg("\tVideo quality: "+str(video_quality))
 	url1_is_hd = False
 	url2 = ''
-	req = urllib2.Request(url)
-	req.add_header('User-Agent', _UserAgent_)
-	response = urllib2.urlopen(req)
-	httpdata = response.read().decode("windows-1250")
-	response.close()
-	match = re.compile('<div class="v-podcast-box">(.+?)<div class="v-clanok">', re.S).findall(httpdata)
+	httpdata = getHtmlFromUrl(url1+__piano_d__)
+	match = re.compile('<div class="v-podcast-box js-v-podcast-box">(.+?)<div class="(?:v-clanok|v-perex)">', re.DOTALL).findall(httpdata)
 	if match:
-		items = re.compile('</label><a href="(.+?)" class="hd-btn(.+?)"></a>', re.S).findall(match[0])
+		items = re.compile('</label><a href="(.+?)" class="hd-btn(.+?)"></a>', re.DOTALL).findall(match[0])
 		if items:
 			url2, hd_btn_off = items[0]
 			url2 = __baseurl__ + url2
@@ -157,17 +156,26 @@ def listVideoLink(url1,name,desc):
 			logDbg("Alternative video quality not found.")
 	else:
 		logErr("podcast-box not found!")
+	
 	if len(url2):
 		if url1_is_hd:
-			getVideoLink(url1,'[HD] ',name,desc)
-			getVideoLink(url2,'[SD] ',name,desc)
+			url_sd=url2
+			url_hd=url1
 		else:
-			getVideoLink(url2,'[HD] ',name,desc)
-			getVideoLink(url1,'[SD] ',name,desc)
+			url_sd=url1
+			url_hd=url2
+		logDbg("\tHD URL: "+url_hd)
+		logDbg("\tSD URL: "+url_sd)
+		if video_quality == VQ_SELECT:
+			addLink('[HD] ' + name , getVideoUrl(url_hd + __piano_d__), None)
+			addLink('[SD] ' + name , getVideoUrl(url_sd + __piano_d__), None)
+		elif video_quality == VQ_SD:
+			addLink('[SD] ' + name , getVideoUrl(url_sd + __piano_d__), None)
+		else:
+			addLink('[HD] ' + name , getVideoUrl(url_hd + __piano_d__), None)
 	else:
-		getVideoLink(url1,'',name,desc)
-
-
+		addLink('[HD] ' + name , getVideoUrl(url1 + __piano_d__), None)
+	return
 url=None
 name=None
 desc=None
@@ -199,13 +207,13 @@ if mode==None or url==None or len(url)<1:
 	listCategories()
 	
 elif mode==1:
-	listActiveShows(url)
+	listShows(url,u'Aktívne')
 
 elif mode==2:
-	listArchiveShows(url)
+	listShows(url,u'Archív')
 
 elif mode==3:
 	listEpisodes(url)
 
-elif mode==4:
-	listVideoLink(url,name,desc)
+elif mode==5:
+	playEpisode(url)
