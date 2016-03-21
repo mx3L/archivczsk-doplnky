@@ -18,11 +18,10 @@
 
 <addon id="plugin.video.tv.sme.sk"
        name="TV SME.sk"
-       version="1.0.0"
+       version="1.0.3"
        provider-name="Radim Stoklasa">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
-    <import addon="script.module.archivczsk.common" version="1.0.0"/>
   </requires>
   <extension point="xbmc.python.pluginsource" library="default.py">
     <provides>video</provides>
@@ -57,6 +56,22 @@
     <description></description>
     <license>GNU GPL</license>
     <platform>all</platform>
+  </extension>
+</addon>
+
+<addon id="plugin.video.primaplay" name="Prima Play" version="0.3.3" provider-name="Ladislav Dokulil">
+  <requires>
+    <import addon="xbmc.python" version="2.1.0"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary>Prima Play</summary>
+	<description>Plugin to play videos from Prima Play archive</description>
+    <description lang="cs">Plugin nabízí přístup do archivu Prima Play.</description>
+    <platform>all</platform>
+    <source>https://github.com/alladdin/plugin.video.primaplay</source>
   </extension>
 </addon>
 

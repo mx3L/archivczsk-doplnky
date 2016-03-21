@@ -234,7 +234,7 @@
 
 <addon id="plugin.video.videacesky.cz"
        name="videacesky.cz"
-       version="1.0.11"
+       version="1.0.12"
        provider-name="Libor Zoubek">
   <requires>
     <import addon="xbmc.python" version="2.0" />
