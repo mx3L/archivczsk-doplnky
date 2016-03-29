@@ -162,7 +162,7 @@ def resolve_videos(link):
                 title = "%dKB/s" % (bandwidth/1024/8)
             else:
                 title = str(idx)
-            add_video(title, link[:link.rfind('/') + 1] + url)
+            add_video(title, url)
     else:
         add_video("video", link)
 
