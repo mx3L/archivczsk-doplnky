@@ -1,4 +1,8 @@
-2016-12-02 [0.3.3]
+2016-23-03 [0.3.4]
+ * Fixed parsing video url
+ * Play SD when HD respond 403 HTTP status
+
+ 2016-12-02 [0.3.3]
  * Fix login to Account section
  * Add integration tests
 

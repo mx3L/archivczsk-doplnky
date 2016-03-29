@@ -77,7 +77,7 @@ class Parser:
 
     def get_video_link(self, productID):
         content = self.ua.get(self.get_player_init_url(productID))
-        link_re = re.compile("'src'\s*:\s+'(https?://[^']+\\.m3u8)'")
+        link_re = re.compile("'src'\s*:\s+'(https?://[^']+\\.m3u8.*)'")
         sd_link = link_re.search(content).group(1)
         hd_link = None
         if self.hd_enabled: hd_link = self.try_get_hd_link(sd_link)
@@ -89,7 +89,7 @@ class Parser:
         try:
             self.ua.get(hd_link)
         except urllib2.HTTPError, e:
-            if e.code == 404:
+            if (e.code == 404) or (e.code == 403):
                 return None
             else:
                 raise
