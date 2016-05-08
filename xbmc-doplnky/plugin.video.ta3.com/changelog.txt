@@ -1,3 +1,5 @@
+[B]1.1.1:[/B]
+- oprava listovania
 [B]1.1.0:[/B]
 - ciastocna oprava po redesigne stranky
 [B]1.0.1:[/B]

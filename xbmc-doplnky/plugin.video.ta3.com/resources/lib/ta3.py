@@ -335,7 +335,7 @@ class TA3ContentProvider(ContentProvider):
         request.add_header('Content-length', len(body))
         request.add_data(body)
         try:
-            urllib2.urlopen(request).read()
+            return urllib2.urlopen(request).read()
         except RedirectionException:
             return urllib2.urlopen(url).read()
 
