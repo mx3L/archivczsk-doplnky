@@ -295,7 +295,7 @@ class MarkizaContentProvider(ContentProvider):
             item = self.video_item()
             item['title'] = v['title']
             item['surl'] = v['title']
-            item['url'] = "%s/%s" % (v['baseUrl'], v['url'].replace('.f4m', '.m3u8'))
+            item['url'] = "%s/%s" % (v['baseUrl'].replace(':1935',''), v['url'].replace('.f4m', '.m3u8'))
             result.append(item)
         if len(result) > 0 and select_cb:
             return select_cb(result)
