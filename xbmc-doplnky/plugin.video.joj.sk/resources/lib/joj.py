@@ -30,6 +30,10 @@ from xml.etree.ElementTree import fromstring
 import util
 from provider import ContentProvider
 
+BASE_URL = {"JOJ":  "http://joj.sk",
+        "JOJ Plus": "http://plus.joj.sk",
+        "WAU":      "http://wau.joj.sk"}
+
 class JojContentProvider(ContentProvider):
     def __init__(self, username=None, password=None, filter=None):
         ContentProvider.__init__(self, 'joj.sk', 'http://www.joj.sk/', username, password, filter)
@@ -53,8 +57,6 @@ class JojContentProvider(ContentProvider):
     def _list_article(self, data):
         url_and_title_match = re.search(r'<a href="(?P<url>[^"]+)" title="(?P<title>[^"]+)"', data)
         if url_and_title_match is None:
-            print('cannot get title! - %s'%(str(e)))
-            self.info('cannot get title! - %s'%(str(e)))
             return None
         item = {}
         item['title'] = url_and_title_match.group('title')
@@ -73,13 +75,13 @@ class JojContentProvider(ContentProvider):
         result = []
         self.info("list_base %s"% url)
         data = util.request(url)
-        data = util.substr(data, '<section class="b-articles" id="numeric">', '<div class="s-footer-wrap">')
+        data = util.substr(data, '<section class="s s-container s-videozone s-archive s-tv-archive">', '<div class="s-footer-wrap">')
         for article_match in re.finditer('<article class="b-article article-md media-on">(.+?)</article>', data, re.DOTALL):
             article_dict = self._list_article(article_match.group(1))
             if article_dict is not None:
                 item = self.dir_item()
                 item.update(article_dict)
-                item['url'] = "s#" + item['url']
+                item['url'] = item['url'] + "#s"
                 result.append(item)
         return result
 
@@ -129,7 +131,7 @@ class JojContentProvider(ContentProvider):
                 item = self.video_item()
                 groupdict = archive_list_match.groupdict()
                 if 'season' in groupdict and 'episode' in groupdict:
-                    item['title'] = "(S%02dE%02d) - %s"%(int(archive_list_match.group('season')), int(archive_list_match.group('episode')), archive_list_match.group('title'))
+                    item['title'] = "(S%02d E%02d) - %s"%(int(archive_list_match.group('season')), int(archive_list_match.group('episode')), archive_list_match.group('title'))
                 else:
                     item['title'] = "(%s) - %s"%(archive_list_match.group('date'), archive_list_match.group('title'))
                 item['url'] = self._fix_url(archive_list_match.group('url'))
@@ -146,15 +148,30 @@ class JojContentProvider(ContentProvider):
 
     def list(self, url):
         self.info("list %s" % url)
-        if url.startswith("s#"):
-            result = self.list_show(url[2:], list_series=True)
+        url_parsed = urlparse.urlparse(url)
+        if not url_parsed.path:
+            if url not in BASE_URL.values():
+                print "not joj.sk url!"
+                return []
+            return self.subcategories(url)
+        if url_parsed.fragment == "s":
+            result = self.list_show(url, list_series=True)
             if not result:
-                result = self.list_show(url[2:], list_episodes=True)
+                result = self.list_show(url, list_episodes=True)
             return result
         return self.list_show(url, list_episodes=True)
 
     def categories(self):
-        return self.list_base('http://www.joj.sk/archiv-filter')
+        return[
+            self.dir_item("JOJ", BASE_URL["JOJ"]),
+            self.dir_item("JOJ Plus", BASE_URL["JOJ Plus"]),
+            self.dir_item("WAU", BASE_URL["WAU"])]
+
+    def subcategories(self, base_url):
+        live = self.video_item()
+        live['title'] = '[B]Live[/B]'
+        live['url'] = base_url + 'live.html'
+        return [live] + self.list_base(base_url + '/archiv-filter')
 
     def rtmp_url(self, playpath, pageurl, type=None, balance=None):
         server = 'n11.joj.sk'

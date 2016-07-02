@@ -1,3 +1,5 @@
+[B]1.2.7[/B]
+- re-add other webpages(plus, wau) + live streams
 [B]1.2.6[/B]
 - fixed after webpage redesign
 [B]1.2.5[/B]
