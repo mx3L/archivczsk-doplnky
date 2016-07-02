@@ -1,3 +1,5 @@
+[B]1.2.6[/B]
+- fixed after webpage redesign
 [B]1.2.5[/B]
 - clean up episodes listing of show 'ceskoslovensko ma talent'
 - and slovak language string fixes, thanks to @jose1711
