@@ -112,30 +112,31 @@ class JojContentProvider(ContentProvider):
              'Sledovanosť':'seen',
              'Séria':'season',
              'Epizóda':'episode'}
-            headers_data = re.search('<div class="i head e-video-categories">(.+?)</div>', episodes_data, re.DOTALL).group(1)
-            headers = []
-            for span_match in re.finditer('<span[^>]*>([^<]+)</span>', headers_data):
-                key = title_to_key.get(span_match.group(1))
-                if key is None:
-                    print "undefined key", span_match.group(1)
-                    headers.append("")
-                else:
-                    headers.append(key)
-            archive_list_pattern  = r'<a href="(?P<url>[^"]+)" title="(?P<title>[^"]+)[^>]+>\s+'
-            for key in headers:
-                if key in ("", "title"):
-                    archive_list_pattern += r'^.+?$\s+'
-                else:
-                    archive_list_pattern += r'<span>(?P<%s>[^<]+)</span>\s+'%key
-            for archive_list_match in re.finditer(archive_list_pattern, episodes_data, re.MULTILINE):
-                item = self.video_item()
-                groupdict = archive_list_match.groupdict()
-                if 'season' in groupdict and 'episode' in groupdict:
-                    item['title'] = "(S%02d E%02d) - %s"%(int(archive_list_match.group('season')), int(archive_list_match.group('episode')), archive_list_match.group('title'))
-                else:
-                    item['title'] = "(%s) - %s"%(archive_list_match.group('date'), archive_list_match.group('title'))
-                item['url'] = self._fix_url(archive_list_match.group('url'))
-                result.append(item)
+            headers_match = re.search('<div class="i head e-video-categories">(.+?)</div>', episodes_data, re.DOTALL)
+            if headers_match is not None:
+                headers = []
+                for span_match in re.finditer('<span[^>]*>([^<]+)</span>', headers_match.group(1)):
+                    key = title_to_key.get(span_match.group(1))
+                    if key is None:
+                        print "undefined key", span_match.group(1)
+                        headers.append("")
+                    else:
+                        headers.append(key)
+                archive_list_pattern  = r'<a href="(?P<url>[^"]+)" title="(?P<title>[^"]+)[^>]+>\s+'
+                for key in headers:
+                    if key in ("", "title"):
+                        archive_list_pattern += r'^.+?$\s+'
+                    else:
+                        archive_list_pattern += r'<span>(?P<%s>[^<]+)</span>\s+'%key
+                for archive_list_match in re.finditer(archive_list_pattern, episodes_data, re.MULTILINE):
+                    item = self.video_item()
+                    groupdict = archive_list_match.groupdict()
+                    if 'season' in groupdict and 'episode' in groupdict:
+                        item['title'] = "(S%02d E%02d) - %s"%(int(archive_list_match.group('season')), int(archive_list_match.group('episode')), archive_list_match.group('title'))
+                    else:
+                        item['title'] = "(%s) - %s"%(archive_list_match.group('date'), archive_list_match.group('title'))
+                    item['url'] = self._fix_url(archive_list_match.group('url'))
+                    result.append(item)
 
             pagination_data = util.substr(data, '<nav>','</nav>')
             next_match = re.search(r'a href="(?P<url>[^"]+)" aria-label="Ďalej"', pagination_data, re.DOTALL)
@@ -170,7 +171,7 @@ class JojContentProvider(ContentProvider):
     def subcategories(self, base_url):
         live = self.video_item()
         live['title'] = '[B]Live[/B]'
-        live['url'] = base_url + 'live.html'
+        live['url'] = base_url + '/live.html'
         return [live] + self.list_base(base_url + '/archiv-filter')
 
     def rtmp_url(self, playpath, pageurl, type=None, balance=None):
@@ -196,8 +197,8 @@ class JojContentProvider(ContentProvider):
         item = item.copy()
         url = item['url']
         if url.endswith('live.html'):
-            channel = re.search(r'http://(\w+)\.joj\.sk', url).group(1)
-            for original, replacement in {'www': 'joj', 'plus': 'jojplus'}.items():
+            channel = urlparse.urlparse(url).netloc.split('.')[0]
+            for original, replacement in {'joj': 'joj', 'plus': 'jojplus'}.items():
                 if channel == original:
                     channel = replacement
                     break
