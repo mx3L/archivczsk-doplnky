@@ -177,7 +177,7 @@ class Parser:
 
         wrapper_items = re.split('<section class="l-constrained movies-list-carousel-wrapper">', content)
 
-        title_re = re.compile('<h2 class="[^"]+"(?: data-scroll="cid-[^"]+")?>(.+)</h2>[^<]*<div class="l-movies-list', re.S)
+        title_re = re.compile('<h2(?: class="[^"]+")?(?: data-scroll="cid-[^"]+")?>(.+)</h2>[^<]*<div class="l-movies-list', re.S)
         link_re = re.compile('<h2[^>]*>[^<]*<a href="([^"]+)">', re.S)
         for wrapper_item in wrapper_items:
             title_result = title_re.search(wrapper_item)

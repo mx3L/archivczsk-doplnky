@@ -1,3 +1,6 @@
+2016-23-03 [0.3.5]
+ * Fixed parsing of video list title
+
 2016-23-03 [0.3.4]
  * Fixed parsing video url
  * Play SD when HD respond 403 HTTP status

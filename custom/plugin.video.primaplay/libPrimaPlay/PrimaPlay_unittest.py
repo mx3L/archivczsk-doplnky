@@ -5,7 +5,6 @@ import os, sys
 import PrimaPlay
 import urllib2
 
-
 user = 'text@example.com';
 password = 'password';
 
@@ -147,22 +146,21 @@ class PrimaPlayUnitTest(unittest.TestCase):
         page = prima_play.get_page('http://play.iprima.cz')
 
         self.assertEqual(page.player, None)
-        self.assertEqual(len(page.video_lists), 7)
-        self.assertEqual(page.video_lists[0].title, u'Oblíbené seriály')
-        self.assertEqual(page.video_lists[0].link,
-            'http://play.iprima.cz?genres[]=p128387&reltype=general&cat[]=SERIES&sort[]=latest')
-        self.assertEqual(len(page.video_lists[0].item_list), 12)
-        self.assertEqual(page.video_lists[0].item_list[0].title,
-            u'Vinaři 2 Řady , 32 Epizod')
-        self.assertEqual(page.video_lists[0].item_list[0].link,
-            'http://play.iprima.cz/vinari')
-        self.assertTrue(page.video_lists[0].item_list[0].description);
+        self.assertEqual(len(page.video_lists), 8)
+        self.assertEqual(page.video_lists[1].title, u'Pořady a Seriály')
+        self.assertEqual(page.video_lists[1].link, None)
+        self.assertEqual(len(page.video_lists[1].item_list), 19)
+        self.assertEqual(page.video_lists[1].item_list[0].title,
+            u'Ohnivý kuře 32 Epizod')
+        self.assertEqual(page.video_lists[1].item_list[0].link,
+            'http://play.iprima.cz/ohnivy-kure')
+        self.assertTrue(page.video_lists[1].item_list[0].description);
         self.assertEqual(len(page.filter_lists), 3)
         self.assertEqual(page.filter_lists[0].title, u'Žánr')
-        self.assertEqual(len(page.filter_lists[0].item_list), 31)
-        self.assertEqual(page.filter_lists[0].item_list[0].title, u'Katastrofický')
+        self.assertEqual(len(page.filter_lists[0].item_list), 30)
+        self.assertEqual(page.filter_lists[0].item_list[0].title, u'Akční')
         self.assertEqual(page.filter_lists[0].item_list[0].link,
-            'http://play.iprima.cz?genres[]=p14197')
+            'http://play.iprima.cz?genres[]=p14198')
 
     def test_get_page__episodes(self):
         prima_play = PrimaPlay.Parser(mockUserAgent(), mockTime())

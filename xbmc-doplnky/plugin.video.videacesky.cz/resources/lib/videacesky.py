@@ -24,6 +24,8 @@ import re
 import urllib
 import urllib2
 import cookielib
+import json
+from xml.etree.ElementTree import fromstring
 
 import util
 import resolver
@@ -41,15 +43,15 @@ class VideaceskyContentProvider(ContentProvider):
         return ['categories', 'resolve', 'search']
 
     def list(self, url):
-        if url.find('#top10#') == 0:
-            return self.list_top10(util.request(self.base_url))
+        if url.find('zebricky/') == 0:
+            return self.list_top10(util.request(self.base_url+url))
         if url.find("#related#") == 0:
             return self.list_related(util.request(url[9:]))
         else:
             return self.list_content(util.request(self._url(url)), self._url(url))
 
     def search(self, keyword):
-        return self.list('?s=' + urllib.quote(keyword))
+        return self.list('/hledat?q=' + urllib.quote(keyword))
 
     def categories(self):
         result = []
@@ -58,15 +60,11 @@ class VideaceskyContentProvider(ContentProvider):
         item['url'] = "?orderby=post_date"
         result.append(item)
         item = self.dir_item()
-        item['type'] = 'top'
-        item['url'] = "?r_sortby=highest_rated"
-        result.append(item)
-        item = self.dir_item()
-        item['title'] = '[B]TOP 10 měsíce[/B]'
-        item['url'] = "#top10#"
+        item['title'] = 'Top of the month'
+        item['url'] = "zebricky/mesic/vse"
         result.append(item)
         data = util.request(self.base_url)
-        data = util.substr(data, '<ul id=\"headerMenu2\">', '</ul>')
+        data = util.substr(data, '<ul class=\"nav categories m-b\">', '</div>')
         pattern = '<a href=\"(?P<url>[^\"]+)(.+?)>(?P<name>[^<]+)'
         for m in re.finditer(pattern, data, re.IGNORECASE | re.DOTALL):
             if m.group('url') == '/':
@@ -79,47 +77,44 @@ class VideaceskyContentProvider(ContentProvider):
 
     def list_top10(self, page):
         result = []
-        data = util.substr(page, '<div id="mosthighestratingposts-2"', '<div id="most_commented_widget-4"')
-        pattern = '<li><a href=\"(?P<url>[^"]+)\">(?P<title>[^"]+)</a></li>'
+        data = util.substr(page, '<div class=\"line-items no-wrapper no-padder', '<div class=\"my-pagination>')
+        pattern = '<article class=\"video-line.+?<a href=\"(?P<url>[^\"]+)\" *title=\"(?P<title>[^\"]+)\"(.+?)<img src=\"(?P<img>[^\"]+)\"'
         for m in re.finditer(pattern, data, re.IGNORECASE | re.DOTALL):
             item = self.video_item()
             item['title'] = m.group('title')
-            item['url'] = m.group('url')
+            item['url'] = self.base_url[:-1] + m.group('url')
             self._filter(result, item)
         return result
 
     def list_content(self, page, url=None):
         result = []
         if not url: url = self.base_url
-        data = util.substr(page, '<div class=\"contentArea', '<div class=\"pagination\">')
-        pattern = '<h\d class=\"postTitle\"><a href=\"(?P<url>[^\"]+)(.+?)<span>(?P<title>[^<]+)</span></a></h\d>(.+?)<span class=\"postDate\">(?P<date>[^\<]+)</span>(.+?)<div class=\"postContent">[^<]+<a[^>]+[^<]+<img src=\"(?P<img>[^\"]+)(.+?)<div class=\"obs\">(?P<plot>.+?)</div>'
+        data = util.substr(page, '<div class=\"items no-wrapper no-padder', '<div class=\"my-pagination>')
+        pattern = '<article class=\"video\".+?<a href=\"(?P<url>[^\"]+)\" *title=\"(?P<title>[^\"]+)\"(.+?)<img src=\"(?P<img>[^\"]+)\".+?<p>(?P<plot>[^<]+?)<\/p>.+?<li class=\"i-published\".+?title=\"(?P<date>[^\"]+)\"'
         for m in re.finditer(pattern, data, re.IGNORECASE | re.DOTALL):
             item = self.video_item()
             item['title'] = m.group('title')
             item['img'] = m.group('img').strip()
             item['plot'] = self.decode_plot(m.group('plot'))
-            item['url'] = m.group('url')
+            item['url'] = self.base_url[:-1] + m.group('url')
             item['menu'] = {'$30060':{'list':'#related#' + item['url'], 'action-type':'list'}}
+            print item
             self._filter(result, item)
-        data = util.substr(page, '<div class=\"pagination\">', '</div>')
-        m = re.search('<li class=\"info\"><span>([^<]+)', data)
-        n = re.search('<li class=\"prev\"[^<]+<a href=\"(?P<url>[^\"]+)[^<]+<span>(?P<name>[^<]+)', data)
-        k = re.search('<li class=\"next\"[^<]+<a href=\"(?P<url>[^\"]+)[^<]+<span>(?P<name>[^<]+)', data)
-        # replace last / + everyting till the end
-        # myurl = re.sub('\/[\w\-]+$', '/', url)
-        if not m == None:
-            if not n == None:
-                item = self.dir_item()
-                item['type'] = 'prev'
-                # item['title'] = '%s - %s' % (m.group(1), n.group('name'))
-                item['url'] = n.group('url')
-                result.append(item)
-            if not k == None:
-                item = self.dir_item()
-                item['type'] = 'next'
-                # item['title'] = '%s - %s' % (m.group(1), k.group('name'))
-                item['url'] = k.group('url')
-                result.append(item)
+        data = util.substr(page, '<ul class=\"my-pagination', '</div>')
+        n = re.search('<li class=\"paginate_button previous *\"[^<]+<a href=\"(?P<url>[^\"]+)\">(?P<name>[^<]+)<', data)
+        k = re.search('<li class=\"paginate_button next *\"[^<]+<a href=\"(?P<url>[^\"]+)\">(?P<name>[^<]+)<', data)
+        if not n == None:
+            item = self.dir_item()
+            item['type'] = 'prev'
+            # item['title'] = '%s - %s' % (m.group(1), n.group('name'))
+            item['url'] = n.group('url')
+            result.append(item)
+        if not k == None:
+            item = self.dir_item()
+            item['type'] = 'next'
+            # item['title'] = '%s - %s' % (m.group(1), k.group('name'))
+            item['url'] = k.group('url')
+            result.append(item)
         return result
 
     def list_related(self, page):
@@ -157,16 +152,18 @@ class VideaceskyContentProvider(ContentProvider):
         resolved = []
         item = item.copy()
         url = self._url(item['url'])
-        data = util.substr(util.request(url), '<div class=\"postContent\"', '<div class="fb_share">')
+        data = util.substr(util.request(url), '<![CDATA[', '</script>')
 
-        playlist = re.findall('ihv_video_instance_..setup(?P<video_instance>.+?)events', data, re.MULTILINE | re.DOTALL)
+        playlist = re.search('''ihv_video_instance_\d+\.setup.+?(?P<jsondata>'playlist':.+?)width:''', data, re.MULTILINE | re.DOTALL)
+	jsondata = re.sub(' +',' ','{%s' % playlist.group('jsondata').replace('file:','"file":').replace('label:','"label":').replace('kind:','"kind":').replace('default:','"default":').replace('true','"true"').replace('],',']'))+'}'
+        jsondata=json.decode(jsondata)
 
-        for playlist_item in playlist:
-            video_url = resolver.findstreams(playlist_item, ['file: "(?P<url>.+?)"'])
-            subs = re.search('file: \"(?P<url>.+?.srt)', playlist_item)
+        for playlist_item in jsondata['playlist']:
+            video_url = resolver.findstreams([playlist_item['file']])
+            subs = playlist_item['tracks']
             if video_url and subs:
                 for i in video_url:
-                    i['subs'] = subs.group(1)
+                    i['subs'] = self.base_url[:-1]+subs[0]['file']
             resolved += video_url[:]
 
         if not resolved:

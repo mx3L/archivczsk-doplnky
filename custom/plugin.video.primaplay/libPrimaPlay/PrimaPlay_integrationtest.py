@@ -5,7 +5,6 @@ import os, sys
 import PrimaPlay
 import urllib, urllib2
 
-
 class CacheUserAgent(PrimaPlay.UserAgent):
     def __init__(self, cache_dir = None):
         super(CacheUserAgent, self).__init__()
@@ -50,10 +49,11 @@ class PrimaPlayIntegrationTest(unittest.TestCase):
         self.assertTrue(len(page.video_lists[0].item_list))
         self.assertEqual(len(page.filter_lists), 3)
         self.assertEqual(page.filter_lists[0].title, u'Žánr')
-        self.assertEqual(len(page.filter_lists[0].item_list), 33)
-        self.assertEqual(page.filter_lists[0].item_list[0].title, u'Životopisný')
+        self.assertTrue(len(page.filter_lists[0].item_list))
+        page.filter_lists[0].item_list.sort(key=lambda elem: elem.title)
+        self.assertEqual(page.filter_lists[0].item_list[0].title, u'Akční')
         self.assertEqual(page.filter_lists[0].item_list[0].link,
-            'http://play.iprima.cz?genres[]=p14220')
+            'http://play.iprima.cz?genres[]=p14198')
 
     def test_prostreno(self):
         page = self.play_parser.get_page('http://play.iprima.cz/prostreno')
@@ -68,7 +68,7 @@ class PrimaPlayIntegrationTest(unittest.TestCase):
         self.assertEqual(epizodes_page.player, None)
         self.assertEqual(len(epizodes_page.video_lists), 1)
         self.assertEqual(len(epizodes_page.video_lists[0].item_list), 18)
-        self.assertEqual(epizodes_page.video_lists[0].next_link, 'https://play.iprima.cz/tdi/dalsi/prostreno?cat[]=EPISODE&src=p14877&sort[]=Rord&sort[]=latest&offset=18')
+        self.assertEqual(epizodes_page.video_lists[0].next_link, 'https://play.iprima.cz/tdi/dalsi/prostreno?cat[]=EPISODE&src=p14877&sort[]=latest&sort[]=Rord&offset=18')
 
     def test_prostreno_video(self):
         page = self.play_parser.get_page('http://play.iprima.cz/prostreno')
