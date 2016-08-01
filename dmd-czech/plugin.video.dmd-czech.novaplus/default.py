@@ -25,7 +25,7 @@ nova_service_url = 'http://cdn-lb.cdn.cra.cz/'
 nova_app_id = 'nova-vod'
 
 def OBSAH():
-    addDir('Nejnovější','http://novaplus.nova.cz',6,icon,1)
+    addDir('Nejsledovanější','http://novaplus.nova.cz',6,icon,1)
     addDir('Seriály a pořady','http://novaplus.nova.cz/porady/',5,icon,1)
     addDir('Televizní noviny','http://novaplus.nova.cz/porad/televizni-noviny',1,icon,1)
 
@@ -62,28 +62,19 @@ def CATEGORIES(url,page):
                 continue
             url = item.a['href'].encode('utf-8')
             title = item.a.span.getText(" ").encode('utf-8')
-            match = re.compile('porad/(.+?)').findall(url)
-            thumb = 'http://static.cz.prg.cmestatic.com/static/cz/microsites/avod/img/porady/'+match[0]+'.jpg'
+            id_porad = item['data-show-id']
+            # pruhledna loga
+            thumb = 'http://static.cz.prg.cmestatic.com/static/cz/microsites/avod/img/porady/logo/' + str(id_porad) + '.png'
+            # loga s pozadim
+            #thumb = 'http://static.cz.prg.cmestatic.com' + item.img['src']
             addDir(title,__baseurl__ + url,2,thumb,1)
 
 
 def INDEX(url,page):
     doc = read_page(url)
-    items = doc.find('div', 'show_videos')
-    if items:
+    style = doc.find('div', id='extra_index')
+    if style:
     # prvni styl stranky s poradem
-        items = items.find('div', 'items')
-        for item in items.findAll('div', 'item'):
-                item2 = item.find('h3')
-                item3 = item.find('div', 'img')
-                url = item3.h3.a['href'].encode('utf-8')
-                title = item3.h3.a.getText(" ").encode('utf-8')
-                thumb = item3.a.img['src']
-                if re.search('voyo.nova.cz', str(url), re.U):
-                    continue
-                addDir(title,__baseurl__+url,3,thumb,1)
-    else:
-    # druhy styl stranky s poradem
         items = doc.find('div', id='extra_index')
         items = items.find('div', 'items')
         for item in items.findAll('div', 'item'):
@@ -95,6 +86,19 @@ def INDEX(url,page):
                 if re.search('voyo.nova.cz', str(url), re.U):
                     continue
                 addDir(title,__baseurl__+url,3,thumb,1)
+ 
+    else:
+    # druhy styl stranky s poradem
+        items = doc.find('div', 'items')
+        for item in items.findAll('div', 'item_container'):
+                url = item.a['href'].encode('utf-8')
+                if re.search('voyo.nova.cz', str(url), re.U):
+                    continue
+                item3 = item.find('div', 'img')
+                url = item3.a['href'].encode('utf-8')
+                title = item3.h3.a.getText(" ").encode('utf-8')
+                thumb = item3.a.img['src']
+                addDir(title,__baseurl__+url,3,thumb,1)  
 
 
 def VIDEOLINK(url,name):

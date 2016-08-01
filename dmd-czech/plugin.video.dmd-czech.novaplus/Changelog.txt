@@ -1,3 +1,8 @@
+﻿2016-05-20
+ * Oprava prehravani
+ * Oprava nahledu poradu
+ * Zmena nazvu hlavniho adresare na Nejsledovanejsi
+ * Update grafiky dle aktualniho vzhledu stranek Nova Plus
 2015-11-21
  * Oprava prehravani
 2015-06-11

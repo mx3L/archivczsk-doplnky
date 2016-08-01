@@ -28,7 +28,7 @@ from provider import cached
 class UloztoContentProvider(ContentProvider):
 
     def __init__(self,username=None,password=None,filter=None):
-        ContentProvider.__init__(self,'ulozto.cz','http://www.ulozto.cz/',username,password,filter)
+        ContentProvider.__init__(self,'ulozto.cz','https://www.ulozto.cz/',username,password,filter)
         self.search_type=''
         self.cp = urllib2.HTTPCookieProcessor(cookielib.LWPCookieJar())
         self.rh = UloztoHTTPRedirectHandler()
@@ -204,7 +204,7 @@ class UloztoContentProvider(ContentProvider):
 
         if vip:
             data = util.substr(page,'<h3>Neomezené stahování</h3>','</div')
-            m = re.search('<a(.+?)href=\"(?P<url>[^\"]+)\"',data,re.IGNORECASE | re.DOTALL)
+            m = re.search('<a(.+?)href=\"(?P<url>[^\"#]+)\"',data,re.IGNORECASE | re.DOTALL)
             if m:
                 try:
                     self.rh.throw = True
@@ -236,7 +236,8 @@ class UloztoContentProvider(ContentProvider):
 
     def _get_file_url_anonymous(self,page,post_url,headers,captcha_cb):
 
-        capdata = json.loads(util.request(self._url('reloadXapca.php')))
+        data = util.request(self._url('reloadXapca.php'))
+        capdata = json.loads(data)
         captcha = capdata['image']
         if not captcha.startswith('http'):
             captcha = 'http:' + captcha
@@ -253,6 +254,7 @@ class UloztoContentProvider(ContentProvider):
         ts = re.search('<input type=\"hidden\" name=\"ts\".+?value=\"([^\"]+)"',page,re.IGNORECASE | re.DOTALL)
         cid = re.search('<input type=\"hidden\" name=\"cid\".+?value=\"([^\"]+)"',page,re.IGNORECASE | re.DOTALL)
         sign = re.search('<input type=\"hidden\" name=\"sign\".+?value=\"([^\"]+)"',page,re.IGNORECASE | re.DOTALL)
+        sign_a = re.search('<input type=\"hidden\" name=\"sign_a\".+?value=\"([^\"]+)"',page,re.IGNORECASE | re.DOTALL)
         has = capdata['hash']
         salt = capdata['salt']
         timestamp = capdata['timestamp']
@@ -260,7 +262,7 @@ class UloztoContentProvider(ContentProvider):
         if not (sign and ts and cid and has and token):
             util.error('[uloz.to] - unable to parse required params from page, plugin needs fix')
             return
-        request = {'captcha_type':'xcapca','hash':has,'salt':salt,'timestamp':timestamp,'ts':ts.group(1),'cid':cid.group(1),'sign':sign.group(1),'captcha_value':code,'do':'downloadDialog-freeDownloadForm-submit','_token_':token.group(1)}
+        request = {'captcha_type':'xapca','hash':has,'salt':salt,'timestamp':timestamp,'ts':ts.group(1),'cid':'','sign':sign.group(1),'sign_a':sign_a.group(1),'captcha_value':code,'do':'download-freeDownloadTab-freeDownloadForm-submit','_token_':token.group(1),'adi':'f'}
         req = urllib2.Request(post_url,urllib.urlencode(request))
         req.add_header('User-Agent',util.UA)
         req.add_header('Referer',post_url)
