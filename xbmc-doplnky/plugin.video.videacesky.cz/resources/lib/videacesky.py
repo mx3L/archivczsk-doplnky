@@ -155,8 +155,8 @@ class VideaceskyContentProvider(ContentProvider):
         data = util.substr(util.request(url), '<![CDATA[', '</script>')
 
         playlist = re.search('''ihv_video_instance_\d+\.setup.+?(?P<jsondata>'playlist':.+?)width:''', data, re.MULTILINE | re.DOTALL)
-	jsondata = re.sub(' +',' ','{%s' % playlist.group('jsondata').replace('file:','"file":').replace('label:','"label":').replace('kind:','"kind":').replace('default:','"default":').replace('true','"true"').replace('],',']'))+'}'
-        jsondata=json.decode(jsondata)
+	jsondata = re.sub(' +',' ','{%s' % playlist.group('jsondata').replace('file:','"file":').replace('label:','"label":').replace('kind:','"kind":').replace('default:','"default":').replace('tracks','"tracks"').replace('true','"true"').replace('],',']'))+'}'
+        jsondata = json.loads(jsondata.replace("'",'"'))
 
         for playlist_item in jsondata['playlist']:
             video_url = resolver.findstreams([playlist_item['file']])
