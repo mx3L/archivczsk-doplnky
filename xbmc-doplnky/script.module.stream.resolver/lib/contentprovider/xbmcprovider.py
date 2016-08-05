@@ -136,7 +136,7 @@ class XBMContentProvider(object):
 						streams['title'],
 						streams['quality'],
 						streams['url'],
-						subs=self.get_subtitle(streams['subs'], stream.get('headers')),
+						subs=self.get_subtitle(streams['subs'], streams.get('headers')),
 						filename=params['title'],
 						headers=streams.get('headers',dict()),
 						lang=streams.get('lang',''))
