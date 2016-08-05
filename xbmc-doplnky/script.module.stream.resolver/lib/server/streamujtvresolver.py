@@ -8,25 +8,36 @@
 # */
 import re,util
 import simplejson as json
+import urllib2
+import cookielib
 from base64 import b64decode, b64encode
 
 __name__='streamujtv'
 def supports(url):
     return not _regex(url) == None
 
+def request(opener, url, headers):
+    req = urllib2.Request(url, headers=headers)
+    resp = opener.open(req)
+    data = resp.read()
+    resp.close()
+    return data
+
 # returns the steam url
 def resolve(url):
     m = _regex(url)
     if m:
-        data = util.request(url)
-        if data.find('Toto video neexistuje') > 0:
-            util.error('Video bylo smazano ze serveru')
-            return
+        cookies = cookielib.LWPCookieJar()
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookies))
         player = 'http://www.streamuj.tv/new-flash-player/mplugin4.swf'
         headers = {'User-Agent':'Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0',
                     'Referer':'http://www.streamuj.tv/mediaplayer/player.swf'}
+        data = request(opener, url, headers)
+        if data.find('Toto video neexistuje') > 0:
+            util.error('Video bylo smazano ze serveru')
+            return
         burl = b64decode('aHR0cDovL2Z1LWNlY2gucmhjbG91ZC5jb20vcGF1dGg=')
-        key = util.request('http://www.streamuj.tv/_key.php?auth=3C27f5wk6qB3g7nZ5SDYf7P7k1572rFH1QxV0QQ')
+        key = request(opener, 'http://www.streamuj.tv/_key.php?auth=3C27f5wk6qB3g7nZ5SDYf7P7k1572rFH1QxV0QQ', headers)
         index = 0
         result = []
         qualities = re.search('rn\:[^\"]*\"([^\"]*)',data,re.IGNORECASE|re.DOTALL)
@@ -47,7 +58,11 @@ def resolve(url):
                 qindex = 0
                 for stream in streams:
                     res = json.loads(util.post_json(burl,{'link':stream,'player':player,'key':key}))
-                    stream = res['link']
+                    req = urllib2.Request(res['link'], headers=headers)
+                    req.get_method = lambda : 'HEAD'
+                    resp = opener.open(req)
+                    stream = resp.geturl()
+                    resp.close()
                     q = rn[qindex]
                     if q == 'HD':
                         q = '720p'
@@ -58,7 +73,10 @@ def resolve(url):
                         l += ' + subs'
                         s = subs.group(1)
                         s = json.loads(util.post_json(burl,{'link':s,'player':player, 'key':key}))
-                        result.append({'url':stream,'quality':q,'subs':s['link'],'headers':headers,'lang':l})
+                        cookie_header = ",".join("%s=%s"%(c.name, c.value) for c in cookies)
+                        subtitle_headers = {"Cookie":cookie_header}
+                        subtitle_headers.update(headers)
+                        result.append({'url':stream,'quality':q,'subs':s['link'],'headers':subtitle_headers,'lang':l})
                     else:
                         result.append({'url':stream,'quality':q,'headers':headers, 'lang':l})
                     qindex+=1

@@ -104,14 +104,42 @@ class XBMContentProvider(object):
 			xbmcutil.add_search_folder(xbmcutil.__lang__(30003), params, xbmcutil.icon('search.png'))
 		self.list(self.provider.categories())
 
+	def get_subtitle(self, url, headers=None):
+		if url and headers:
+			try:
+				import hashlib
+				local = os.path.join("/tmp", 'xbmc_subs_%s.srt'%int(hashlib.md5(url).hexdigest(), 16))
+				if not os.path.isfile(local):
+					data = util.request(url, headers)
+					with open(local, "w") as f:
+						f.write(data)
+				return local
+			except Exception:
+				traceback.print_exc()
+		return url
+
 	def play(self, params):
 		streams = self.resolve(params['play'])
 		if streams is not None:
 			if type(streams) == type([]):
 				for stream in streams:
-					xbmcutil.add_play(params['title'], stream['title'], stream['quality'], stream['url'], subs=stream['subs'], filename=params['title'], headers=stream.get('headers',dict()), lang=stream.get('lang',''))
+					xbmcutil.add_play(params['title'],
+							stream['title'],
+							stream['quality'],
+							stream['url'],
+							subs=self.get_subtitle(stream['subs'], stream.get('headers')),
+							filename=params['title'],
+							headers=stream.get('headers',dict()),
+							lang=stream.get('lang',''))
 			else:
-				xbmcutil.add_play(params['title'], streams['title'], streams['quality'], streams['url'], subs=streams['subs'], filename=params['title'], headers=streams.get('headers',dict()), lang=streams.get('lang',''))
+				xbmcutil.add_play(params['title'],
+						streams['title'],
+						streams['quality'],
+						streams['url'],
+						subs=self.get_subtitle(streams['subs'], stream.get('headers')),
+						filename=params['title'],
+						headers=streams.get('headers',dict()),
+						lang=streams.get('lang',''))
 
 
 
