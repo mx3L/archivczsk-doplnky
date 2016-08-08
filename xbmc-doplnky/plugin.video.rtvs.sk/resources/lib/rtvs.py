@@ -66,6 +66,24 @@ def to_unicode(text, encoding='utf-8'):
         return text
     return unicode(text, encoding, errors='replace')
 
+def get_streams_from_manifest_url(url):
+    result = []
+    manifest = util.request(url)
+    for m in re.finditer(r'^#EXT-X-STREAM-INF:(?P<info>.+)\n(?P<chunk>.+)', manifest, re.MULTILINE):
+        stream = {}
+        stream['quality'] = '???'
+        stream['bandwidth'] = 0
+        for info in re.split(r''',(?=(?:[^'"]|'[^']*'|"[^"]*")*$)''', m.group('info')):
+            key, val = info.split('=', 1)
+            if key == "BANDWIDTH":
+                stream['bandwidth'] = int(val)
+            if key == "RESOLUTION":
+                stream['quality'] = val.split("x")[1] + "p"
+        stream['url'] = url[:url.rfind('/') + 1] + m.group('chunk')
+        result.append(stream)
+    result.sort(key=lambda x:x['bandwidth'], reverse=True)
+    return result
+
 
 class RtvsContentProvider(ContentProvider):
 
@@ -87,6 +105,8 @@ class RtvsContentProvider(ContentProvider):
     def list(self, url):
         if url.find('#az#') == 0:
             return self.az()
+        if url.find('#live#') == 0:
+            return self.live()
         elif url.find("#date#") == 0:
             month, year = url.split('#')[-1].split('.')
             return self.date(int(year), int(month))
@@ -117,6 +137,24 @@ class RtvsContentProvider(ContentProvider):
         d = date.today()
         item['url'] = "#date#%d.%d" % (d.month, d.year)
         result.append(item)
+        item = self.dir_item()
+        item['title'] = '[B]Živé vysielanie[/B]'
+        item['url'] = "#live#"
+        result.append(item)
+        return result
+
+    def live(self):
+        result = []
+        item = self.video_item("live.1")
+        item['title'] = "STV1"
+        result.append(item)
+        item = self.video_item("live.2")
+        item['title'] = "STV2"
+        result.append(item)
+        for i in range(1,9):
+            item = self.video_item("live.%d"%(i+6))
+            item['title'] = "RIO"+ str(i)
+            result.append(item)
         return result
 
     def az(self):
@@ -232,37 +270,39 @@ class RtvsContentProvider(ContentProvider):
     def resolve(self, item, captcha_cb=None, select_cb=None):
         result = []
         item = item.copy()
-        video_id = item['url'].split('/')[-1]
-        self.info("<resolve> videoid: %s" % video_id)
-        videodata = util.json.loads(util.request("http://www.rtvs.sk/json/archive.json?id=" + video_id))
-        for v in videodata['playlist']:
-            url = "%s/%s" % (v['baseUrl'], v['url'].replace('.f4m', '.m3u8'))
-            #http://cdn.srv.rtvs.sk:1935/vod/_definst_//smil:fZGAj3tv0QN4WtoHawjZnKy35t7dUaoB.smil/manifest.m3u8
-            if '/smil:' in url:
-                manifest = util.request(url)
-                for m in re.finditer('#EXT-X-STREAM-INF:PROGRAM-ID=\d+,BANDWIDTH=\d+,RESOLUTION=(?P<resolution>\d+x\d+)\s(?P<chunklist>[^\s]+)', manifest, re.DOTALL):
+        if item['url'].startswith('live.'):
+            channel_id = item['url'].split('.')[1]
+            data = util.request("http://www.rtvs.sk/json/live5.json?c=%s&b=mozilla&p=linux&v=47&f=1&d=1"%(channel_id))
+            videodata = util.json.loads(data)[0]
+            for stream in get_streams_from_manifest_url(videodata['sources'][0]['file']):
+                item = self.video_item()
+                item['title'] = videodata.get('title','')
+                item['url'] = stream['url']
+                item['quality'] = stream['quality']
+                item['img'] = videodata.get('image','')
+                result.append(item)
+        else:
+            video_id = item['url'].split('/')[-1]
+            self.info("<resolve> videoid: %s" % video_id)
+            videodata = util.json.loads(util.request("http://www.rtvs.sk/json/archive.json?id=" + video_id))
+            for v in videodata['playlist']:
+                url = "%s/%s" % (v['baseUrl'], v['url'].replace('.f4m', '.m3u8'))
+                #http://cdn.srv.rtvs.sk:1935/vod/_definst_//smil:fZGAj3tv0QN4WtoHawjZnKy35t7dUaoB.smil/manifest.m3u8
+                if '/smil:' in url:
+                    for stream in get_streams_from_manifest_url(url):
+                        item = self.video_item()
+                        item['title'] = v['details']['name']
+                        item['surl'] = item['title']
+                        item['url'] = stream['url']
+                        item['quality'] = stream['quality']
+                        result.append(item)
+                else:
                     item = self.video_item()
                     item['title'] = v['details']['name']
                     item['surl'] = item['title']
-                    if m.group('resolution') == '1280x720':
-                        item['quality'] = '720p'
-                    elif m.group('resolution') == '852x480':
-                        item['quality'] = '480p'
-                    elif m.group('resolution') == '640x360':
-                        item['quality'] = '360p'
-                    elif m.group('resolution') == '426x240':
-                        item['quality'] = '240p'
-                    else:
-                        item['quality'] = '???'
-                    item['url'] = url[:url.rfind('/')+1] + m.group('chunklist')
+                    item['quality'] = '???'
+                    item['url'] = url
                     result.append(item)
-            else:
-                item = self.video_item()
-                item['title'] = v['details']['name']
-                item['surl'] = item['title']
-                item['quality'] = '???'
-                item['url'] = url
-                result.append(item)
         self.info("<resolve> playlist: %d items" % len(result))
         map(self.info, ["<resolve> item(%d): title= '%s', url= '%s'" % (i, it['title'], it['url']) for i, it in enumerate(result)])
         if len(result) > 0 and select_cb:

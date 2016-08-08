@@ -1,3 +1,6 @@
+[B]1.0.7:[/B]
+- added all live streams
+- default quality option is set back to always ask
 [B]1.0.6:[/B]
 - fix alphabet range to include shows starting with Z/z, thanks to @pokopt
 [B]1.0.5:[/B]
