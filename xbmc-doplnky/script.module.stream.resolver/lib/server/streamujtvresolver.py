@@ -60,7 +60,11 @@ def resolve(url):
                     res = json.loads(util.post_json(burl,{'link':stream,'player':player,'key':key}))
                     req = urllib2.Request(res['link'], headers=headers)
                     req.get_method = lambda : 'HEAD'
-                    resp = opener.open(req)
+                    try:
+                        resp = opener.open(req)
+                    except (urllib2.HTTPError, urllib2.URLError) as e:
+                        print 'skipping %s: %s'%(res['link'], e)
+                        continue
                     stream = resp.geturl()
                     resp.close()
                     q = rn[qindex]
