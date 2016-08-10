@@ -24,11 +24,12 @@ import re
 import urllib
 import urllib2
 import cookielib
-import xml.etree.ElementTree as ET
+import string
+import unicodedata
 try:
-    from bs4 import BeautifulSoup
-except:
-    pass
+    import xml.etree.cElementTree as ET
+except Exception:
+    import xml.etree.ElementTree as ET
 
 import util
 from provider import ContentProvider, cached, ResolveException
@@ -38,12 +39,34 @@ from provider import ContentProvider, cached, ResolveException
 MOVIES_BASE_URL = "http://movies.prehraj.me"
 TV_SHOWS_BASE_URL = "http://tv.prehraj.me"
 MOVIES_A_TO_Z_TYPE = "movies-a-z"
+MOVIES_GENRE = "filmyxmlzanr.php"
+GENRE_PARAM = "zanr"
 TV_SHOWS_A_TO_Z_TYPE = "tv-shows-a-z"
+XML_LETTER = "xmlpismeno"
 TV_SHOW_FLAG = "#tvshow#"
 ISO_639_1_CZECH = "cs"
 MOST_POPULAR_TYPE = "most-popular"
 RECENTLY_ADDED_TYPE = "recently-added"
 SEARCH_TYPE = "search"
+
+
+def encode(string):
+    return unicodedata.normalize('NFKD', string.decode('utf-8')).encode('ascii', 'ignore')
+
+def normalize_filename(name, validChars=None):
+    validFilenameChars = "-_.() %s%s" % (string.ascii_letters, string.digits)
+    if (validChars is not None):
+        validFilenameChars = validChars
+    cleanedFilename = encode(name)
+    return ''.join(c for c in cleanedFilename if c in validFilenameChars)
+
+def make_name(text, lower=True):
+    text = normalize_filename(text, "-_.' %s%s" % (string.ascii_letters, string.digits))
+    word_re = re.compile(r'\b\w+\b')
+    text = ''.join([c for c in text if (c.isalnum() or c == "'" or c ==
+                                        '.' or c == '-' or c.isspace())]) if text else ''
+    text = '-'.join(word_re.findall(text))
+    return text.lower() if lower else text
 
 
 class SosacContentProvider(ContentProvider):
@@ -69,6 +92,7 @@ class SosacContentProvider(ContentProvider):
         for title, url in [
             ("Movies", MOVIES_BASE_URL),
             ("TV Shows", TV_SHOWS_BASE_URL),
+            ("Movies - by Genres", MOVIES_BASE_URL + "/" + MOVIES_GENRE),
             ("Movies - Most popular",
              MOVIES_BASE_URL + "/" + self.ISO_639_1_CZECH + MOST_POPULAR_TYPE),
             ("TV Shows - Most popular",
@@ -78,9 +102,6 @@ class SosacContentProvider(ContentProvider):
             ("TV Shows - Recently added",
              TV_SHOWS_BASE_URL + "/" + self.ISO_639_1_CZECH + RECENTLY_ADDED_TYPE)]:
             item = self.dir_item(title=title, url=url)
-            if title == 'Movies' or title == 'TV Shows':
-                item['menu'] = {"[B][COLOR red]Add all to library[/COLOR][/B]": {
-                    'action': 'add-all-to-library', 'title': title}}
             result.append(item)
         return result
 
@@ -93,13 +114,22 @@ class SosacContentProvider(ContentProvider):
         for letter in ['0-9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'e', 'h', 'i', 'j', 'k', 'l', 'm',
                        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']:
             item = self.dir_item(title=letter.upper())
-            item['url'] = self.base_url + "/" + self.ISO_639_1_CZECH + url_type + "/" + letter
+            if url_type == MOVIES_A_TO_Z_TYPE:
+                item['url'] = self.base_url + "/filmyxmlpismeno.php?pismeno=" + letter
+            else:
+                item['url'] = self.base_url + "/" + self.ISO_639_1_CZECH + url_type + "/" + letter
             result.append(item)
         return result
 
     @staticmethod
     def remove_flag_from_url(url, flag):
         return url.replace(flag, "", count=1)
+
+    @staticmethod
+    def is_xml_letter(url):
+        if XML_LETTER in url:
+            return True
+        return False
 
     @staticmethod
     def is_base_url(url):
@@ -152,6 +182,8 @@ class SosacContentProvider(ContentProvider):
 
     def list(self, url):
         print("Examining url", url)
+        if MOVIES_GENRE in url:
+            return self.list_by_genres(url)
         if self.is_most_popular(url):
             if "movie" in url:
                 return self.list_movies_by_letter(url)
@@ -182,7 +214,48 @@ class SosacContentProvider(ContentProvider):
         if self.has_tv_show_flag(url):
             return self.list_tv_show(self.remove_flags(url))
 
+        if self.is_xml_letter(url):
+            print("xml letter")
+            if "movie" in url:
+                return self.list_xml_letter(url)
+
         return [self.dir_item(title="I failed", url="fail")]
+
+    def list_by_genres(self, url):
+        if "?" + GENRE_PARAM in url:
+            return self.list_xml_letter(url)
+        else:
+            result = []
+            page = util.request(url)
+            data = util.substr(page, '<select name=\"zanr\">', '</select')
+            for s in re.finditer('<option value=\"([^\"]+)\">([^<]+)</option>', data,
+                                 re.IGNORECASE | re.DOTALL):
+                item = {'url': url + "?" + GENRE_PARAM + "=" +
+                        s.group(1), 'title': s.group(2), 'type': 'dir'}
+                self._filter(result, item)
+            return result
+
+    def list_xml_letter(self, url):
+        result = []
+        data = util.request(url)
+        tree = ET.fromstring(data)
+        for film in tree.findall('film'):
+            item = self.video_item()
+            try:
+                if ISO_639_1_CZECH in self.ISO_639_1_CZECH:
+                    title = film.findtext('nazevcs')
+                else:
+                    title = film.findtext('nazeven')
+                item['title'] = '%s (%s)' % (title, film.findtext('rokvydani'))
+                item['name'] = item['title'].encode('utf-8')
+                item['img'] = film.findtext('obrazekmaly')
+                item['url'] = self.base_url + '/player/' + make_name(
+                    film.findtext('nazeven').encode('utf-8') + '-' + film.findtext('rokvydani'))
+                self._filter(result, item)
+            except Exception, e:
+                print("ERR TITLE: ", item['title'], e)
+                pass
+        return result
 
     def list_tv_show(self, url):
         result = []
@@ -405,13 +478,13 @@ class SosacContentProvider(ContentProvider):
     def list_tv_shows_by_letter(self, url):
         print("Getting shows by letter", url)
         shows = self.list_by_letter(url)
-        print("Resloved shows", shows)
+        #print("Resloved shows", shows)
         shows = self.add_directory_flag(shows)
         return self.add_url_flag_to_items(shows, TV_SHOW_FLAG)
 
     def list_movies_by_letter(self, url):
         movies = self.list_by_letter(url)
-        print("Resolved movies", movies)
+        #print("Resolved movies", movies)
         return self.add_video_flag(movies)
 
     def resolve(self, item, captcha_cb=None, select_cb=None):
@@ -435,22 +508,31 @@ class SosacContentProvider(ContentProvider):
         return BeautifulSoup(util.request(url))
 
     def list_search(self, url):
+        print 'list_search', url
         result = []
-        html_tree = self.parse_html(url)
-        for entry in html_tree.select('ul.content li'):
+        data = util.request(url)
+        search_data = util.substr(data, 'ul class="content"','</ul>')
+        for i in re.finditer(r'<li>(.+?)</li>', search_data, re.DOTALL):
             item = self.video_item()
-            entry.p.strong.extract()
-            item['url'] = entry.h4.a.get('href')
-            item['title'] = entry.h4.a.text
-            item['img'] = MOVIES_BASE_URL + entry.img.get('src')
-            item['plot'] = entry.p.text.strip()
-            item['menu'] = {"[B][COLOR red]Add to library[/COLOR][/B]": {
-                'url': item['url'], 'action': 'add-to-library', 'name': item['title']}}
-            self._filter(result, item)
-        # Process next 4 pages, so we'll get 20 items per page instead of 4
-        for next_page in html_tree.select('.pagination ul li.next a'):
-            next_url = '%s/%ssearch%s' % (MOVIES_BASE_URL, self.ISO_639_1_CZECH,
-                                          next_page.get('href'))
+            url_and_title_pattern = re.compile(r'<h4><a href="(?P<url>[^"]+)">(?P<title>[^<]+)</a></h4>')
+            url_and_title_match = url_and_title_pattern.search(i.group(1))
+            if not url_and_title_match:
+                print 'cannot find title/video url in %s!'%(i.group(1))
+                continue
+            item['url'] = url_and_title_match.group('url')
+            item['title'] = url_and_title_match.group('title')
+            img_match = re.search(r'<img src="([^"]+)', i.group(1))
+            if img_match:
+                item['img'] = img_match.group(1)
+            plot_match = re.search(r'</strong>(.+?)</p>', i.group(1), re.DOTALL)
+            if plot_match:
+                item['plot'] = plot_match.group(1).strip()
+            result.append(item)
+        page_data = util.substr(data, '<div class="pagination">', '</div>')
+        next_page_match = re.search(r'<li class="next"><a href="([^"]+)', page_data)
+        if next_page_match:
+            next_url = '%s/%s/search%s' % (MOVIES_BASE_URL, ISO_639_1_CZECH,
+                                          util.decode_html(next_page_match.group(1)))
             page_number = 1
             page = re.search(r'\bpage=(\d+)', url)
             if page:
@@ -460,7 +542,7 @@ class SosacContentProvider(ContentProvider):
             if page:
                 next_page_number = int(page.group(1))
             if page_number > next_page_number:
-                break
+                return result
             if page_number % 5 != 0:
                 result += self.list_search(next_url)
             else:
@@ -468,5 +550,5 @@ class SosacContentProvider(ContentProvider):
                 item['type'] = 'next'
                 item['url'] = next_url
                 result.append(item)
-            break
         return result
+
