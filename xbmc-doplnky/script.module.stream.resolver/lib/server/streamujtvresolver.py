@@ -62,7 +62,7 @@ def resolve(url):
                     req.get_method = lambda : 'HEAD'
                     try:
                         resp = opener.open(req)
-                    except (urllib2.HTTPError, urllib2.URLError) as e:
+                    except Exception as e:
                         print 'skipping %s: %s'%(res['link'], e)
                         continue
                     stream = resp.geturl()
