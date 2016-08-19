@@ -170,6 +170,21 @@ def remove_search(addon, server, search):
                 f.write(json.dumps(searches, ensure_ascii=True))
                 f.close()
 
+def edit_search(addon, server, search, replacement):
+        local = addon.get_info('profile')
+        if not os.path.exists(local):
+                return
+        local = os.path.join(local, server)
+        if os.path.exists(local):
+                f = open(local, 'r')
+                data = f.read()
+                searches = json.loads(data.decode('utf-8', 'ignore'))
+                f.close()
+                searches.remove(search)
+                searches.insert(0, replacement)
+                f = open(local, 'w')
+                f.write(json.dumps(searches, ensure_ascii=True))
+                f.close()
 
 def add_search_item(name, params, logo=None, infoLabels={}, menuItems={}):
     name = decode_html(name)

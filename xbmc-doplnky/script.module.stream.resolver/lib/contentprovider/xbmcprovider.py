@@ -65,24 +65,36 @@ class XBMContentProvider(object):
 			return self.do_search(params['search'])
 		elif 'search-remove' in params.keys():
 			return self.search_remove(params['search-remove'])
+		elif 'search-edit' in params.keys():
+			return self.search_edit(params['search-edit'])
 		elif self.run_custom:
 			return self.run_custom(params)
 
 	def search_list(self):
 		params = self.params()
 		params.update({'search':''})
-		menuItems = self.params()
 		xbmcutil.add_search_item(xbmcutil.__lang__(30004), params, xbmcutil.icon('search.png'))
 		for what in xbmcutil.get_searches(self.addon, self.provider.name):
 			params = self.params()
 			menuItems = self.params()
+			menuItems2 = self.params()
 			params['search'] = what
 			menuItems['search-remove'] = what
-			xbmcutil.add_dir(what, params, menuItems={u'Remove':menuItems})
+			menuItems2['search-edit'] = what
+			xbmcutil.add_dir(what, params, menuItems={u'Remove':menuItems,u'Edit':menuItems2})
 
 	def search_remove(self, what):
 		xbmcutil.remove_search(self.addon, self.provider.name, what)
 		client.refresh_screen()
+
+	def search_edit(self, what):
+		try:
+			replacement = client.getTextInput(self.session, xbmcutil.__lang__(30003), what)
+		except ValueError:
+			client.showInfo("Please install new version of archivCZSK")
+		if replacement != '':
+			xbmcutil.edit_search(self.addon, self.provider.name, what, replacement)
+			client.refresh_screen()
 
 	def do_search(self, what):
 		if what == '':
