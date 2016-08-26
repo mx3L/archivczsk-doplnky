@@ -38,6 +38,12 @@ settings = {'quality':__addon__.getSetting('quality')}
 
 class MarkizaXBMCContentProvider(xbmcprovider.XBMCMultiResolverContentProvider):
 
+    def render_video(self, item):
+        date = item.get('date')
+        if date:
+            item['title'] = '%s - %s' %(item['title'], date)
+        super(MarkizaXBMCContentProvider, self).render_video(item)
+
     def play(self, params):
         stream = self.resolve(params['play'])
         print type(stream)
