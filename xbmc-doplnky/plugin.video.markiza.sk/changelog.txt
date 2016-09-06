@@ -1,3 +1,5 @@
+[B]1.0.9:[/B]
+- oprava listovania epizod
 [B]1.0.8:[/B]
 - oprava po redizajne stranok
 [B]1.0.7:[/B]
