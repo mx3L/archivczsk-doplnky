@@ -37,12 +37,14 @@ class MarkizaContentProvider(ContentProvider):
         urllib2.install_opener(opener)
 
     def capabilities(self):
-        return ['categories', 'resolve']
+        return ['categories', 'resolve', '!download']
 
     def list(self, url):
         self.info('list - %s'% url )
         result = []
         purl = urlparse(url)
+        if url.find("#") != -1:
+            url = url[:url.find("#")]
         if purl.path == '/video/':
             if purl.fragment == 'az':
                 self.info('list - detected az url')
@@ -60,11 +62,9 @@ class MarkizaContentProvider(ContentProvider):
 
     def categories(self):
         result = []
-        # TODO
-        #result.append(self.dir_item(self.base_url + 'video/#latest', type='new'))
-        #result.append(self.dir_item(self.base_url + 'video/#top', type='top'))
-        #result.append(self.dir_item('A-Z', self.base_url+ 'video/#az'))
-        result += self.list_base(self.base_url)
+        result.append(self.dir_item(url=self.base_url + 'najnovsie', type='new'))
+        result.append(self.dir_item(url=self.base_url + 'najsledovanejsie', type='top'))
+        result.append(self.dir_item('A-Z', self.base_url + 'video/#az'))
         return result
 
     def list_base(self, url, az=True, top=True):
@@ -132,12 +132,22 @@ class MarkizaContentProvider(ContentProvider):
         result = []
         item = item.copy()
         video_id = urlparse(item['url']).path.split('/')[-1].split('_')[0]
-        videodata = util.json.loads(util.request('http://www.markiza.sk/json/video.json?id=' + video_id))
-        for v in videodata['playlist']:
+        videodata = util.json.loads(util.request('http://videoarchiv.markiza.sk/json/video_jwplayer7.json?is_web=1&id=' + video_id))
+        details = videodata['details']
+        playlist = videodata['playlist']
+        sources = [p['sources'][0]['file'] for p in playlist]
+        add_idx = [n for n,s in enumerate(sources) if s not in sources[n+1:]]
+        playlist = [v for n,v in enumerate(playlist) if n in add_idx]
+        #print util.json.dumps(playlist, indent=True)
+        for v in playlist:
             item = self.video_item()
-            item['title'] = v['title']
+            item['title'] = v['title'] or details['name']
+            item['date'] = details['date']
+            item['lenght'] = details['duration']
+            item['url'] = v['sources'][0]['file']
             item['surl'] = v['title']
-            item['url'] = "%s/%s" % (v['baseUrl'].replace(':1935',''), v['url'].replace('.f4m', '.m3u8'))
+            item['img'] = v['image']
+            item['plot'] = v['description']
             result.append(item)
         if len(result) > 0 and select_cb:
             return select_cb(result)
