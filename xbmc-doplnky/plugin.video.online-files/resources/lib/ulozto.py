@@ -24,7 +24,6 @@ import simplejson as json
 from base64 import b64decode
 from provider import ContentProvider
 from provider import ResolveException
-from provider import cached
 class UloztoContentProvider(ContentProvider):
 
     def __init__(self,username=None,password=None,filter=None):
@@ -106,19 +105,18 @@ class UloztoContentProvider(ContentProvider):
             result.append(item)
         return result
 
-    @cached(1)
     def list(self,url):
         if url.find('#fm#') == 0:
             return self.list_folder(url[5:])
         url = self._url(url)
-        page = util.request(url,headers={'X-Requested-With':'XMLHttpRequest','Referer':url,'Cookie':'uloz-to-id=1561277170;'})
+        page = util.request(url,headers={'X-Requested-With':'XMLHttpRequest','Referer':url,'Cookie':'uloz-to-id=1561277170;'}).decode('string-escape')
         script = util.substr(page,'var kn','</script>')
         keymap = None
         key = None
-        k = re.search('{([^\;]+)"',script,re.IGNORECASE | re.DOTALL)
+        k = re.search(r'({.+?})',script)
         if k:
-            keymap = json.loads("{"+k.group(1)+"\"}")
-        j = re.search('kapp\(kn\[\"([^\"]+)"',script,re.IGNORECASE | re.DOTALL)
+            keymap = util.json.loads(k.group(1))
+        j = re.search(r'ad.push\(\[kn, kn\["([^"]+)', script)
         if j:
             key = j.group(1)
         if not (j and k):
@@ -126,31 +124,30 @@ class UloztoContentProvider(ContentProvider):
             return []
         burl = b64decode('I2h0dHA6Ly9kZWNyLWNlY2gucmhjbG91ZC5jb20vZGVjcnlwdC8/a2V5PSVzJnZhbHVlPSVz')
         murl = b64decode('aHR0cDovL2RlY3ItY2VjaC5yaGNsb3VkLmNvbS9kZWNyeXB0Lw==')
-        data = util.substr(page,'<ul class=\"chessFiles','var kn =') 
         result = []
         req = {'seed':keymap[key],'values':keymap}
         decr = json.loads(util.post_json(murl,req))
-        for li in re.finditer('<li data-icon=\"(?P<key>[^\"]+)',data, re.IGNORECASE |  re.DOTALL):
+        for li in re.finditer('<div data-icon=\"(?P<key>[^\"]+)',page, re.IGNORECASE |  re.DOTALL):
             body = urllib.unquote(b64decode(decr[li.group('key')]))
-            m = re.search('<li.+?<div data-icon=\"(?P<key>[^\"]+)[^<]+<img(.+?)src=\"(?P<logo>[^\"]+)(.+?)<i class=\"fa fa-download(?P<info>.+?)class="fileReset"',body, re.IGNORECASE |  re.DOTALL)
-            if not m:
+            div_name = util.substr(body, '<div class="name"', '</div>')
+            title_url_match = re.search(r'<a href="(?P<url>[^"]+)" title="(?P<title>[^"]+)', div_name)
+
+            if not title_url_match:
                 continue
-            value = keymap[m.group('key')]
-            info = m.group('info')
-            iurl = burl % (keymap[key],value)
             item = self.video_item()
-            item['title'] = '.. title not found..'
-            title = re.search('<div class=\"fileName.+?<a[^>]+>(?P<title>[^<]+)',info, re.IGNORECASE|re.DOTALL)
-            if title:
-                item['title'] = title.group('title')
-            size = re.search('<span class=\"fileSize[^>]+>(?P<size>[^<]+)',info, re.IGNORECASE|re.DOTALL)
-            if size:
-                item['size'] = size.group('size').strip()
-            time = re.search('<span class=\"fileTime[^>]+>(?P<time>[^<]+)',info, re.IGNORECASE|re.DOTALL)
-            if time:
-                item['length'] = time.group('time')
-            item['url'] = iurl
-            item['img'] = m.group('logo')
+            item['title'] = title_url_match.group('title')
+            item['url'] = title_url_match.group('url')
+
+            div_media = util.substr(body, 'div class="media"', '<div class="tools">')
+            img_match = re.search(r'img src="([^"]+)', div_media)
+            if img_match:
+                item['img'] = "http:" + img_match.group(1)
+            time_match = re.search(r'<span>Čas</span>(.+)', div_media)
+            if time_match:
+                item['length'] = time_match.group(1).strip()
+            size_match = re.search(r'<span>Velikost</span>([^<]+)', div_media)
+            if size_match:
+                item['size'] = size_match.group(1).strip()
             self._filter(result,item)
         # page navigation
         data = util.substr(page,'<div class=\"paginator','</div')
@@ -158,11 +155,10 @@ class UloztoContentProvider(ContentProvider):
         if mnext:
             item = self.dir_item()
             item['type'] = 'next'
-            item['url'] = mnext.group('url')
+            item['url'] = util.decode_html(mnext.group('url'))
             result.append(item)
         return result
 
-    @cached(48)
     def decr_url(self,url):
         if url.startswith('#'):
             ret = json.loads(util.request(url[1:]))
@@ -224,8 +220,7 @@ class UloztoContentProvider(ContentProvider):
                 return item
 
         else:
-            data = util.substr(page,'<h3>Omezené stahování</h3>','<script')
-            m = re.search('<form(.+?)action=\"(?P<action>[^\"]+)\"',data,re.IGNORECASE | re.DOTALL)
+            m = re.search('<form action="(?P<action>[^"]+)[^>]+class="jsFreeDownloadForm"', page)
             if m:
                 self.rh.throw = True
                 stream_url = self._get_file_url_anonymous(page,self._url(m.group('action')),response.headers,captcha_cb)
@@ -262,7 +257,20 @@ class UloztoContentProvider(ContentProvider):
         if not (sign and ts and cid and has and token):
             util.error('[uloz.to] - unable to parse required params from page, plugin needs fix')
             return
-        request = {'captcha_type':'xapca','hash':has,'salt':salt,'timestamp':timestamp,'ts':ts.group(1),'cid':'','sign':sign.group(1),'sign_a':sign_a.group(1),'captcha_value':code,'do':'download-freeDownloadTab-freeDownloadForm-submit','_token_':token.group(1),'adi':'f'}
+        request = {
+            'captcha_type':'xapca',
+            'hash':has,
+            'salt':salt,
+            'timestamp':timestamp,
+            'ts':ts.group(1),
+            'cid':'',
+            'sign':sign.group(1),
+            'sign_a':sign_a.group(1),
+            'captcha_value':code,
+            '_do':'download-freeDownloadTab-freeDownloadForm-submit',
+            '_token_':token.group(1),
+            'adi':'f'
+        }
         req = urllib2.Request(post_url,urllib.urlencode(request))
         req.add_header('User-Agent',util.UA)
         req.add_header('Referer',post_url)
@@ -271,7 +279,8 @@ class UloztoContentProvider(ContentProvider):
         sessid=[]
         for cookie in re.finditer('(ULOSESSID=[^\;]+)',headers.get('Set-Cookie'),re.IGNORECASE | re.DOTALL):
             sessid.append(cookie.group(1))
-        req.add_header('Cookie','nomobile=1; uloztoid='+cid.group(1)+'uloztoid2='+cid.group(1)+'; '+sessid[-1])
+        req.add_header('Cookie','nomobile=1; uloztoid='+cid.group(1)+'; uloztoid2='+cid.group(1)+'; '+sessid[-1])
+        util.info(req.headers)
         util.info(request)
         try:
             resp = urllib2.urlopen(req)
