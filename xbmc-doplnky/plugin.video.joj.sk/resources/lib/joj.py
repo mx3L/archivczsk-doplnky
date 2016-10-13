@@ -127,14 +127,26 @@ class JojContentProvider(ContentProvider):
                     if key in ("", "title"):
                         archive_list_pattern += r'^.+?$\s+'
                     else:
-                        archive_list_pattern += r'<span>(?P<%s>[^<]+)</span>\s+'%key
+                        archive_list_pattern += r'<span>(?P<%s>[^<]*)</span>\s+'%key
                 for archive_list_match in re.finditer(archive_list_pattern, episodes_data, re.MULTILINE):
                     item = self.video_item()
                     groupdict = archive_list_match.groupdict()
                     if 'season' in groupdict and 'episode' in groupdict:
-                        item['title'] = "(S%02d E%02d) - %s"%(int(archive_list_match.group('season')), int(archive_list_match.group('episode')), archive_list_match.group('title'))
+                        # joj sometimes don't provide season/episode numbers
+                        # for latest episodes, so mark them as 0.
+                        try:
+                            season = int(archive_list_match.group('season'))
+                        except Exception:
+                            season = 0
+                        try:
+                            episode = int(archive_list_match.group('episode'))
+                        except Exception:
+                            episode = 0
+                        item['title'] = "(S%02d E%02d) - %s"%(season, episode,
+                                archive_list_match.group('title'))
                     else:
-                        item['title'] = "(%s) - %s"%(archive_list_match.group('date'), archive_list_match.group('title'))
+                        item['title'] = "(%s) - %s"%(archive_list_match.group('date'),
+                                archive_list_match.group('title'))
                     item['url'] = self._fix_url(archive_list_match.group('url'))
                     result.append(item)
 
