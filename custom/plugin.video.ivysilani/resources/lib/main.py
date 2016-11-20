@@ -106,6 +106,7 @@ class iVysilaniContentProvider(ContentProvider):
                 if g.link == genre:
                     return self.listProgrammelist(g, episodes=True)
         elif letter:
+            letter = urllib.unquote_plus(letter)
             for l in ivysilani.alphabet():
                 if _toString(l.link) == _toString(letter):
                     return self.listProgrammelist(l, episodes=True)
