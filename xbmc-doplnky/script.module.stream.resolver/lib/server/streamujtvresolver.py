@@ -30,7 +30,7 @@ def resolve(url):
         cookies = cookielib.LWPCookieJar()
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookies))
         player = 'http://www.streamuj.tv/new-flash-player/mplugin4.swf'
-        headers = {'User-Agent':'Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0',
+        headers = {'User-Agent':util.UA,
                     'Referer':'http://www.streamuj.tv/mediaplayer/player.swf'}
         data = request(opener, url, headers)
         if data.find('Toto video neexistuje') > 0:
@@ -51,7 +51,7 @@ def resolve(url):
             streams = re.search('res'+str(index)+'\:[^\"]*\"([^\"]+)',data,re.IGNORECASE|re.DOTALL)
             subs = re.search('sub'+str(index)+'\:[^\"]*\"([^\"]+)',data,re.IGNORECASE|re.DOTALL)
             if subs: 
-                subs = re.search('[^>]+>([^$]+)',subs.group(1),re.IGNORECASE|re.DOTALL)
+                subs = re.search('[^>]+>([^,$]+)',subs.group(1),re.IGNORECASE|re.DOTALL)
             if streams and qualities:
                 streams = streams.group(1).split(',')
                 rn = qualities.group(1).split(',')
