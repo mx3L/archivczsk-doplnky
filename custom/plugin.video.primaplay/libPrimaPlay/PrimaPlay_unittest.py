@@ -5,6 +5,8 @@ import os, sys
 import PrimaPlay
 import urllib2
 
+os.chdir(os.path.dirname(sys.argv[0]))
+
 user = 'text@example.com';
 password = 'password';
 
@@ -16,18 +18,18 @@ class mockUserAgent:
     def __init__(self, url_map = {}):
         self.ua = PrimaPlay.UserAgent()
         self.url_map = {
-            'http://play.iprima.cz/prehravac/init?_ts=1450875766&_infuse=1&productId=p135603': lambda url: 'test_player_init.js',
+            'http://api.play-backend.iprima.cz/prehravac/init?_ts=1450875766&_infuse=1&productId=p135603': lambda url: 'test_player_init.js',
             'http://play.iprima.cz/': lambda url: 'test_homepage.html',
             'http://play.iprima.cz': lambda url: 'test_homepage.html',
             'http://play.iprima.cz/prostreno': lambda url: 'test_filters.html',
             'http://play.iprima.cz/vysledky-hledani-vse?query=prostreno': lambda url: 'test_search_page.html',
             'http://play.iprima.cz/prostreno-IX-9': lambda url: 'test_video_page.html',
             'http://play.iprima.cz/moje-play': lambda url: 'test_moje_play.html',
-            'https://play.iprima.cz/login/nav/formular?csrfToken=868668da5dd5d622ddee5738cf226523ccc6b708-1451918185394-55fbc39b6ea5a369d8723b76': lambda url: 'test_homepage_logged.html',
+            'https://play.iprima.cz/tdi/login/nav/form?csrfToken=868668da5dd5d622ddee5738cf226523ccc6b708-1451918185394-55fbc39b6ea5a369d8723b76': lambda url: 'test_homepage_logged.html',
             'http://play.iprima.cz/prostreno?cat[]=EPISODE&src=p14877&sort[]=Rord&sort[]=latest': lambda url: 'test_prostreno_epizody.html',
             'http://prima-vod-prep.service.cdn.cra.cz/vod_Prima/_definst_/0000/5314/cze-ao-sd1-sd2-sd3-sd4-hd1-hd2.smil/playlist.m3u8': lambda url: self.raise_not_found(url),
             'http://prima-vod-prep.service.cdn.cra.cz/vod_Prima/_definst_/0001/4844/cze-ao-sd1-sd2-sd3-sd4-hd1-hd2.smil/playlist.m3u8': lambda url: 'test_homepage.html',
-            'http://play.iprima.cz/prehravac/init?_ts=1450875766&_infuse=1&productId=p148175': lambda url: 'test_player_init-2.js',
+            'http://api.play-backend.iprima.cz/prehravac/init?_ts=1450875766&_infuse=1&productId=p148175': lambda url: 'test_player_init-2.js',
             'http://play.iprima.cz/cestovani-cervi-dirou-s-morganem-freemanem-ii-9': lambda url: 'test_video_page-2.html',
             'http://play.iprima.cz/prostreno?season=p14894&action=remove': lambda url: 'test_remove_all_filters.html',
             'https://play.iprima.cz/tdi/dalsi?filter=allShows&sort[]=title&offset=54': lambda url: 'test_ajax_response.data',
@@ -60,15 +62,15 @@ class mockUserAgent:
         raise urllib2.HTTPError(url, 404, 'Not found', None, None)
 
 class PrimaPlayUnitTest(unittest.TestCase):
- 
+
     def setUp(self):
         pass
- 
+
     def test_get_player_init_link(self):
         prima_play = PrimaPlay.Parser(mockUserAgent(), mockTime())
 
         self.assertEqual(prima_play.get_player_init_url('p135603'),
-            'http://play.iprima.cz/prehravac/init?_ts=1450875766&_infuse=1&productId=p135603')
+            'http://api.play-backend.iprima.cz/prehravac/init?_ts=1450875766&_infuse=1&productId=p135603')
 
     def test_get_video_link__sd(self):
         prima_play = PrimaPlay.Parser(mockUserAgent(), mockTime())
@@ -170,7 +172,7 @@ class PrimaPlayUnitTest(unittest.TestCase):
         self.assertEqual(len(page.video_lists), 1)
         self.assertEqual(page.video_lists[0].title, None)
         self.assertEqual(page.video_lists[0].link, None)
-        self.assertEqual(page.video_lists[0].next_link, 
+        self.assertEqual(page.video_lists[0].next_link,
             'https://play.iprima.cz/tdi/dalsi/prostreno?season=p14877&sort[]=Rord&sort[]=latest&offset=18')
         self.assertEqual(len(page.video_lists[0].item_list), 18)
         self.assertEqual(page.video_lists[0].item_list[0].title,

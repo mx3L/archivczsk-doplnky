@@ -57,7 +57,7 @@ class UserAgent(object):
 class Parser:
     def __init__(self, ua = UserAgent(), time_obj = time, hd_enabled = True):
         self.ua = ua
-        self.player_init_url = 'http://play.iprima.cz/prehravac/init?'
+        self.player_init_url = 'http://api.play-backend.iprima.cz/prehravac/init?'
         self.search_url = 'http://play.iprima.cz/vysledky-hledani-vse?'
         self.time = time_obj
         self.hd_enabled = hd_enabled
@@ -68,7 +68,7 @@ class Parser:
             '_ts': int(self.time.time()),
             'productId': productID
         })
-        #http://play.iprima.cz/prehravac/init?_infuse=1&_ts=1450864235286&productId=p135603
+        #http://api.play-backend.iprima.cz/prehravac/init?_infuse=1&_ts=1450864235286&productId=p135603
 
     def get_search_url(self, query):
         return self.search_url + urllib.urlencode({
@@ -77,7 +77,7 @@ class Parser:
 
     def get_video_link(self, productID):
         content = self.ua.get(self.get_player_init_url(productID))
-        link_re = re.compile("'src'\s*:\s+'(https?://[^']+\\.m3u8.*)'")
+        link_re = re.compile("'?src'?\s*:\s+'(https?://[^']+\\.m3u8.*)'")
         sd_link = link_re.search(content).group(1)
         hd_link = None
         if self.hd_enabled: hd_link = self.try_get_hd_link(sd_link)
@@ -172,7 +172,7 @@ class Parser:
             list.append(PageVideoList(None,
                 None, self.make_full_link(next_link, src_link),
                 items))
-            
+
             return list
 
         wrapper_items = re.split('<section class="l-constrained movies-list-carousel-wrapper">', content)
@@ -329,7 +329,7 @@ class Account:
             'nav_redirectUri': self.page_for_login
         }
         self.parser = parser
-        self.login_url_re = re.compile('action="(https://[^/]+/login/(?:nav/)?formular[^"]+)"', re.S)
+        self.login_url_re = re.compile('action="(https://[^/]+(?:/tdi)?/login/(?:nav/)?form(?:ular)?[^"]+)"', re.S)
         self.video_list_url = 'http://play.iprima.cz/moje-play'
 
     def login(self):
@@ -343,6 +343,7 @@ class Account:
         content = self.parser.ua.get(self.page_for_login)
         return self.login_url_re.search(content).group(1)
         # https://play.iprima.cz/login/formular?csrfToken=142090b66b24c01af02aa7c23a98d890b667b0cd-1453127273565-b29a993b2a09570ee2da1151
+        # https://play.iprima.cz/tdi/login/nav/form?csrfToken=e925f6428ac151c8675ea15fc4cf0b9d09b1613f-1478592531500-e2236dd1ce0b6b725c253abe
 
 class Page:
     def __init__(self, player = None, video_lists = [], filter_lists = [], current_filters = None):

@@ -77,7 +77,7 @@
 {
 									'lang': 'cze',
 									'title': 'Čeština',
-									'src': 'http://prima-vod-prep.service.cdn.cra.cz/vod_Prima/_definst_/0001/4844/cze-ao-sd1-sd2-sd3-sd4.smil/playlist.m3u8',
+									src: 'http://prima-vod-prep.service.cdn.cra.cz/vod_Prima/_definst_/0001/4844/cze-ao-sd1-sd2-sd3-sd4.smil/playlist.m3u8',
 									'type': 'application/x-mpegURL','profiles': ['ao', 'sd1', 'sd2', 'sd3', 'sd4']
 								},
 						],

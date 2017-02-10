@@ -3,7 +3,29 @@
 import unittest
 import os, sys
 import PrimaPlay
-import urllib, urllib2
+import urllib, urllib2, urlparse
+
+os.chdir(os.path.dirname(sys.argv[0]))
+
+class UrlCmp(object):
+    def __init__(self, url):
+        parts = urlparse.urlparse(url)
+        _query = frozenset(urlparse.parse_qsl(parts.query))
+        parts = parts._replace(query=_query)
+        self.parts = parts
+        self.url = url
+
+    def __eq__(self, other):
+        return self.parts == other.parts
+
+    def __hash__(self):
+        return hash(self.parts)
+
+    def __str__(self):
+        return self.url
+
+    def __repr__(self):
+        return self.url
 
 class CacheUserAgent(PrimaPlay.UserAgent):
     def __init__(self, cache_dir = None):
@@ -59,7 +81,7 @@ class PrimaPlayIntegrationTest(unittest.TestCase):
         page = self.play_parser.get_page('http://play.iprima.cz/prostreno')
         self.assertEqual(page.player, None)
         self.assertEqual(len(page.video_lists), 3)
-        self.assertEqual(page.video_lists[0].title, u'Všechny epizody')
+        self.assertRegexpMatches(page.video_lists[0].title, u'^Všechny epizody')
         self.assertEqual(len(page.video_lists[0].item_list), 20)
 
     def test_prostreno_epizodes(self):
@@ -68,7 +90,8 @@ class PrimaPlayIntegrationTest(unittest.TestCase):
         self.assertEqual(epizodes_page.player, None)
         self.assertEqual(len(epizodes_page.video_lists), 1)
         self.assertEqual(len(epizodes_page.video_lists[0].item_list), 18)
-        self.assertEqual(epizodes_page.video_lists[0].next_link, 'https://play.iprima.cz/tdi/dalsi/prostreno?cat[]=EPISODE&src=p14877&sort[]=latest&sort[]=Rord&offset=18')
+        self.assertEqual(UrlCmp(epizodes_page.video_lists[0].next_link),
+            UrlCmp('https://play.iprima.cz/tdi/dalsi/prostreno?cat[]=EPISODE&src=p14877&sort[]=latest&sort[]=Rord&offset=18'))
 
     def test_prostreno_video(self):
         page = self.play_parser.get_page('http://play.iprima.cz/prostreno')
@@ -84,7 +107,8 @@ class PrimaPlayIntegrationTest(unittest.TestCase):
         page = self.play_parser.get_page('http://play.iprima.cz/prostreno')
         epizodes_page = self.play_parser.get_page(page.video_lists[0].link)
         next_page = self.play_parser.get_next_list(epizodes_page.video_lists[0].next_link)
-        self.assertEqual(next_page.next_link, 'https://play.iprima.cz/tdi/dalsi/prostreno?cat[]=EPISODE&src=p14877&sort[]=Rord&sort[]=latest&offset=36')
+        self.assertEqual(UrlCmp(next_page.next_link),
+            UrlCmp('https://play.iprima.cz/tdi/dalsi/prostreno?cat[]=EPISODE&src=p14877&sort[]=Rord&sort[]=latest&offset=36'))
 
     def test_account(self):
         if not self.account_user: return self.skipTest("Account credentials must be defined in environment (PRIMA_USER, PRIMA_PASSWORD) for account testing")
