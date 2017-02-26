@@ -101,7 +101,7 @@ class StreamCinemaContentProvider(ContentProvider):
                 self.write("letter")
                 return self.list_by_letter(url)
             if "/series/" in url:
-                self.write("search")
+                self.write("series")
                 self.base_url = SERIES_BASE_URL
                 return self.list_series(url)
             if "/list/" in url:
@@ -112,6 +112,20 @@ class StreamCinemaContentProvider(ContentProvider):
             pass
         self.write("I failed")
         return [self.dir_item(title="I failed", url="fail")]
+
+    def list_by_letter(self, url):
+        result = []
+        data = json.loads(self.get_data_cached(url))
+        for m in data:
+            item = self.video_item()
+            if '/json/series' in self.base_url:
+                item = self.video_item(url=self.base_url + '/play/%s/%s/%s' % (m['id'], m['season'], m['episode']), img=m['poster'])
+            else:
+                item = self.video_item(url=self.base_url + '/play/' + m['id'], img=m['poster'])
+            item['title'] = m['name']
+            self._filter(result, item)
+        util.debug(result)
+        return result
 
     def list_by_params(self, url):
         data = json.loads(self.get_data_cached(url))
@@ -129,29 +143,33 @@ class StreamCinemaContentProvider(ContentProvider):
         return result
         
     def list_series(self, url):
-        data = json.loads(self.get_data_cached(url))
         result = []
-        for m in data:
-            if m['typ'] == 'get':
-                item = self.video_item()
-                item['title'] = m['title']
-                item['img'] = m['poster']
-                item['url'] = m['url'] if m['url'] else ""
-                
-            if m['typ'] == 'latest':
-                item = self.dir_item(m)
-            else:
-                if '/json/series' in self.base_url:
-                    item = self.video_item(url=self.base_url + '/play/%s/%s/%s' % (m['id'], m['season'], m['episode']), img=m['poster'])
+        data = json.loads(self.get_data_cached(url))
+        try:
+            for m in data:
+                if m['typ'] == 'latest':
+                    if 'title' in m:
+                        item = self.dir_item(title=m['title'], url=SERIES_BASE_URL + '/get/' + m['url'])
+                    else:
+                        item = self.dir_item(title=m['name'], url=SERIES_BASE_URL + '/get/' + m['url'])
                 else:
-                    item = self.video_item(url=self.base_url + '/play/' + m['id'], img=m['poster'])
-                item['title'] = m['name']
-                
-            self._filter(result, item)
+                    if '/json/series' in self.base_url:
+                        tmp = self.base_url + '/play/%s/%s/%s' % (m['id'], m['season'], m['episode'])
+                        item = self.video_item(url=tmp)
+                    else:
+                        item = self.video_item(url=self.base_url + '/play/' + m['id'])
+                    item['title'] = m['name']
+
+                self._filter(result, item)
+        except:
+            self.write(traceback.format_exc())
+            pass
+            
         return result
 
     @cached(ttl=24)
     def get_data_cached(self, url):
+        self.write("URL: %s" % url)
         return util.request(url)
 
     def _resolve(self, itm):
