@@ -84,9 +84,9 @@ class DVTVContentProvider(ContentProvider):
                     versions = re.compile('{[^}]*?}', re.S).findall(sources)
                     if versions:
                         for version in versions:
-                            url = re.compile('file: ?\'([^\']*?)\'').search(version).group(1).strip()
-                            mime = re.compile('type: ?\'([^\']*?)\'').search(version).group(1).strip()
-                            quality = re.compile('label: ?\'([^\']*?)\'').search(version).group(1).strip()
+                            url = re.compile('"file":"([^"]*)"').search(version).group(1).replace('\/','/').strip()
+                            mime = re.compile('"type":"([^"]*)"').search(version).group(1).replace('\/','/').strip()
+                            quality = re.compile('"label":"([^"]*)"').search(version).group(1).strip()
                             if mime =='video/webm':
                                 continue
                             vitem = self.video_item()
