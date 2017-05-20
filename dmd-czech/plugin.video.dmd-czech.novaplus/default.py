@@ -127,10 +127,8 @@ def VIDEOLINK(url,name):
     #Dolovani rtmp adresy z configu
     rtmp_url = re.compile('src":"(.+?)"').findall(httpdata)
     rtmp_url = rtmp_url[0].replace("\\","")
-    tcurlandplaypath = rtmp_url.replace("/&"," playpath=").replace("rtmp://"," tcUrl=rtmp://")
     #Slozeni vysledneho linku, sklada se z adresy rtmp_url a pak jeste jednou z adresy rtmp_url, ale ta uz musi byt rozdelena a slouzi jako parametry playpath a tcUrl
     #rtmp://nova-voyo-cz-pc.service.cdn.cra.cz/vod/&mp4:oldcdn/2015/11/06/1561560/2015-11-19_ulice-218_cyklus_dil_2919-b041884-np-mp4-lq.mp4?SIGV=2&IS=0&ET=1448109213&CIP=31.30.37.226&KO=1&KN=1&US=2338c0708283dbc363f88ecdbf53233c27d52ef3 tcUrl=rtmp://nova-voyo-cz-pc.service.cdn.cra.cz/vod playpath=mp4:oldcdn/2015/11/06/1561560/2015-11-19_ulice-218_cyklus_dil_2919-b041884-np-mp4-lq.mp4?SIGV=2&IS=0&ET=1448109213&CIP=31.30.37.226&KO=1&KN=1&US=2338c0708283dbc363f88ecdbf53233c27d52ef3
-    rtmp_url = rtmp_url+tcurlandplaypath
     addLink(name,rtmp_url,thumb[0],desc)
 
 
