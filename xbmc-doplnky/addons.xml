@@ -291,30 +291,6 @@
   </extension>
 </addon>
 
-<addon id="plugin.video.mixer.cz"
-       name="mixer.cz"
-       version="1.0.4"
-       provider-name="Maros Ondrasek">
-  <requires>
-    <import addon="xbmc.python" version="2.0" />
-    <import addon="script.module.stream.resolver" version="1.6.9" />
-  </requires>
-  <extension point="xbmc.python.pluginsource"
-             provides="video"
-             library="default.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <summary lang="en">mixer.cz</summary>
-    <summary lang="cs">mixer.cz</summary>
-    <summary lang="sk">mixer.cz</summary>
-    <description lang="en">Watch music clips from mixer.cz</description>
-    <description lang="cs">Sledujte hudobne klipy ze servru mixer.cz</description>
-    <description lang="sk">Sledujte hudobne klipy zo serveru mixer.cz</description>
-    <platform>all</platform>
-  </extension>
-</addon>
-
 <addon id="plugin.video.slowtv.cz" name="SlowTV" provider-name="Josef Weiss" version="1.0.0">
   <requires>
     <import addon="xbmc.python" version="2.1.0" />
