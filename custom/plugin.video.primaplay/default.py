@@ -150,7 +150,7 @@ def resolve_videos(link):
     if m3u8_obj.is_variant:
         streams = []
         for i in m3u8_obj.playlists:
-            streams.append((i.uri, i.stream_info.resolution, i.stream_info.bandwidth))
+            streams.append((i.base_uri + "/" + i.uri, i.stream_info.resolution, i.stream_info.bandwidth))
         streams.sort(key=lambda x:x[2], reverse=True)
         streams.sort(key=lambda x:x[1], reverse=True)
         for idx, (url, resolution, bandwidth) in enumerate(streams):

@@ -7,6 +7,7 @@ import cookielib
 import time
 import re
 import sys
+import ssl
 
 __author__ = "Ladislav Dokulil"
 __license__ = "GPL 2"
@@ -22,7 +23,14 @@ class UserAgent(object):
         self.cookie_jar = cookielib.CookieJar()
         self.cookie_jar.set_cookie(self.cookie('ott_cookies_confirmed', '1'))
         if session_id: self.cookie_jar.set_cookie(self.cookie('PLAY_SESSION', session_id))
-        self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cookie_jar))
+
+        if hasattr(ssl, 'create_default_context'):
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            self.opener = urllib2.build_opener(urllib2.HTTPSHandler(context = ctx), urllib2.HTTPCookieProcessor(self.cookie_jar))
+        else:
+            self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cookie_jar))
 
     def get(self, url):
         req = self.request(url)

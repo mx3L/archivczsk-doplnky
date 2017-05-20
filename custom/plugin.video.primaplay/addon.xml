@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.primaplay" name="Prima Play" version="0.3.7" provider-name="Ladislav Dokulil">
+<addon id="plugin.video.primaplay" name="Prima Play" version="0.3.8" provider-name="Ladislav Dokulil">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
   </requires>
