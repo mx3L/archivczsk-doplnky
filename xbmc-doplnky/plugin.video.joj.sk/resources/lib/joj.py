@@ -186,24 +186,6 @@ class JojContentProvider(ContentProvider):
         live['url'] = base_url + '/live.html'
         return [live] + self.list_base(base_url + '/archiv-filter')
 
-    def rtmp_url(self, playpath, pageurl, type=None, balance=None):
-        server = 'n11.joj.sk'
-        if balance is not None and type is not None:
-            try:
-                nodes = balance.find('project[@id="joj"]').find('balance[@type="%s"]' % (type))
-                min_node = int(nodes.find('node').attrib.get('id'))
-                max_node = int(nodes.findall('node')[-1].attrib.get('id'))
-                node_id = random.randint(min_node, max_node)
-                server = balance.find('nodes').find('node[@id="%d"]' % node_id).attrib.get('url')
-            except Exception as e:
-                self.error("cannot get stream server: %s" % (str(e)))
-                self.info("using default stream server")
-        swfurl = 'http://player.joj.sk/JojPlayer.swf?no_cache=137034'
-        rtmp_url =  'rtmp://' + server + ' playpath=' + playpath + ' swfUrl=' + swfurl +' swfVfy=true'
-        if pageurl:
-            rtmp_url += ' pageUrl=' + pageUrl
-        return rtmp_url
-
     def resolve(self, item, captcha_cb=None, select_cb=None):
         result = []
         item = item.copy()
@@ -238,8 +220,7 @@ class JojContentProvider(ContentProvider):
                 item['img'] = playlist.attrib.get('large_image')
                 item['length'] = playlist.attrib.get('duration')
                 item['quality'] = video.attrib.get('label')
-                item['url'] = self.rtmp_url(video.attrib.get('path'), playlist.attrib.get('url'),
-                                            video.attrib.get('type'), balance)
+                item['url'] = 'https://nn.geo.joj.sk/' + video.attrib.get('path').replace('dat/', 'storage/')
                 result.append(item)
             result.reverse()
         if select_cb:
