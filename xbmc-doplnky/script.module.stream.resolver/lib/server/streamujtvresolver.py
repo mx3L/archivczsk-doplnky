@@ -59,13 +59,19 @@ def resolve(url):
                 for stream in streams:
                     res = json.loads(util.post_json(burl,{'link':stream,'player':player,'key':key}))
                     req = urllib2.Request(res['link'], headers=headers)
-                    req.get_method = lambda : 'HEAD'
+                    print 'resolve - link = %s'% res['link']
                     try:
                         resp = opener.open(req)
+                        #print "content-length = %s" %resp.info().getheader("Content-Length")
+                        #print "stream url = %s"% resp.geturl()
+                        if int(resp.info().getheader("Content-Length")) < 2000:
+                            stream = resp.read()
+                        else:
+                            stream = resp.geturl()
                     except Exception as e:
                         print 'skipping %s: %s'%(res['link'], e)
                         continue
-                    stream = resp.geturl()
+                    #print 'resolve - final url = %s'% stream
                     resp.close()
                     q = rn[qindex]
                     if q == 'HD':
