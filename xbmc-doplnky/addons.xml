@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addons>
-<addon id="plugin.video.sosac.ph" name="Sosáč" provider-name="L. Zoubek + jondas" version="1.2.5">
+<addon id="plugin.video.sosac.ph" name="Sosáč" provider-name="L. Zoubek + jondas" version="1.2.6">
   <requires>
     <import addon="xbmc.python" version="2.1.0" />
     <import addon="script.module.stream.resolver" version="1.6.25" />
@@ -179,7 +179,7 @@
   </extension>
 </addon>
 
-<addon id="script.module.stream.resolver" name="stream resolver" provider-name="Libor Zoubek" version="1.6.40">
+<addon id="script.module.stream.resolver" name="stream resolver" provider-name="Libor Zoubek" version="1.6.41">
   <requires>
     <import addon="xbmc.python" version="2.1.0" />
     <import addon="script.module.simplejson" version="2.0.10" />
@@ -287,6 +287,30 @@
     <summary lang="cs">pohadkar.cz</summary>
     <description lang="en">Watch online tales mostly in czech language on pohadkar.cz</description>
     <description lang="cs">Sledujte online pohádky ze servru pohádkář.cz. Ideální pro zabavení dětí.</description>
+    <platform>all</platform>
+  </extension>
+</addon>
+
+<addon id="plugin.video.mixer.cz"
+       name="mixer.cz"
+       version="1.0.4"
+       provider-name="Maros Ondrasek">
+  <requires>
+    <import addon="xbmc.python" version="2.0" />
+    <import addon="script.module.stream.resolver" version="1.6.9" />
+  </requires>
+  <extension point="xbmc.python.pluginsource"
+             provides="video"
+             library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">mixer.cz</summary>
+    <summary lang="cs">mixer.cz</summary>
+    <summary lang="sk">mixer.cz</summary>
+    <description lang="en">Watch music clips from mixer.cz</description>
+    <description lang="cs">Sledujte hudobne klipy ze servru mixer.cz</description>
+    <description lang="sk">Sledujte hudobne klipy zo serveru mixer.cz</description>
     <platform>all</platform>
   </extension>
 </addon>
