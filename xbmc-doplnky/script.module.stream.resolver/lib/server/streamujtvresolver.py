@@ -6,93 +6,87 @@
 # *  http://www.gnu.org/copyleft/gpl.html
 # *
 # */
-import re,util
-import simplejson as json
-import urllib2
-import cookielib
+import re
+import util
+import json
 from base64 import b64decode, b64encode
 
-__name__='streamujtv'
+__name__ = 'streamujtv'
+
+
 def supports(url):
-    return not _regex(url) == None
+    return _regex(url) is not None
 
-def request(opener, url, headers):
-    req = urllib2.Request(url, headers=headers)
-    resp = opener.open(req)
-    data = resp.read()
-    resp.close()
-    return data
 
-# returns the steam url
 def resolve(url):
     m = _regex(url)
     if m:
-        cookies = cookielib.LWPCookieJar()
-        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookies))
-        player = 'http://www.streamuj.tv/new-flash-player/mplugin4.swf'
-        headers = {'User-Agent':util.UA,
-                    'Referer':'http://www.streamuj.tv/mediaplayer/player.swf'}
-        data = request(opener, url, headers)
+        util.init_urllib()
+        data = util.request(url)
         if data.find('Toto video neexistuje') > 0:
             util.error('Video bylo smazano ze serveru')
             return
+        player = 'http://www.streamuj.tv/new-flash-player/mplugin4.swf'
+        headers = {
+            'User-Agent': util.UA,
+            'Referer': 'http://www.streamuj.tv/mediaplayer/player.swf',
+            'Cookie': ','.join("%s=%s" % (c.name, c.value) for c in util._cookie_jar)
+        }
         burl = b64decode('aHR0cDovL2Z1LWNlY2gucmhjbG91ZC5jb20vcGF1dGg=')
-        key = request(opener, 'http://www.streamuj.tv/_key.php?auth=3C27f5wk6qB3g7nZ5SDYf7P7k1572rFH1QxV0QQ', headers)
+        key = util.request(
+            'http://www.streamuj.tv/_key.php?auth=3C27f5wk6qB3g7nZ5SDYf7P7k1572rFH1QxV0QQ')
         index = 0
         result = []
-        qualities = re.search('rn\:[^\"]*\"([^\"]*)',data,re.IGNORECASE|re.DOTALL)
-        langs = re.search('langs\:[^\"]*\"([^\"]+)',data,re.IGNORECASE|re.DOTALL)
-        languages = []
-        if not langs:
-            languages = [''] # pretend there is at least language so we read 1st stream info
-        else:
+        qualities = re.search(r'rn\:[^\"]*\"([^\"]*)', data, re.IGNORECASE | re.DOTALL)
+        langs = re.search(r'langs\:[^\"]*\"([^\"]+)', data, re.IGNORECASE | re.DOTALL)
+        languages = ['']  # pretend there is at least language so we read 1st stream info
+        if langs:
             languages = langs.group(1).split(',')
-        for lang in languages:
-            streams = re.search('res'+str(index)+'\:[^\"]*\"([^\"]+)',data,re.IGNORECASE|re.DOTALL)
-            subs = re.search('sub'+str(index)+'\:[^\"]*\"([^\"]+)',data,re.IGNORECASE|re.DOTALL)
-            if subs: 
-                subs = re.search('[^>]+>([^,$]+)',subs.group(1),re.IGNORECASE|re.DOTALL)
+        for language in languages:
+            streams = re.search(r'res{index}\:[^\"]*\"([^\"]+)'.format(index=index),
+                                data, re.IGNORECASE | re.DOTALL)
+            subs = re.search(r'sub{index}\:[^\"]*\"([^\"]+)'.format(index=index),
+                             data, re.IGNORECASE | re.DOTALL)
+            if subs:
+                subs = re.search(r'[^>]+>([^,$]+)', subs.group(1), re.IGNORECASE | re.DOTALL)
+            else:
+                subs = None
             if streams and qualities:
                 streams = streams.group(1).split(',')
                 rn = qualities.group(1).split(',')
                 qindex = 0
                 for stream in streams:
-                    res = json.loads(util.post_json(burl,{'link':stream,'player':player,'key':key}))
-                    req = urllib2.Request(res['link'], headers=headers)
-                    print 'resolve - link = %s'% res['link']
-                    try:
-                        resp = opener.open(req)
-                        #print "content-length = %s" %resp.info().getheader("Content-Length")
-                        #print "stream url = %s"% resp.geturl()
-                        if int(resp.info().getheader("Content-Length")) < 2000:
-                            stream = resp.read()
-                        else:
-                            stream = resp.geturl()
-                    except Exception as e:
-                        print 'skipping %s: %s'%(res['link'], e)
-                        continue
-                    #print 'resolve - final url = %s'% stream
-                    resp.close()
+                    res = json.loads(util.post_json(burl, {
+                        'link': stream, 'player': player, 'key': key
+                    }))
+                    stream = res['link']
                     q = rn[qindex]
                     if q == 'HD':
                         q = '720p'
                     else:
                         q = 'SD'
-                    l = ' '+lang
+                    item = {
+                        'url': stream,
+                        'quality': q,
+                        'headers': headers,
+                        'lang': language
+                    }
                     if subs:
-                        l += ' + subs'
-                        s = subs.group(1)
-                        s = json.loads(util.post_json(burl,{'link':s,'player':player, 'key':key}))
-                        cookie_header = ",".join("%s=%s"%(c.name, c.value) for c in cookies)
-                        subtitle_headers = {"Cookie":cookie_header}
-                        subtitle_headers.update(headers)
-                        result.append({'url':stream,'quality':q,'subs':s['link'],'headers':subtitle_headers,'lang':l})
-                    else:
-                        result.append({'url':stream,'quality':q,'headers':headers, 'lang':l})
-                    qindex+=1
-            index+=1
+                        link = subs.group(1)
+                        response = json.loads(util.post_json(burl, {
+                            'link': link, 'player': player, 'key': key
+                        }))
+                        if 'link' in response:
+                            item['lang'] += ' + subs'
+                            item['subs'] = response[u'link']
+                        else:
+                            util.error("Could not fetch subtitles from '{}'".format(link))
+                            util.error("Server response: {}".format(response))
+                    result.append(item)
+                    qindex += 1
+            index += 1
         return result
 
-def _regex(url):
-    return re.search('streamuj\.tv/video/',url,re.IGNORECASE | re.DOTALL)
 
+def _regex(url):
+    return re.search(r'streamuj\.tv/video/', url, re.IGNORECASE | re.DOTALL)

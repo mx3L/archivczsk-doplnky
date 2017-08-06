@@ -23,6 +23,7 @@
 import urllib
 import urllib2
 import cookielib
+import hashlib
 import sys
 import json
 
@@ -69,6 +70,10 @@ class SosacContentProvider(ContentProvider):
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.LWPCookieJar()))
         urllib2.install_opener(opener)
         self.reverse_eps = reverse_eps
+        self.streamujtv_user = None
+        self.streamujtv_pass = None
+        self.streamujtv_location = None
+
 
     def on_init(self):
         kodilang = self.lang or 'cs'
@@ -285,14 +290,52 @@ class SosacContentProvider(ContentProvider):
         return self.add_video_flag(movies)
 
     def resolve(self, item, captcha_cb=None, select_cb=None):
+        def probeHTML5(result):
+
+            class NoRedirectHandler(urllib2.HTTPRedirectHandler):
+
+                def http_error_302(self, req, fp, code, msg, headers):
+                    infourl = urllib.addinfourl(fp, headers, req.get_full_url())
+                    infourl.status = code
+                    infourl.code = code
+                    return infourl
+                http_error_300 = http_error_302
+                http_error_301 = http_error_302
+                http_error_303 = http_error_302
+                http_error_307 = http_error_302
+
+            opener = urllib2.build_opener(NoRedirectHandler())
+            urllib2.install_opener(opener)
+
+            r = urllib2.urlopen(urllib2.Request(result['url'], headers=result['headers']))
+            if r.code == 200:
+                result['url'] = r.read()
+            return result
+
         data = item['url']
         if not data:
             raise ResolveException('Video is not available.')
         result = self.findstreams([STREAMUJ_URL + data])
         if len(result) == 1:
-            return result[0]
+            return probeHTML5(self.set_streamujtv_info(result[0]))
         elif len(result) > 1 and select_cb:
-            return select_cb(result)
+            return probeHTML5(self.set_streamujtv_info(select_cb(result)))
+
+    def set_streamujtv_info(self, stream):
+        if stream:
+            if len(self.streamujtv_user) > 0 and len(self.streamujtv_pass) > 0:
+                # set streamujtv credentials
+                m = hashlib.md5()
+                m.update(self.streamujtv_pass)
+                h = m.hexdigest()
+                m = hashlib.md5()
+                m.update(h)
+                stream['url'] = stream['url'] + \
+                    "&pass=%s:::%s" % (self.streamujtv_user, m.hexdigest())
+            if self.streamujtv_location in ['1', '2']:
+                stream['url'] = stream['url'] + "&location=%s" % self.streamujtv_location
+        return stream
+
 
     def get_subs(self):
         return self.parent.get_subs()
