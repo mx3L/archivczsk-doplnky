@@ -54,24 +54,24 @@ class SosacProvider(xbmcprovider.XBMContentProvider):
         xbmcprovider.XBMContentProvider.__init__(self, provider, settings, addon, session)
         self.check_setting_keys(['quality'])
 
-        def resolve(self, url):
-            def select_cb(resolved):
-                resolved = resolver.filter_by_quality(resolved, self.settings['quality'] or '0')
-                if len(resolved) == 1:
-                    return resolved[0]
-                else:
-                    stream_list = ['[%s]%s'%(s['quality'],s['lang']) for s in resolved]
-                    idx = client.getListInput(self.session, stream_list, _("Select stream"))
-                    if idx == -1:
-                        return resolved[0]
-                    return resolved[idx]
+    def resolve(self, url):
+        def select_cb(resolved):
+            resolved = resolver.filter_by_quality(resolved, self.settings['quality'] or '0')
+            if len(resolved) == 1:
+                return resolved[0]
+            else:
+                stream_list = ['[%s]%s'%(s['quality'],s['lang']) for s in resolved]
+                idx = client.getListInput(self.session, stream_list, _("Select stream"))
+                if idx == -1:
+                    return None
+                return resolved[idx]
 
-            item = self.provider.video_item()
-            item.update({'url':url})
-            try:
-                return self.provider.resolve(item, select_cb=select_cb)
-            except ResolveException, e:
-                self._handle_exc(e)
+        item = self.provider.video_item()
+        item.update({'url':url})
+        try:
+            return self.provider.resolve(item, select_cb=select_cb)
+        except ResolveException, e:
+            self._handle_exc(e)
 
 SosacProvider(sosac,settings,__addon__, session).run(params)
 

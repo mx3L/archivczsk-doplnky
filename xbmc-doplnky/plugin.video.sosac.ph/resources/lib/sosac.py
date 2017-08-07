@@ -304,12 +304,13 @@ class SosacContentProvider(ContentProvider):
                 http_error_303 = http_error_302
                 http_error_307 = http_error_302
 
-            opener = urllib2.build_opener(NoRedirectHandler())
-            urllib2.install_opener(opener)
+            if result is not None:
+                opener = urllib2.build_opener(NoRedirectHandler())
+                urllib2.install_opener(opener)
 
-            r = urllib2.urlopen(urllib2.Request(result['url'], headers=result['headers']))
-            if r.code == 200:
-                result['url'] = r.read()
+                r = urllib2.urlopen(urllib2.Request(result['url'], headers=result['headers']))
+                if r.code == 200:
+                    result['url'] = r.read()
             return result
 
         data = item['url']
