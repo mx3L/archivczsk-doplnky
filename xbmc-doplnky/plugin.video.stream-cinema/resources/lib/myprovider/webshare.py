@@ -39,7 +39,7 @@ class Webshare():
         self.password = password
         self.base_url = 'http://webshare.cz/'
         self.token = ''
-        #util.init_urllib()
+        util.init_urllib()
         self.login()
         
     def _url(self, url):
