@@ -1,2 +1,5 @@
-- verzia 1.1.1 
-	2017-08-03 new api read from kodi
+2017-09-26 verzia 1.1.2
+	- new api 1.2
+	- set up order items in Movies & Series category: Country, Quality, Genre
+2017-08-03 verzia 1.1.1 
+	- new api 1.1

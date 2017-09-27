@@ -3,4 +3,10 @@
     <string id="30010">webshare.cz</string>
     <string id="30101">Username</string>
     <string id="30102">Password</string>
+    <string id="30103">Order category Country</string>
+    <string id="30104">Order category Quality</string>
+    <string id="30105">Order category Genre</string>
+	  <string id="301031">Default</string>
+	  <string id="301032">Year</string>
+	  <string id="301033">Rating</string>
 </strings>

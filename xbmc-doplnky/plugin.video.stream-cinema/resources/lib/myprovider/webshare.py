@@ -31,6 +31,14 @@ import urllib
 import urllib2
 import urlparse
 import util
+import datetime
+from time import strftime
+
+class wsUserData(object):
+    def __init__(self, isVip, vipDaysLeft, userId):
+        self.isVip = isVip
+        self.vipDaysLeft = vipDaysLeft
+        self.userId = userId
 
 class Webshare():
 
@@ -39,7 +47,7 @@ class Webshare():
         self.password = password
         self.base_url = 'http://webshare.cz/'
         self.token = ''
-        util.init_urllib()
+        #util.init_urllib()
         self.login()
         
     def _url(self, url):
@@ -50,6 +58,9 @@ class Webshare():
             return url
         return self.base_url + url.lstrip('./')
 
+    def _create_header_stats(self,url,deviceId):
+        
+        return headers
     def _create_request(self,url,base):
         args = dict(urlparse.parse_qsl(url))
         headers = {'X-Requested-With':'XMLHttpRequest','Accept':'text/xml; charset=UTF-8','Referer':self.base_url}
@@ -73,7 +84,7 @@ class Webshare():
                 return False
             salt = xml.find('salt').text
             # create hashes
-            password = hashlib.sha1(md5crypt(self.password, salt)).hexdigest()
+            password = hashlib.sha1(md5crypt(self.password.encode('utf-8'), salt.encode('utf-8'))).hexdigest()
             digest = hashlib.md5(self.username + ':Webshare:' + self.password).hexdigest()
             # login
             headers,req = self._create_request('',{'username_or_email':self.username,'password':password,'digest':digest,'keep_logged_in':1})
@@ -87,6 +98,57 @@ class Webshare():
             util.info('Login successfull')
             return True
         return False
+
+    def userData(self):
+        if self.token:
+            headers,req = self._create_request('/',{'wst':self.token})
+            data = util.post(self._url('api/user_data/'), req, headers=headers)
+            xml = ET.fromstring(data)
+            xml.find('vip').text
+            isVip = xml.find('vip').text
+            vipDays = xml.find('vip_days').text
+            ident = xml.find('ident').text
+
+            if isVip != '1':
+                isVip = '0'
+            return wsUserData(isVip, vipDays, ident)
+        return wsUserData('-99', '0', '0')
+
+    def write(self, msg):
+        # prerobit na HDD plus cas tam dat a tak
+        f = open('/tmp/stream_cinema_info.log', 'a')
+        f.write(strftime("%H:%M:%S") +" %s\n" % msg)
+        f.close()
+
+    def sendStats(self, item, apiVer, deviceId):
+        #send data to server about watching movie
+        udata = self.userData()
+        urlStats = 'http://stream-cinema.online/kodi/Stats?ver='+apiVer+'&uid='+deviceId
+        
+        # not token no account on webshare
+        if udata.isVip != '-99':
+            dur = float(item['duration'])
+            ep = ''
+            se = ''
+            if 'episode' in item:
+                ep = str(item['episode'])
+            if 'season' in item:
+                se = str(item['season'])
+            now = datetime.datetime.now()
+            endIn = now + datetime.timedelta(seconds=int(dur))
+            endStr = endIn.strftime('%H:%M:%S')
+
+            data = { 'vip':udata.isVip, 'vd': udata.vipDaysLeft, 'est':endStr, 'scid':str(item['id']), 
+                     'action':'start', 'ws':udata.userId, 'dur':dur, 
+                     'ep':ep, 'se':se }
+            
+            #self.write('data='+str(data))
+
+            headers = {'Content-Type':'application/json', 'X-Uid':deviceId}
+            response = util.post_json(urlStats, data, headers)
+
+            self.write('stats('+str(item['id'])+')='+str(response))
+
 
     def resolve(self,ident):
         headers,req = self._create_request('/',{'ident':ident,'wst':self.token})

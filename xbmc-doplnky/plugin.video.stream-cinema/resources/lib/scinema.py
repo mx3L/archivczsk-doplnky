@@ -23,9 +23,7 @@
 
 #todo
 # - get language
-# - loging improve time + ...
-# - auto update plugins check why want update after change
-# - check method 
+# - 
 
 
 import urllib
@@ -39,12 +37,13 @@ import traceback
 import util
 from provider import ContentProvider, cached, ResolveException
 from Components.Language import language
+from time import strftime
 
 sys.path.append( os.path.join ( os.path.dirname(__file__),'myprovider') )
 #sys.setrecursionlimit(10000)
 
 BASE_URL="http://stream-cinema.online/kodi"
-API_VERSION="1.1"
+API_VERSION="1.2"
 
 class StreamCinemaContentProvider(ContentProvider):
     ISO_639_1_CZECH = None
@@ -61,6 +60,11 @@ class StreamCinemaContentProvider(ContentProvider):
             self.wspass = password
             self.language = language.getLanguage()
             self.init_trans()
+            self.write("init stream-cinema finished...");
+            self.deviceUid = None
+            self.itemOrderGenre = '0'
+            self.itemOrderCountry = '0'
+            self.itemOrderQuality = '0'
         except:
             self.write("init failed...")
             pass
@@ -75,6 +79,7 @@ class StreamCinemaContentProvider(ContentProvider):
             "30902": {"sk_SK":"Seriály","en_EN":"Series", "cs_CZ":"Seriály"},
             "30903": {"sk_SK":"A-Z","en_EN":"A-Z", "cs_CZ":"A-Z"},
             "30904": {"sk_SK":"Najnovšie","en_EN":"New", "cs_CZ":"Nově přidané streamy"},
+            "30950": {"sk_SK":"Najnovšie","en_EN":"New", "cs_CZ":"Nově přidané streamy"},
             "30905": {"sk_SK":"Populárne","en_EN":"Popular", "cs_CZ":"Nejsledovanější"},
             "30906": {"sk_SK":"Krajina","en_EN":"Country", "cs_CZ":"Země"},
             "30907": {"sk_SK":"Kvalita","en_EN":"Quality", "cs_CZ":"Kvalita"},
@@ -90,7 +95,7 @@ class StreamCinemaContentProvider(ContentProvider):
             "30924": {"sk_SK":"Zrušiť odber","en_EN":"xxx", "cs_CZ":"yyy"},
             "30925": {"sk_SK":"Knižnica","en_EN":"xxx", "cs_CZ":"yyy"},
             "30926": {"sk_SK":"Pridať do knižnice (všetko)","en_EN":"xxx", "cs_CZ":"yyy"},
-            "30927": {"sk_SK":"Naposledy sledované","en_EN":"xxx", "cs_CZ":"yyy"},
+            "30927": {"sk_SK":"Naposledy sledované","en_EN":"Last watched", "cs_CZ":"Naposledy sledované"},
             "30928": {"sk_SK":"TV program na 14 dní","en_EN":"TV program 14 days", "cs_CZ":"TV program na 14 dni"},
             "30929": {"sk_SK":"Naposledy pridané","en_EN":"Latest streams", "cs_CZ":"Nově přidané"},
             "30930": {"sk_SK":"1) Navštívte: [COLOR skyblue]%s[/COLOR]","en_EN":"xxx", "cs_CZ":"yyy"},
@@ -250,10 +255,12 @@ class StreamCinemaContentProvider(ContentProvider):
     def capabilities(self):
         return ['resolve', 'categories', 'search']
 
-    def write(self, str):
+    
+
+    def write(self, msg):
         # prerobit na HDD plus cas tam dat a tak
         f = open('/tmp/stream_cinema_info.log', 'a')
-        f.write("%s\n" % str)
+        f.write(strftime("%H:%M:%S") +" %s\n" % msg)
         f.close()
 
     def on_init(self):
@@ -276,9 +283,15 @@ class StreamCinemaContentProvider(ContentProvider):
 
     def _json(self, url):
         try:
-            return json.loads(self.get_data_cached(url))
+            qs = '?'
+            if '?' in url:
+                qs='&'
+
+            urlapi = url+qs+'ver='+API_VERSION+'&uid='+self.deviceUid
+            #self.write("json url: " + str(urlapi))
+            return json.loads(self.get_data_cached(urlapi))
         except Exception, e:
-            self.write("Chybna pripojenia: " + str(url))
+            self.write("Chyba pripojenia: " + str(urlapi))
             pass
 
     def _getName(self, id):
@@ -316,9 +329,20 @@ class StreamCinemaContentProvider(ContentProvider):
             if self.wsuser != "" or self.wspass != "":
                 try:
                     if self.ws == None:
+                        #self.write("_resolve ws is null...");
                         from webshare import Webshare as wx
                         self.ws = wx(self.wsuser, self.wspass)
+                    #else:
+                    #    self.write("_resolve ws is not null...");
+                    
                     itm['url'] = self.ws.resolve(itm['params']['play']['ident'])
+                    
+                    
+                    if not str(itm['url']):
+                        self.write("_resolve url is null reset ws...");
+                        self.ws = None
+                    #else:
+                    #    self.write("resolve item "+str(itm['url']))
                 except:
                     self.write("_resolve failed...")
                     self.write(traceback.format_exc())
@@ -335,20 +359,28 @@ class StreamCinemaContentProvider(ContentProvider):
 
         try:
             data = self._json(BASE_URL)
-            if data["menu"]:
+            if type(data) is dict and data["menu"]:
                 for m in data["menu"]:
                     try:
+                        # skip not valid items
+                        if not 'url' in m:
+                            continue
                         #util.debug("MENU: %s" % str(m))
                         if m['type'] == 'dir' and m['url'].startswith('/'):
-                            tmpTrans = self._getName(str(m['title']))
-                            item = self.dir_item(title=tmpTrans, url=BASE_URL+str(m['url']))
-                            result.append(item)
+                            # filter new search menu (not supported yet)
+                            if m['url'] != '/Search/menu':
+                                tmpTrans = self._getName(str(m['title']))
+                                item = self.dir_item(title=tmpTrans, url=BASE_URL+str(m['url']))
+                                result.append(item)
                     except Exception:
                         self.write("get category failed ("+m['url']+', title='+m['title']+")...")
                         self.write(traceback.format_exc())
                         pass
             else:
-                result = [{'title': 'Get category menu failed...', 'url':'failed_url'}]
+                item = self.dir_item(title='Get category menu failed...', url='failed_url')
+                result.append(item)
+                # or let system to failed to author mus actualize .. this is incompatible type then failed
+                #result = [{'title': 'Get category menu failed...', 'url':'failed_url'}]
         except:
             self.write("get categories failed...")
             self.write(traceback.format_exc())
@@ -361,11 +393,31 @@ class StreamCinemaContentProvider(ContentProvider):
         return self._renderItem(BASE_URL+ '/Search?' + urllib.urlencode(sq))
 
     def _renderItem(self, url):
+        # sort 1-desc order by releasedate (year)
+        # sort 2- desc order by rating (not yet implemented)
+        # not implemented on Series yet
+        if 'Movies/genre/' in url or 'Series/genre/' in url:
+            # dont add etc. NextPage item (...?p=2), and other
+            if not ('?' in url) and self.itemOrderGenre == '1': 
+                url = url+'/1'
+        if 'Movies/country/' in url or 'Series/country/' in url:
+            # dont add etc. NextPage item (...?p=2), and other
+            if not ('?' in url) and self.itemOrderCountry == '1': 
+                url = url+'/1'
+        if 'Movies/guality/' in url or 'Series/quality/' in url:
+            # dont add etc. NextPage item (...?p=2), and other
+            if not ('?' in url) and self.itemOrderQuality == '1': 
+                url = url+'/1'
+
         data = self._json(url)
         result = []
 
         if data['menu']:
             for m in data['menu']:
+                # skip not valid items
+                if not 'url' in m:
+                    continue
+
                 itemUrl = BASE_URL+str(m['url'])
                 try:
                     if m['type'] == 'dir' and m['url'].startswith('/'):
@@ -384,6 +436,8 @@ class StreamCinemaContentProvider(ContentProvider):
                         
                         item = self.video_item(url=itemUrl, img=image)
                         item['title']= m['title']
+                        if '/Tv' in url:
+                            item['title'] = m['title'].replace('[LIGHT]','').replace('[/LIGHT]','')
                     self._filter(result, item)
                 except:
                     self.write("item render failed "+itemUrl)
@@ -405,12 +459,24 @@ class StreamCinemaContentProvider(ContentProvider):
 
     def resolve(self, item, captcha_cb=None, select_cb=None):
         #self.write("ITEM RESOLVE: " + str(item))
-        
+        # tu to zbehne na zoznam streamov
         try:
             data = self._json(item['url'])
             #self.write("\n\n\nurl: "+str(item['url'])+"\n\ndata: " + str(data))
 
-            if BASE_URL in item['url']:
+            #send stats
+            try:
+                if 'info' in data:
+                    if self.ws == None:
+                        from webshare import Webshare as wx
+                        self.ws = wx(self.wsuser, self.wspass)
+                    self.ws.sendStats(data['info'], API_VERSION, self.deviceUid)
+            except:
+                self.write("send stats failed ...")
+                self.write(traceback.format_exc())
+                pass
+
+            if 'info' in data and BASE_URL in item['url']:
                 if 'strms' in data:
                     #self.write("[SC] data info: " + str(data['info']))
                     out = [self.merge_dicts(data['info'], i) for i in data['strms']]
@@ -422,6 +488,9 @@ class StreamCinemaContentProvider(ContentProvider):
                 res = []
                 try:
                     for m in data:
+                        # better info for render
+                        # maybe change in another place :)
+                        m['lang'] = m['size']+m['ainfo']
                         tmp = self._resolve(m)
                         self._filter(res, tmp)
                     return res
@@ -431,6 +500,8 @@ class StreamCinemaContentProvider(ContentProvider):
                     from Plugins.Extensions.archivCZSK.gui.common import showErrorMessage
                     showErrorMessage(InfoBar.instance.session, self._getName("$66666"), 10, None)
                     pass
+            else:
+                self.write('resolve item failed!'+str(item))
         except:
             self.write("resolve failed "+item['url'])
             self.write(traceback.format_exc())

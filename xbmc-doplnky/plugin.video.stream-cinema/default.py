@@ -26,18 +26,55 @@ import re
 import util,xbmcprovider,xbmcutil
 from scinema import StreamCinemaContentProvider
 
+
+
+
 __scriptid__   = 'plugin.video.stream-cinema'
 __scriptname__ = 'stream-cinema.online'
 __addon__      = ArchivCZSK.get_xbmc_addon(__scriptid__)
 __language__   = __addon__.getLocalizedString
-__set          = __addon__.getSetting
+__gets         = __addon__.getSetting
+__sets         = __addon__.setSetting
 
+def getDeviceUid():
+       uid = str(__gets('deviceid'))
+       try:
+           if uid.startswith('e2-'):
+               return uid
+           uid = ''
+           
+           import uuid
+           # save to settings and return
+           uid = 'e2-'+str(uuid.uuid4())
+           __sets('deviceid', uid)
+           return uid
+       except:
+          if uid == '':
+              import random
+              import string
+              uid = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(32))
+              uid = 'e2-'+uid
+              __sets('deviceid', uid)
+              return uid
+          pass
+       __sets('deviceid', 'e2-empty')
+       return 'e2-empty'
 
 settings = {'quality':__addon__.getSetting('quality')}
 
-reverse_eps = __set('order-episodes') == '0'
+reverse_eps = __gets('order-episodes') == '0'
+
+scinema = StreamCinemaContentProvider(username=__gets('wsuser'),password=__gets('wspass'),reverse_eps=reverse_eps)
+scinema.deviceUid = getDeviceUid()
+scinema.itemOrderGenre = __gets('item_order_genre')
+scinema.itemOrderCountry = __gets('item_order_country')
+scinema.itemOrderQuality = __gets('item_order_quality')
 
 print("Running stream cinema provider with params:", params)
-xbmcprovider.XBMCMultiResolverContentProvider(StreamCinemaContentProvider(username=__set('wsuser'),password=__set('wspass'),reverse_eps=reverse_eps),settings,__addon__, session).run(params)
+xbmcprovider.XBMCMultiResolverContentProvider(
+    scinema,
+    #StreamCinemaContentProvider(username=__set('wsuser'),password=__set('wspass'),reverse_eps=reverse_eps),
+    settings,__addon__, session
+).run(params)
 
 
