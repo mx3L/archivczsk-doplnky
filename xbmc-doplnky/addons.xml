@@ -333,8 +333,8 @@
   </extension>
 </addon>
 
-<addon id="plugin.video.stream-cinema" name="Stream Cinema" provider-name="mtester270 (origin bbaron)" version="1.1.1">
-    <requires>
+<addon id="plugin.video.stream-cinema" name="Stream Cinema" provider-name="chaoss (origin bbaron)" version="1.1.2">
+  <requires>
         <import addon="xbmc.python" version="2.1.0" />
         <import addon="script.module.stream.resolver" version="1.6.25" />
     </requires>
