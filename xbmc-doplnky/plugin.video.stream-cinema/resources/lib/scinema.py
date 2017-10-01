@@ -23,7 +23,14 @@
 
 #todo
 # - get language
-# - 
+# - call back na dialog ale pozro ak to jebne musi ist dalej
+# - nastavit pocet dni VIP v settings
+# - fixnut co to furt pusta do initu jak jeble
+# - fix ked su opakovane requesty 1min per request na /Play a tiez na resolve maju nieco
+# - opravit hlasku ze nie je login
+# - dat do nastaveni kolko dni ostava na VIP
+# - spravit linux enigma release.sh
+# - asi spravit komplet novy tool nech to zobrazuje dalsie udaje foto atd....
 
 
 import urllib
@@ -33,11 +40,13 @@ import sys
 import os
 import json
 import traceback
-
+import datetime
 import util
+
 from provider import ContentProvider, cached, ResolveException
 from Components.Language import language
 from time import strftime
+
 
 sys.path.append( os.path.join ( os.path.dirname(__file__),'myprovider') )
 #sys.setrecursionlimit(10000)
@@ -45,7 +54,46 @@ sys.path.append( os.path.join ( os.path.dirname(__file__),'myprovider') )
 BASE_URL="http://stream-cinema.online/kodi"
 API_VERSION="1.2"
 
+class Singleton(type):
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+class StaticDataSC():
+    __metaclass__ = Singleton
+    
+    def __init__(self, username=None, password=None):
+        self.vipDaysLeft = "-1"
+        self.write("StaticDataSC init...")
+
+        if username and password:
+            try:
+                login = username
+                pwd = password
+                from webshare import Webshare as wx
+                ws = wx(login, pwd)
+                if ws.loginOk:
+                    udata = ws.userData()
+                    self.vipDaysLeft = udata.vipDaysLeft
+                else:
+                    self.vipDaysLeft = "0"
+            except:
+                self.write("get vip days left failed")
+                self.write(traceback.format_exc())
+                pass
+
+    def write(self, msg):
+        # prerobit na HDD plus cas tam dat a tak
+        f = open('/tmp/stream_cinema_info.log', 'a')
+        dtn = datetime.datetime.now()
+        f.write(dtn.strftime("%H:%M:%S.%f")[:-3] +" %s\n" % msg)
+        #f.write(strftime("%H:%M:%S") +" %s\n" % msg)
+        f.close()
+
 class StreamCinemaContentProvider(ContentProvider):
+    __metaclass__ = Singleton
     ISO_639_1_CZECH = None
     par = None
 
@@ -60,20 +108,31 @@ class StreamCinemaContentProvider(ContentProvider):
             self.wspass = password
             self.language = language.getLanguage()
             self.init_trans()
-            self.write("init stream-cinema finished...");
+            self.write("init stream-cinema...");
             self.deviceUid = None
             self.itemOrderGenre = '0'
             self.itemOrderCountry = '0'
             self.itemOrderQuality = '0'
+            self.session = None
         except:
-            self.write("init failed...")
+            self.write("init stream-cinema failed...")
+            self.write(traceback.format_exc())
             pass
 
     def init_trans(self):
         self.trans = {
-            "66666": {"sk_SK":"Prihlasovacie údaje nie sú v plugine nastavené. \n\nAk nemáte účet tak sa prosím zaregistrujte na webshare.cz",
-                      "en_EN":"Login data is not set in the plugin settings. \n\nIf you do not have an account so please register at webshare.cz",
-                      "cs_CZ":"Přihlašovací údaje nejsou v pluginu nastaveny. \n\nPokud nemáte účet tak se prosím zaregistrujte na webshare.cz"},
+            "66666": {"sk_SK":"Prihlasovacie údaje sú nesprávne alebo nie sú v plugine nastavené. \n\nAk nemáte účet tak sa prosím zaregistrujte na webshare.cz",
+                      "en_EN":"Login data is wrong or is not set in the plugin settings. \n\nIf you do not have an account so please register at webshare.cz",
+                      "cs_CZ":"Přihlašovací údaje jsou nesprávné nebo nejsou v pluginu nastaveny. \n\nPokud nemáte účet tak se prosím zaregistrujte na webshare.cz"},
+            "66667": {"sk_SK":"Príliš veľa požiadaviek, prosím počkajte (1min) a opakujte akciu.",
+                      "en_EN":"Too many requests, please wait (1min) and try again.", 
+                      "cs_CZ":"Příliš mnoho požadavků, prosím čekejte (1min) a opakujte akci."},
+            "66668": {"sk_SK":"Pre sledovanie videa bez sekania je potrebné mať VIP účet na webshare.cz. \n\nMinimálna rýchlosť internetu 5 Mb/s (0.625 MB/s)",
+                      "en_EN":"To watch a video without freezing you need a VIP account at webshare.cz. Minimum internet speed 5 Mb/s (0.625 MB/s)", 
+                      "cs_CZ":"Pro sledování videa bez sekání je třeba mít VIP účet na webshare.cz. Minimální rychlost internetu 5 Mb/s (0.625 MB/s)"},
+            "66669": {"sk_SK":"Nepodarilo sa načítať hlavné menu (chyba pripojenia). \n\nZa vzniknuté problémy sa ospravedlňujeme.",
+                      "en_EN":"Unable to load main menu (connection error). \ n\nWe are apologizing for the problems you have encountered.", 
+                      "cs_CZ":"Nepodařilo se načíst hlavní menu (chyba připojení). \n\nZa vzniklé problémy se omlouváme."},
             #<!-- texty v menu -->
             "30901": {"sk_SK":"Filmy","en_EN":"Movies", "cs_CZ":"Filmy"},
             "30902": {"sk_SK":"Seriály","en_EN":"Series", "cs_CZ":"Seriály"},
@@ -81,6 +140,7 @@ class StreamCinemaContentProvider(ContentProvider):
             "30904": {"sk_SK":"Najnovšie","en_EN":"New", "cs_CZ":"Nově přidané streamy"},
             "30950": {"sk_SK":"Najnovšie","en_EN":"New", "cs_CZ":"Nově přidané streamy"},
             "30905": {"sk_SK":"Populárne","en_EN":"Popular", "cs_CZ":"Nejsledovanější"},
+            "30956": {"sk_SK":"Práve sledované","en_EN":"Watching now", "cs_CZ":"Právě sledované"},
             "30906": {"sk_SK":"Krajina","en_EN":"Country", "cs_CZ":"Země"},
             "30907": {"sk_SK":"Kvalita","en_EN":"Quality", "cs_CZ":"Kvalita"},
             "30908": {"sk_SK":"Žáner","en_EN":"Genre", "cs_CZ":"Žánr"},
@@ -255,13 +315,42 @@ class StreamCinemaContentProvider(ContentProvider):
     def capabilities(self):
         return ['resolve', 'categories', 'search']
 
-    
-
     def write(self, msg):
         # prerobit na HDD plus cas tam dat a tak
         f = open('/tmp/stream_cinema_info.log', 'a')
-        f.write(strftime("%H:%M:%S") +" %s\n" % msg)
+        dtn = datetime.datetime.now()
+        f.write(dtn.strftime("%H:%M:%S.%f")[:-3] +" %s\n" % msg)
+        #f.write(strftime("%H:%M:%S") +" %s\n" % msg)
         f.close()
+    def showMsg(self, msgId, showSec):
+        try:
+            # show info message dialog
+            #from Screens.InfoBar import InfoBar
+            from Plugins.Extensions.archivCZSK.gui.common import showErrorMessage
+            #from Plugins.Extensions.archivCZSK.gui.common import showYesNoDialog
+            #from time import sleep
+
+            #showErrorMessage(InfoBar.instance.session, self._getName(msgId), showSec, None)
+            showErrorMessage(self.session, self._getName(msgId), showSec, None)
+            #showYesNoDialog(self.session, self._getName(msgId), self.mycb)
+            #from Screens.MessageBox import MessageBox
+            #from Plugins.Extensions.archivCZSK.engine.tools.util import toString
+            #self.session.openWithCallback(self.mycb,MessageBox, text=toString(self._getName(msgId)), timeout=showSec, type=MessageBox.TYPE_ERROR)
+        
+            #sleep(showSec)
+        except:
+            self.write("showMsg failed ")
+            self.write(traceback.format_exc())
+            pass;
+
+    def mycb(self, answer):
+        # toto sa zavola ked sa closne window 
+        # answer je vyplnena ak da niekto dialog yesNO
+        self.write("session call back")
+        #if answer:
+        #	self.write("session call back set")
+        #else:
+        #	self.write("session call back set no answer")
 
     def on_init(self):
         kodilang = self.lang or 'cs'
@@ -290,8 +379,9 @@ class StreamCinemaContentProvider(ContentProvider):
             urlapi = url+qs+'ver='+API_VERSION+'&uid='+self.deviceUid
             #self.write("json url: " + str(urlapi))
             return json.loads(self.get_data_cached(urlapi))
-        except Exception, e:
-            self.write("Chyba pripojenia: " + str(urlapi))
+        except:
+            self.write("Chyba pripojenia...")
+            self.write(traceback.format_exc())
             pass
 
     def _getName(self, id):
@@ -322,36 +412,28 @@ class StreamCinemaContentProvider(ContentProvider):
         return id
     
     def _resolve(self, itm):
-        if itm == None:
+        if itm is None:
             return None;
         #self.write("_resolve itm: " + str(itm) + itm['provider'])
         if itm['provider'] == 'plugin.video.online-files' and itm['params']['cp'] == 'webshare.cz':
-            if self.wsuser != "" or self.wspass != "":
-                try:
-                    if self.ws == None:
-                        #self.write("_resolve ws is null...");
-                        from webshare import Webshare as wx
-                        self.ws = wx(self.wsuser, self.wspass)
-                    #else:
-                    #    self.write("_resolve ws is not null...");
+            if self.ws is None:
+                #self.write("_resolve ws is null...");
+                from webshare import Webshare as wx
+                self.ws = wx(self.wsuser, self.wspass)
                     
-                    itm['url'] = self.ws.resolve(itm['params']['play']['ident'])
+            try:
+                itm['url'] = self.ws.resolve(itm['params']['play']['ident'])
+            except:
+                # reset ws reason: singleton
+                #self.write("ws resolve reinit...");
+                self.ws = None
+                raise
                     
-                    
-                    if not str(itm['url']):
-                        self.write("_resolve url is null reset ws...");
-                        self.ws = None
-                    #else:
-                    #    self.write("resolve item "+str(itm['url']))
-                except:
-                    self.write("_resolve failed...")
-                    self.write(traceback.format_exc())
-                    pass
-            else:
-                raise Exception("no login for webshare.cz")
+            if not itm['url']:
+                raise Exception("Resolve url is empty")
 
-        #self.write("_resolve URL: " + str(itm['url']))
-        return itm
+            return itm
+        raise Exception("Not supported item to resolve!")
     
 
     def categories(self):
@@ -377,11 +459,13 @@ class StreamCinemaContentProvider(ContentProvider):
                         self.write(traceback.format_exc())
                         pass
             else:
-                item = self.dir_item(title='Get category menu failed...', url='failed_url')
-                result.append(item)
+                raise Exception("Get main menu category failed.")
+                #item = self.dir_item(title='Get category menu failed...', url='failed_url')
+                #result.append(item)
                 # or let system to failed to author mus actualize .. this is incompatible type then failed
                 #result = [{'title': 'Get category menu failed...', 'url':'failed_url'}]
         except:
+            self.showMsg("$66669", 20)
             self.write("get categories failed...")
             self.write(traceback.format_exc())
             pass
@@ -458,51 +542,64 @@ class StreamCinemaContentProvider(ContentProvider):
         return [self.dir_item(title="Load items failed...", url="failed_url")]
 
     def resolve(self, item, captcha_cb=None, select_cb=None):
-        #self.write("ITEM RESOLVE: " + str(item))
         # tu to zbehne na zoznam streamov
         try:
             data = self._json(item['url'])
-            #self.write("\n\n\nurl: "+str(item['url'])+"\n\ndata: " + str(data))
-
-            #send stats
-            try:
-                if 'info' in data:
-                    if self.ws == None:
-                        from webshare import Webshare as wx
-                        self.ws = wx(self.wsuser, self.wspass)
-                    self.ws.sendStats(data['info'], API_VERSION, self.deviceUid)
-            except:
-                self.write("send stats failed ...")
-                self.write(traceback.format_exc())
-                pass
 
             if 'info' in data and BASE_URL in item['url']:
+                statsData = data['info']
                 if 'strms' in data:
-                    #self.write("[SC] data info: " + str(data['info']))
                     out = [self.merge_dicts(data['info'], i) for i in data['strms']]
                     data = out
-                #self.write("[SC] data: " + str(data))
+
                 if len(data) < 1:
                     raise ResolveException('Video is not available.')
 
+                if self.ws is None:
+                    #self.write("Resolve ws is null (reinit)...");
+                    from webshare import Webshare as wx
+                    self.ws = wx(self.wsuser, self.wspass)
+
+                #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@todo
+                # check login
+                if not self.ws.loginOk:
+                    #self.showMsg("$66666", 10)
+                    self.write("Ws account login not ok.")
+                
+                # send stats
+                try:
+                    udata = self.ws.sendStats(statsData, BASE_URL, API_VERSION, self.deviceUid)
+                    # check VIP
+                    if udata.isVip == "0":
+                        #self.showMsg("$66668", 10)
+                        self.write("Ws account is not VIP.")
+                except:
+                    self.write("send stats failed...")
+                    self.write(traceback.format_exc())
+                    pass
+                
+
                 res = []
                 try:
+                    #self.write("_resolve start...")
                     for m in data:
                         # better info for render
-                        # maybe change in another place :)
-                        m['lang'] = m['size']+m['ainfo']
+                        if 'size' in m and 'ainfo' in m:
+                            m['lang'] = m['size']+m['ainfo']
                         tmp = self._resolve(m)
                         self._filter(res, tmp)
+                    #self.write("_resolve end...")
                     return res
                 except:
-                    # show info message dialog
-                    from Screens.InfoBar import InfoBar
-                    from Plugins.Extensions.archivCZSK.gui.common import showErrorMessage
-                    showErrorMessage(InfoBar.instance.session, self._getName("$66666"), 10, None)
+                    self.write("_resolve failed")
+                    self.write(traceback.format_exc())
+                    # soemthing happend with resolve webshare
                     pass
             else:
-                self.write('resolve item failed!'+str(item))
+                self.write('resolve item failed!')
         except:
             self.write("resolve failed "+item['url'])
             self.write(traceback.format_exc())
+            # too many request per minute
+            self.showMsg("$66667",20)
             pass

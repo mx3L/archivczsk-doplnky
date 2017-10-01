@@ -49,6 +49,9 @@ class Webshare():
         self.token = ''
         #util.init_urllib()
         self.login()
+        self.loginOk = False
+        if self.token:
+            self.loginOk = True
         
     def _url(self, url):
         """
@@ -58,9 +61,6 @@ class Webshare():
             return url
         return self.base_url + url.lstrip('./')
 
-    def _create_header_stats(self,url,deviceId):
-        
-        return headers
     def _create_request(self,url,base):
         args = dict(urlparse.parse_qsl(url))
         headers = {'X-Requested-With':'XMLHttpRequest','Accept':'text/xml; charset=UTF-8','Referer':self.base_url}
@@ -74,13 +74,15 @@ class Webshare():
         if not self.username and not self.password:
             return True # fall back to free account
         elif self.username and self.password and len(self.username)>0 and len(self.password)>0:
-            util.info('Login user=%s, pass=*****' % self.username)
+            #util.info('Login user=%s, pass=*****' % self.username)
+            #self.write("Login start...")
             # get salt
             headers,req = self._create_request('',{'username_or_email':self.username})
             data = util.post(self._url('api/salt/'),req,headers=headers)
             xml = ET.fromstring(data)
             if not xml.find('status').text == 'OK':
-                util.error('Server returned error status, response: %s' % data)
+                #self.write("Login end salt...")
+                #util.error('Server returned error status, response: %s' % data)
                 return False
             salt = xml.find('salt').text
             # create hashes
@@ -90,12 +92,14 @@ class Webshare():
             headers,req = self._create_request('',{'username_or_email':self.username,'password':password,'digest':digest,'keep_logged_in':1})
             data = util.post(self._url('api/login/'),req,headers=headers)
             xml = ET.fromstring(data)
+            #self.write("Login end...")
             if not xml.find('status').text == 'OK':
-                util.error('Server returned error status, response: %s' % data)
+                #util.error('Server returned error status, response: %s' % data)
                 return False
+            
             self.token = xml.find('token').text
             util.cache_cookies(None)
-            util.info('Login successfull')
+            #util.info('Login successfull')
             return True
         return False
 
@@ -112,52 +116,56 @@ class Webshare():
             if isVip != '1':
                 isVip = '0'
             return wsUserData(isVip, vipDays, ident)
-        return wsUserData('-99', '0', '0')
+        return wsUserData('-1', '0', '')
 
     def write(self, msg):
         # prerobit na HDD plus cas tam dat a tak
         f = open('/tmp/stream_cinema_info.log', 'a')
-        f.write(strftime("%H:%M:%S") +" %s\n" % msg)
+        dtn = datetime.datetime.now()
+        f.write(dtn.strftime("%H:%M:%S.%f")[:-3] +" %s\n" % msg)
+        #f.write(strftime("%H:%M:%S") +" %s\n" % msg)
         f.close()
 
-    def sendStats(self, item, apiVer, deviceId):
+    def sendStats(self, item, baseUrl, apiVer, deviceId):
         #send data to server about watching movie
+        #self.write('Stats start...')
         udata = self.userData()
-        urlStats = 'http://stream-cinema.online/kodi/Stats?ver='+apiVer+'&uid='+deviceId
+        urlStats = baseUrl + '/Stats?ver='+apiVer+'&uid='+deviceId
         
-        # not token no account on webshare
-        if udata.isVip != '-99':
-            dur = float(item['duration'])
-            ep = ''
-            se = ''
-            if 'episode' in item:
-                ep = str(item['episode'])
-            if 'season' in item:
-                se = str(item['season'])
-            now = datetime.datetime.now()
-            endIn = now + datetime.timedelta(seconds=int(dur))
-            endStr = endIn.strftime('%H:%M:%S')
+        dur = float(item['duration'])
+        ep = ''
+        se = ''
+        if 'episode' in item:
+            ep = str(item['episode'])
+        if 'season' in item:
+            se = str(item['season'])
+        now = datetime.datetime.now()
+        endIn = now + datetime.timedelta(seconds=int(dur))
+        endStr = endIn.strftime('%H:%M:%S')
 
-            data = { 'vip':udata.isVip, 'vd': udata.vipDaysLeft, 'est':endStr, 'scid':str(item['id']), 
-                     'action':'start', 'ws':udata.userId, 'dur':dur, 
-                     'ep':ep, 'se':se }
+        data = { 'vip':udata.isVip, 'vd': udata.vipDaysLeft, 'est':endStr, 'scid':str(item['id']), 
+                    'action':'start', 'ws':udata.userId, 'dur':dur, 
+                    'ep':ep, 'se':se }
             
-            #self.write('data='+str(data))
+        #self.write('data='+str(data))
 
-            headers = {'Content-Type':'application/json', 'X-Uid':deviceId}
-            response = util.post_json(urlStats, data, headers)
+        headers = {'Content-Type':'application/json', 'X-Uid':deviceId}
+        response = util.post_json(urlStats, data, headers)
 
-            self.write('stats('+str(item['id'])+')='+str(response))
+        self.write('Stats('+str(item['id'])+')='+str(response))
 
+        return udata
 
     def resolve(self,ident):
-        headers,req = self._create_request('/',{'ident':ident,'wst':self.token})
-        util.info(headers)
-        util.info(req)
-        data = util.post(self._url('api/file_link/'), req, headers=headers)
-        xml = ET.fromstring(data)
-        if not xml.find('status').text == 'OK':
-            util.error('Server returned error status, response: %s' % data)
-            raise ResolveException(xml.find('message').text)
-        url = xml.find('link').text
-        return url
+        try:
+            headers,req = self._create_request('/',{'ident':ident,'wst':self.token})
+            #util.info(headers)
+            #util.info(req)
+            data = util.post(self._url('api/file_link/'), req, headers=headers)
+            xml = ET.fromstring(data)
+            if not xml.find('status').text == 'OK':
+                #util.error('Server returned error status, response: %s' % data)
+                raise ResolveException(xml.find('message').text)
+            return xml.find('link').text
+        except:
+            raise

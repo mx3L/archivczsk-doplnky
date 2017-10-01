@@ -2,6 +2,7 @@
 <settings>
     <setting label="30101" id="wsuser" type="text" default="" />
     <setting label="30102" id="wspass" type="text" default="" option="hidden" />
+    <setting label="VIP days" id="wsvipdays" type="text" default="0" />
     <setting label="30103" id="item_order_country" type="enum" lvalues="301031|301032" default="0" />
     <setting label="30104" id="item_order_quality" type="enum" lvalues="301031|301032" default="0" />
     <setting label="30105" id="item_order_genre" type="enum" lvalues="301031|301032" default="0" />
