@@ -32,9 +32,6 @@ def resolve(url):
             'Referer': 'http://www.streamuj.tv/mediaplayer/player.swf',
             'Cookie': ','.join("%s=%s" % (c.name, c.value) for c in util._cookie_jar)
         }
-        burl = b64decode('aHR0cDovL2Z1LWNlY2gucmhjbG91ZC5jb20vcGF1dGg=')
-        key = util.request(
-            'http://www.streamuj.tv/_key.php?auth=3C27f5wk6qB3g7nZ5SDYf7P7k1572rFH1QxV0QQ')
         index = 0
         result = []
         qualities = re.search(r'rn\:[^\"]*\"([^\"]*)', data, re.IGNORECASE | re.DOTALL)
@@ -56,10 +53,6 @@ def resolve(url):
                 rn = qualities.group(1).split(',')
                 qindex = 0
                 for stream in streams:
-                    res = json.loads(util.post_json(burl, {
-                        'link': stream, 'player': player, 'key': key
-                    }))
-                    stream = res['link']
                     q = rn[qindex]
                     if q == 'HD':
                         q = '720p'
@@ -73,15 +66,8 @@ def resolve(url):
                     }
                     if subs:
                         link = subs.group(1)
-                        response = json.loads(util.post_json(burl, {
-                            'link': link, 'player': player, 'key': key
-                        }))
-                        if 'link' in response:
-                            item['lang'] += ' + subs'
-                            item['subs'] = response[u'link']
-                        else:
-                            util.error("Could not fetch subtitles from '{}'".format(link))
-                            util.error("Server response: {}".format(response))
+                        item['lang'] += ' + subs'
+                        item['subs'] = link
                     result.append(item)
                     qindex += 1
             index += 1
