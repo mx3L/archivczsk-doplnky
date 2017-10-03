@@ -206,21 +206,28 @@ class JojContentProvider(ContentProvider):
             data = util.substr(data, '<div class="s-archive">','<div class="s s-container s-archive">')
             iframe_url = re.search('<iframe src="([^"]+)"', data).group(1)
             #print 'iframe_url = ', iframe_url
-            pageid = urlparse.parse_qs(iframe_url)['context'][0]
-            #print 'pageid = ', pageid
-            clipid = urlparse.urlparse(iframe_url).path.split('/')[-1]
-            #print 'clipid = ', clipid
-            videophp_url = "http://media.joj.sk/services/Video.php?pageId=%s&clip=%s"% (pageid, clipid.replace('-','%2D'))
-            #print 'videophp_url = ', videophp_url
-            playlist = fromstring(util.request(videophp_url))
-            balanceurl = 'http://media.joj.sk/balance.xml?nc=%d' % random.randint(1000, 9999)
-            balance = fromstring(util.request(balanceurl))
-            for video in playlist.find('files').findall('file'):
+            player_str = urllib2.urlopen(iframe_url).read()
+            #print player_str
+
+            labels_str = re.search(r'var labels = {(.+?)};', player_str, re.DOTALL).group(1)
+            #print 'labels:', labels_str
+            renditions = re.search(r'renditions: \[(.+?)\]', labels_str).group(1).replace("'","").split(',')
+            #print 'renditions: ', renditions
+
+            settings_str = re.search(r'var settings = {(.+?)};', player_str, re.DOTALL).group(1)
+            #print 'settings:', settings_str
+            poster_url = re.search(r'poster: \"(.+?)\"', settings_str).group(1)
+            #print 'poster_url:', poster_url
+
+            bitrates_str = re.search(r'var bitrates = {(.+?)};', player_str, re.DOTALL).group(1)
+            #print 'bitrates:', bitrates_str
+            bitrates_url = re.search(r'"mp4": \[(.+?)\]', bitrates_str, re.DOTALL).group(1)
+            bitrates_url = bitrates_url.replace("'","").replace('\n','').replace(' ','').split(',')
+            for idx, url in enumerate(bitrates_url):
                 item = self.video_item()
-                item['img'] = playlist.attrib.get('large_image')
-                item['length'] = playlist.attrib.get('duration')
-                item['quality'] = video.attrib.get('label')
-                item['url'] = 'https://nn.geo.joj.sk/' + video.attrib.get('path').replace('dat/', 'storage/')
+                item['img'] = poster_url
+                item['quality'] = renditions[idx]
+                item['url'] = url
                 result.append(item)
             result.reverse()
         if select_cb:
