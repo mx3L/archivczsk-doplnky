@@ -23,15 +23,9 @@
 
 #todo
 # - get language
-# - call back na dialog ale pozro ak to jebne musi ist dalej
-# - nastavit pocet dni VIP v settings
-# - fixnut co to furt pusta do initu jak jeble
-# - fix ked su opakovane requesty 1min per request na /Play a tiez na resolve maju nieco
-# - opravit hlasku ze nie je login
-# - dat do nastaveni kolko dni ostava na VIP
-# - spravit linux enigma release.sh
-# - asi spravit komplet novy tool nech to zobrazuje dalsie udaje foto atd....
-
+# - call back for some message with continue functionality
+# - util.request dont read next when get 302 (Redirect)
+# - new capabilities 'stats' (implement later for play stop etc...)
 
 import urllib
 import urllib2
@@ -408,34 +402,8 @@ class StreamCinemaContentProvider(ContentProvider):
         except Exception:
             #self.write(traceback.format_exc())
             pass
-
         return id
     
-    def _resolve(self, itm):
-        if itm is None:
-            return None;
-        #self.write("_resolve itm: " + str(itm) + itm['provider'])
-        if itm['provider'] == 'plugin.video.online-files' and itm['params']['cp'] == 'webshare.cz':
-            if self.ws is None:
-                #self.write("_resolve ws is null...");
-                from webshare import Webshare as wx
-                self.ws = wx(self.wsuser, self.wspass)
-                    
-            try:
-                itm['url'] = self.ws.resolve(itm['params']['play']['ident'])
-            except:
-                # reset ws reason: singleton
-                #self.write("ws resolve reinit...");
-                self.ws = None
-                raise
-                    
-            if not itm['url']:
-                raise Exception("Resolve url is empty")
-
-            return itm
-        raise Exception("Not supported item to resolve!")
-    
-
     def categories(self):
         result = []
 
@@ -475,6 +443,14 @@ class StreamCinemaContentProvider(ContentProvider):
     def search(self, keyword):
         sq = {'search': keyword}
         return self._renderItem(BASE_URL+ '/Search?' + urllib.urlencode(sq))
+    def list(self, url):
+        try:
+            return self._renderItem(url)
+        except:
+            self.write("list failed "+url)
+            self.write(traceback.format_exc())
+            pass
+        return [self.dir_item(title="Load items failed...", url="failed_url")]
 
     def _renderItem(self, url):
         # sort 1-desc order by releasedate (year)
@@ -518,10 +494,13 @@ class StreamCinemaContentProvider(ContentProvider):
                         except:
                             pass;
                         
-                        item = self.video_item(url=itemUrl, img=image)
+                        item = self.video_item(url=itemUrl, img=image, quality='tvoj kvet')
+                        item['img']='keket76'
                         item['title']= m['title']
                         if '/Tv' in url:
                             item['title'] = m['title'].replace('[LIGHT]','').replace('[/LIGHT]','')
+                        # set data for item
+                        self.setAditionalVideoItemInfo(m, item)
                     self._filter(result, item)
                 except:
                     self.write("item render failed "+itemUrl)
@@ -531,15 +510,36 @@ class StreamCinemaContentProvider(ContentProvider):
             result = [{'title': 'Render item failed (invalid data)...', 'url':'failed_url'}]
 
         return result
-
-    def list(self, url):
+    def setAditionalVideoItemInfo(selft, scItem, videoItem):
         try:
-            return self._renderItem(url)
+            # need also 'id' send to XBMC 
+            # supprot ['plot', 'year', 'genre', 'rating', 'director', 'votes', 'cast', 'trailer'] ... feature 'duration'
+            if scItem['type'] == 'video':
+                try:
+                    if 'postersmall' in scItem:
+                        item['img']= scItem['postersmall']
+                    else:
+                        item['img']= scItem['art']['postersmall']
+                except:
+                    pass
+                if 'year' in scItem:
+                    videoItem['year'] = scItem['year']
+                if 'rating' in scItem:
+                    videoItem['rating'] = scItem['rating']
+                if 'plot' in scItem:
+                    videoItem['plot'] = str(scItem['plot'])
+                if 'genre' in scItem:
+                    videoItem['genre'] = str(scItem['genre'])
+                if 'duration' in scItem:
+                    videoItem['duration'] = scItem['duration']
+                if 'id' in scItem:
+                    videoItem['videoid'] = scItem['id']
+                if 'mvideo' in scItem:
+                    videoItem['videowidth'] = scItem['mvideo']['width']
         except:
-            self.write("list failed "+url)
-            self.write(traceback.format_exc())
+            self.write("getAditionalVideoItemInfo failed.\n"+ traceback.format_exc())
             pass
-        return [self.dir_item(title="Load items failed...", url="failed_url")]
+        
 
     def resolve(self, item, captcha_cb=None, select_cb=None):
         # tu to zbehne na zoznam streamov
@@ -603,3 +603,26 @@ class StreamCinemaContentProvider(ContentProvider):
             # too many request per minute
             self.showMsg("$66667",20)
             pass
+    def _resolve(self, itm):
+        if itm is None:
+            return None;
+        #self.write("_resolve itm: " + str(itm) + itm['provider'])
+        if itm['provider'] == 'plugin.video.online-files' and itm['params']['cp'] == 'webshare.cz':
+            if self.ws is None:
+                #self.write("_resolve ws is null...");
+                from webshare import Webshare as wx
+                self.ws = wx(self.wsuser, self.wspass)
+                    
+            try:
+                itm['url'] = self.ws.resolve(itm['params']['play']['ident'])
+            except:
+                # reset ws reason: singleton
+                #self.write("ws resolve reinit...");
+                self.ws = None
+                raise
+                    
+            if not itm['url']:
+                raise Exception("Resolve url is empty")
+
+            return itm
+        raise Exception("Not supported item to resolve!")

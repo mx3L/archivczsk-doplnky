@@ -26,6 +26,7 @@ sys.path.append( os.path.join ( os.path.dirname(__file__),'myprovider') )
 from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
 import re
 import util,xbmcprovider,xbmcutil
+import uuid
 from scinema import StreamCinemaContentProvider
 from scinema import StaticDataSC
 
@@ -39,29 +40,49 @@ __language__   = __addon__.getLocalizedString
 __gets         = __addon__.getSetting
 __sets         = __addon__.setSetting
 
+def generateNewDeviceid():
+    try:
+        tmp = str(uuid.uuid4())
+        mac = str(uuid.uuid1(uuid.getnode(),0))[24:]
+        idx = tmp.index('-')
+        tmp = tmp[idx:]
+        idx = tmp.index('-')
+        tmp = tmp[idx+1:]
+        return 'e2-mac-'+mac+tmp
+    except:
+        try:
+            import random
+            import string
+            return 'e2-rnd-'+''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(32))
+        except:
+            return 'e2-empty'
+        pass
 def getDeviceUid():
     uid = str(__gets('deviceid'))
     try:
-        if uid.startswith('e2-'):
+        if uid.startswith('e2-mac-'):
+            # recheck mac address
+            iddev =str(uuid.uuid1(uuid.getnode(),0))[24:]
+            setiddev = uid[6:]
+            idx = setiddev.index('-')
+            setiddev = setiddev[:-idx]
+            if setiddev != iddev:
+                uid = generateNewDeviceid()
+                __sets('deviceid', uid)
             return uid
-        uid = ''
-           
-        import uuid
-        # save to settings and return
-        uid = 'e2-'+str(uuid.uuid4())
+        else:
+            if uid.startswith('e2-rnd-') or uid == 'e2-empty':
+                return uid
+            else:
+                # generate new 
+                uid = generateNewDeviceid()
+                __sets('deviceid', uid)
+                return uid
+    except:
+        uid = generateNewDeviceid()
         __sets('deviceid', uid)
         return uid
-    except:
-        if uid == '':
-            import random
-            import string
-            uid = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(32))
-            uid = 'e2-'+uid
-            __sets('deviceid', uid)
-            return uid
         pass
-    __sets('deviceid', 'e2-empty')
-    return 'e2-empty'
 def fixXcursor():
     try:
         login = __gets('wsuser')
@@ -103,7 +124,7 @@ scinema.itemOrderCountry = __gets('item_order_country')
 scinema.itemOrderQuality = __gets('item_order_quality')
 scinema.session = session
 
-#scinema.write("PARAMS="+str(params))
+scinema.write("PARAMS="+str(params))
 
 print("Running stream cinema provider with params:", params)
 xbmcprovider.XBMCMultiResolverContentProvider(
