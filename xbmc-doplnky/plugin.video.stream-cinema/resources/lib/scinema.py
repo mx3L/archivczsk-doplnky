@@ -495,7 +495,6 @@ class StreamCinemaContentProvider(ContentProvider):
                             pass;
                         
                         item = self.video_item(url=itemUrl, img=image, quality='tvoj kvet')
-                        item['img']='keket76'
                         item['title']= m['title']
                         if '/Tv' in url:
                             item['title'] = m['title'].replace('[LIGHT]','').replace('[/LIGHT]','')
@@ -517,9 +516,9 @@ class StreamCinemaContentProvider(ContentProvider):
             if scItem['type'] == 'video':
                 try:
                     if 'postersmall' in scItem:
-                        item['img']= scItem['postersmall']
+                        videoItem['img']= scItem['postersmall']
                     else:
-                        item['img']= scItem['art']['postersmall']
+                        videoItem['img']= scItem['art']['postersmall']
                 except:
                     pass
                 if 'year' in scItem:
