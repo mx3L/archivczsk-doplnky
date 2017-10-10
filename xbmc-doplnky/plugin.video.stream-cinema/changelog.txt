@@ -1,3 +1,6 @@
+2017-10-10 verzia 1.1.6
+	- uuid fix
+
 2017-10-01 verzia 1.1.5
 	- functionality improvments
 	- prepare PHASE1 for better UI (on screen info video image, rating, duration)
