@@ -10,5 +10,4 @@
    <category label="Prehrávanie">
    		<setting id="rtmp_seek_fix" type="bool" label="Opraviť RTMP pretáčanie" default="true"/>
    </category>
-  <setting label="Poradie doplnku" id="addonorder" type="text" default="7"/>
 </settings>

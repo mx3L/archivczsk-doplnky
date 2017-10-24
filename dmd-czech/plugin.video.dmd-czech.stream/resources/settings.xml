@@ -2,5 +2,4 @@
 <settings>
    <setting id="user_name" type="text" label="Vaše uživ.jméno nebo email:" default="" />
    <setting id="tv_addon" type="bool" label="TV archiv" default="true" visible="false"/>
-   <setting label="Poradie doplnku" id="addonorder" type="text" default="6"/>
 </settings>

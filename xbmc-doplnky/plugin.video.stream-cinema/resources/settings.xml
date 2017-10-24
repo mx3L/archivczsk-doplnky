@@ -6,7 +6,6 @@
     <setting label="30103" id="item_order_country" type="enum" lvalues="301031|301032" default="0" />
     <setting label="30104" id="item_order_quality" type="enum" lvalues="301031|301032" default="0" />
     <setting label="30105" id="item_order_genre" type="enum" lvalues="301031|301032" default="0" />
-    <setting label="Poradie doplnku" id="addonorder" type="text" default="24"/>
   
     <setting label="DeviceId" id="deviceid" type="text" default="" visible="false"/>
 </settings>

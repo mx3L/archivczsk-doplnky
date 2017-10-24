@@ -9,5 +9,4 @@
         <setting id="account_email" type="text" label="e-mail" default="" />
         <setting id="account_password" type="text" option="hidden" label="heslo" default="" />
     </category>
-    <setting label="Poradie doplnku" id="addonorder" type="text" default="2"/>
 </settings>
