@@ -1,4 +1,6 @@
-﻿2016-05-20
+﻿2017-10-25
+ * Fix prehravania podla ab-forum uzivatela 'shiraz'
+2016-05-20
  * Oprava prehravani
  * Oprava nahledu poradu
  * Zmena nazvu hlavniho adresare na Nejsledovanejsi

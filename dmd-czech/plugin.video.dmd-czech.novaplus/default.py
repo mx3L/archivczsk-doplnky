@@ -13,7 +13,7 @@ from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
 
 __baseurl__ = 'http://novaplus.nova.cz'
 __dmdbase__ = 'http://iamm.uvadi.cz/xbmc/voyo/'
-_UserAgent_ = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'
+_UserAgent_ = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:55.0) Gecko/20100101 Firefox/55.0'
 addon =  ArchivCZSK.get_xbmc_addon('plugin.video.dmd-czech.novaplus')
 profile = addon.getAddonInfo('profile')
 __settings__ = addon
@@ -107,6 +107,9 @@ def VIDEOLINK(url,name):
     response = urllib2.urlopen(req)
     httpdata = response.read()
     response.close()
+    
+    httpdata   = httpdata.replace("\r","").replace("\n","").replace("\t","")
+    
     thumb = re.compile('<meta property="og:image" content="(.+?)" />').findall(httpdata)
     popis = re.compile('<meta property="og:description" content="(.+?)" />').findall(httpdata)
     try:
@@ -115,9 +118,15 @@ def VIDEOLINK(url,name):
         desc = name
 
     #Ziskani adresy configu ze stranky poradu, zacina u parametru configUrl - jen jsem slepil vsechny parametry k sobe a nacetl
-    httpdata   = httpdata.replace("\r","").replace("\n","").replace("\t","")
-    parametry = re.compile('params = (.+?);').findall(httpdata)
-    linkgenerator = parametry[0].replace(" ","").replace("?',","?").replace("{configUrl:'","").replace(":'","=").replace("',","&").replace("'+'","").replace("'}","").replace(",","").replace(":parseInt(","")
+    configUrl = re.compile('configUrl: \'(.+?)\'').findall(httpdata)
+    print 'configUrl = ' + str(configUrl[0])
+
+    parametry = re.compile('configParams: {(.+?)}').findall(httpdata)
+    linkgenerator = parametry[0].replace(" ","").replace("?',","?").replace(":'","=").replace("',","&").replace("'","").replace(",","")
+    print 'configParams = ' + str(linkgenerator)
+    linkgenerator = str(configUrl[0]) + str(linkgenerator)
+
+    print 'finalUrl = ' + str(linkgenerator)
     req = urllib2.Request(linkgenerator)
     req.add_header('User-Agent', _UserAgent_)
     response = urllib2.urlopen(req)
@@ -129,7 +138,7 @@ def VIDEOLINK(url,name):
     rtmp_url = rtmp_url[0].replace("\\","")
     #Slozeni vysledneho linku, sklada se z adresy rtmp_url a pak jeste jednou z adresy rtmp_url, ale ta uz musi byt rozdelena a slouzi jako parametry playpath a tcUrl
     #rtmp://nova-voyo-cz-pc.service.cdn.cra.cz/vod/&mp4:oldcdn/2015/11/06/1561560/2015-11-19_ulice-218_cyklus_dil_2919-b041884-np-mp4-lq.mp4?SIGV=2&IS=0&ET=1448109213&CIP=31.30.37.226&KO=1&KN=1&US=2338c0708283dbc363f88ecdbf53233c27d52ef3 tcUrl=rtmp://nova-voyo-cz-pc.service.cdn.cra.cz/vod playpath=mp4:oldcdn/2015/11/06/1561560/2015-11-19_ulice-218_cyklus_dil_2919-b041884-np-mp4-lq.mp4?SIGV=2&IS=0&ET=1448109213&CIP=31.30.37.226&KO=1&KN=1&US=2338c0708283dbc363f88ecdbf53233c27d52ef3
-    addLink(name,rtmp_url,thumb[0],desc)
+    addLink(name,rtmp_url,'http:' + thumb[0],desc)
 
 
 url=None
