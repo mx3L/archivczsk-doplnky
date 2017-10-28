@@ -98,11 +98,13 @@ class MarkizaContentProvider(ContentProvider):
         if episodes:
             row_list = []
             row_pattern = re.compile(r'<div class="item row ">(.+?)</div>\s+</div>', re.DOTALL)
-            # latest episode
-            episodes_data = util.substr(data, '<section class="col-md-12 info_new row">', '</section>')
-            row_match = row_pattern.search(episodes_data)
-            if row_match:
-                row_list.append(row_match.group(1))
+            purl = urlparse(url)
+            if not 'page=' in purl.query:
+                # latest episode
+                episodes_data = util.substr(data, '<section class="col-md-12 info_new row">', '</section>')
+                row_match = row_pattern.search(episodes_data)
+                if row_match:
+                    row_list.append(row_match.group(1))
             # other episodes
             episodes_data = util.substr(data, '<section class="col-md-12 article-view homepage">','</section>')
             row_list += row_pattern.findall(episodes_data)
@@ -126,13 +128,16 @@ class MarkizaContentProvider(ContentProvider):
                     item['length'] = length_str.strip()
                     item['date'] = date_str.strip()
                 result.append(item)
+            next_match = re.search(r'<li class="pager-next"><a href="([^"]+)', data)
+            if next_match:
+                result.append(self.dir_item(url = self._url(next_match.group(1)), type='next'))
         return result
 
     def resolve(self, item, captcha_cb=None, select_cb=None):
         result = []
         item = item.copy()
         video_id = urlparse(item['url']).path.split('/')[-1].split('_')[0]
-        videodata = util.json.loads(util.request('http://videoarchiv.markiza.sk/json/video_jwplayer7.json?is_web=1&id=' + video_id))
+        videodata = util.json.loads(util.request('http://videoarchiv.markiza.sk/json/video_jwplayer7.json?is_web=1&noads=1&nomidads=1&nopreads=1&nopostads=1&id=' + video_id))
         details = videodata['details']
         playlist = videodata['playlist']
         sources = [p['sources'][0]['file'] for p in playlist]
