@@ -184,9 +184,9 @@ class TA3ContentProvider(ContentProvider):
        item = item.copy()
        if 'live.html' in item['url']:
            result = self._resolve_live(item)
+           result = sorted(result, key=lambda x:x['quality'], reverse=True)
        else:
            result = self._resolve_vod(item)
-       result = sorted(result, key=lambda x:x['quality'], reverse=True)
        if len(result) > 0 and select_cb:
            return select_cb(result)
        return result
@@ -196,27 +196,28 @@ class TA3ContentProvider(ContentProvider):
         data = util.request(self._url(item['url']))
         video_id = re.search("LiveboxPlayer.archiv\(.+?videoId:\s*'([^']+)'", data, re.DOTALL).group(1)
         #print "video_id", video_id
-        player_data = util.request("http://embed.livebox.cz/ta3/vod-source.js", {'Referer':self._url(item['url'])})
+        player_data = util.request("http://embed.livebox.cz/ta3_v2/vod-source.js", {'Referer':self._url(item['url'])})
         #print "player_data", player_data
         url_format = re.search(r'my.embedurl = \[\{"src" : "([^"]+)"', player_data).group(1)
         #print "url_format", url_format
-        manifest_url = url_format.format(video_id)
+        manifest_url = "https:" + url_format.format(video_id)
         #print "manifest_url", manifest_url
         manifest = util.request(manifest_url)
-        #print "manifest", manifest
-        for m in re.finditer('#EXT-X-STREAM-INF:PROGRAM-ID=\d+,BANDWIDTH=(?P<bandwidth>\d+)(,RESOLUTION=(?P<resolution>\d+x\d+))?\s(?P<chunklist>[^\s]+)', manifest, re.DOTALL):
+        print "manifest", manifest
+        for m in re.finditer('#EXT-X-STREAM-INF:PROGRAM-ID=\d+,BANDWIDTH=(?P<bandwidth>\d+).*?(,RESOLUTION=(?P<resolution>\d+x\d+))?\s(?P<chunklist>[^\s]+)', manifest, re.DOTALL):
             item = self.video_item()
             item['surl'] = item['title']
-            if m.group('bandwidth') == '500000':
-                item['quality'] = '360p'
-            elif m.group('bandwidth') == '1000000':
-                item['quality'] = '480p'
-            elif m.group('bandwidth') == '1500000':
-                item['quality'] = '720p'
-            else:
-                item['quality'] = '???'
+            item['quality'] = m.group('bandwidth')
             item['url'] = manifest_url[:manifest_url.rfind('/')+1] + m.group('chunklist')
             resolved.append(item)
+        resolved = sorted(resolved, key=lambda x:int(x['quality']), reverse=True)
+        if len(resolved) == 3:
+            qualities = ['720p', '480p', '360p']
+            for idx, item in enumerate(resolved):
+                item['quality'] = qualities[idx]
+        else:
+            for idx, item in enumerate(resolved):
+                item['quality'] += 'b/s'
         return resolved
 
     def _resolve_live(self, item):
