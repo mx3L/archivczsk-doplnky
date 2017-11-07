@@ -319,7 +319,8 @@ class iVysilaniContentProvider(ContentProvider):
         if isinstance(playable, ivysilani.Programme):
             image = playable.imageURL
         manifest = util.request(playable.url(ivysilani.Quality("web")))
-        for m in re.finditer('#EXT-X-STREAM-INF:PROGRAM-ID=\d+,BANDWIDTH=(?P<bandwidth>\d+)\s(?P<chunklist>[^\s]+)', manifest, re.DOTALL):
+        #for m in re.finditer('#EXT-X-STREAM-INF:PROGRAM-ID=\d+,BANDWIDTH=(?P<bandwidth>\d+)\s(?P<chunklist>[^\s]+)', manifest, re.DOTALL):
+        for m in re.finditer('#EXT-X-STREAM-INF:PROGRAM-ID=\d+,BANDWIDTH=(?P<bandwidth>\d+),AUDIO="\d+"\s(?P<chunklist>[^\s]+)', manifest, re.DOTALL):
             item = self.video_item()
             item['title'] = _toString(playable.title)
             bandwidth = int(m.group('bandwidth'))
