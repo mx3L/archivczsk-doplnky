@@ -524,17 +524,30 @@ class StreamCinemaContentProvider(ContentProvider):
                 if 'year' in scItem:
                     videoItem['year'] = scItem['year']
                 if 'rating' in scItem:
-                    videoItem['rating'] = scItem['rating']
-                if 'plot' in scItem:
-                    videoItem['plot'] = str(scItem['plot'])
-                if 'genre' in scItem:
-                    videoItem['genre'] = str(scItem['genre'])
-                if 'duration' in scItem:
-                    videoItem['duration'] = scItem['duration']
+                    try:
+                        videoItem['rating'] = scItem['rating']
+                    except:
+                        pass
                 if 'id' in scItem:
                     videoItem['videoid'] = scItem['id']
                 if 'mvideo' in scItem:
                     videoItem['videowidth'] = scItem['mvideo']['width']
+
+                if 'duration' in scItem:
+                    try:
+                        videoItem['duration'] = scItem['duration']
+                    except:
+                        pass
+                if 'plot' in scItem:
+                    try:
+                        videoItem['plot'] = util.decode_html(scItem['plot'])
+                    except:
+                        pass
+                if 'genre' in scItem:
+                    try:
+                        videoItem['genre'] = util.decode_html(scItem['genre'])
+                    except:
+                        pass
         except:
             self.write("getAditionalVideoItemInfo failed.\n"+ traceback.format_exc())
             pass

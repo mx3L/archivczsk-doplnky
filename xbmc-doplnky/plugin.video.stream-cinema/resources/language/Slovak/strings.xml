@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<strings>
+    <string id="30010">webshare.cz</string>
+    <string id="30101">Uživ. meno</string>
+    <string id="30102">Uživ. heslo</string>
+    <string id="30103">Radenie kategórie Krajina</string>
+    <string id="30104">Radenie kategórie Kvalita</string>
+    <string id="30105">Radenie kategórie Žáner</string>
+	  <string id="301031">Predvolené</string>
+	  <string id="301032">Rok</string>
+	  <string id="301033">Hodnotenie</string>
+</strings>
