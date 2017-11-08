@@ -98,7 +98,6 @@ class Webshare():
                 return False
             
             self.token = xml.find('token').text
-            util.cache_cookies(None)
             #util.info('Login successfull')
             return True
         return False
