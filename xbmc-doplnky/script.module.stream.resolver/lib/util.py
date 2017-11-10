@@ -26,10 +26,16 @@ import threading
 import Queue
 from Plugins.Extensions.archivCZSK.engine import client
 from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
-UA = 'Mozilla/6.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.5) Gecko/2008092417 Firefox/3.0.3'
 LOG = 2
 sys.path.append(os.path.join(os.path.dirname(__file__), 'contentprovider'))
 sys.path.append( os.path.join ( os.path.dirname(__file__),'crypto') )
+
+try:
+    from Plugins.Extensions.archivCZSK.settings import USER_AGENT
+    UA = USER_AGENT
+except:
+    UA = 'Mozilla/6.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.5) Gecko/2008092417 Firefox/3.0.3'
+    pass
 
 _cookie_jar = None
 
@@ -107,34 +113,34 @@ def run_parallel_in_threads(target, args_list):
     return result
 
 def icon(name):
-	return 'https://github.com/lzoubek/xbmc-doplnky/raw/dharma/icons/' + name
+    return 'https://github.com/lzoubek/xbmc-doplnky/raw/dharma/icons/' + name
 
 def substr(data, start, end):
-	i1 = data.find(start)
-	i2 = data.find(end, i1)
-	return data[i1:i2]
+    i1 = data.find(start)
+    i2 = data.find(end, i1)
+    return data[i1:i2]
 
 def save_to_file(url, file):
-	try:
-		return save_data_to_file(request(url), file)
-	except:
-		traceback.print_exc()
+    try:
+        return save_data_to_file(request(url), file)
+    except:
+        traceback.print_exc()
 
 def save_data_to_file(data, file):
-	try:
-		f = open(file, 'w')
-		f.write(data)
-		f.close()
-		return True
-	except:
-		traceback.print_exc()
+    try:
+        f = open(file, 'w')
+        f.write(data)
+        f.close()
+        return True
+    except:
+        traceback.print_exc()
 def read_file(file):
-	if not os.path.exists(file):
-		return ''
-	f = open(file, 'r')
-	data = f.read()
-	f.close()
-	return data
+    if not os.path.exists(file):
+        return ''
+    f = open(file, 'r')
+    data = f.read()
+    f.close()
+    return data
 
 def _substitute_entity(match):
         ent = match.group(3)
@@ -153,17 +159,17 @@ def _substitute_entity(match):
             else: return match.group()
 
 def decode_html(data):
-	if not type(data) == str:
-		return data
-	try:
-		if not type(data) == unicode:
-			data = unicode(data, 'utf-8', errors='ignore')
-		entity_re = re.compile(r'&(#?)(x?)(\w+);')
-    		return entity_re.subn(_substitute_entity, data)[0]
-	except:
-		traceback.print_exc()
-		print [data]
-		return data
+    if not type(data) == str:
+        return data
+    try:
+        if not type(data) == unicode:
+            data = unicode(data, 'utf-8', errors='ignore')
+        entity_re = re.compile(r'&(#?)(x?)(\w+);')
+        return entity_re.subn(_substitute_entity, data)[0]
+    except:
+        traceback.print_exc()
+        print [data]
+        return data
 
 def debug(text):
         text = "xbmc_doplnky: debug " + (str([text]))
@@ -178,36 +184,57 @@ def error(text):
         client.log.error(text)
 
 
-_diacritic_replace= {u'\u00f3':'o',
-u'\u0213':'-',
+_diacritic_replace= {
+u'\u00f3':'o',
+u'\u00d3':'O',
+u'\u00f4':'o',
+u'\u00d4':'O',
+u'\u0213':'O',
 u'\u00e1':'a',
+u'\u00c1':'A',
+u'\u00e4':'a',
+u'\u00C4':'A',
 u'\u010d':'c',
 u'\u010c':'C',
 u'\u010f':'d',
 u'\u010e':'D',
 u'\u00e9':'e',
 u'\u011b':'e',
+u'\u011a':'E',
+u'\u00c9':'E',
 u'\u00ed':'i',
+u'\u00cd':'I',
+u'\u013e':'l',
+u'\u013d':'L',
 u'\u0148':'n',
+u'\u0147':'N',
 u'\u0159':'r',
+u'\u0158':'R',
+u'\u0160':'S',
 u'\u0161':'s',
 u'\u0165':'t',
+u'\u0164':'T',
 u'\u016f':'u',
+u'\u016e':'U',
+u'\u00fa':'u',
+u'\u00da':'U',
 u'\u00fd':'y',
+u'\u00dd':'Y',
 u'\u017e':'z',
+u'\u017d':'Z',
 u'\xed':'i',
 u'\xe9':'e',
 u'\xe1':'a',
 }
 
 def replace_diacritic(string):
-	ret = []
-	for char in string:
-		if char in _diacritic_replace:
-			ret.append(_diacritic_replace[char])
-		else:
-			ret.append(char)
-	return ''.join(ret)
+    ret = []
+    for char in string:
+        if char in _diacritic_replace:
+            ret.append(_diacritic_replace[char])
+        else:
+            ret.append(char)
+    return ''.join(ret)
 
 
 def int_to_base(number, base):
