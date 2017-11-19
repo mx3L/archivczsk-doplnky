@@ -192,18 +192,20 @@ class JojContentProvider(ContentProvider):
         url = item['url']
         if url.endswith('live.html'):
             channel = urlparse.urlparse(url).netloc.split('.')[0]
-            for original, replacement in {'joj': 'joj', 'plus': 'jojplus'}.items():
-                if channel == original:
-                    channel = replacement
-                    break
-            for quality, resolution in {'lq': '180p', 'mq': '360p', 'hq': '540p'}.items():
+            if channel in 'plus':
+                channel = 'jojplus'
+            channel_quality_map = {'joj': ('360', '540', '720'),
+                                   'jojplus': ('360', '540'),
+                                   'wau': ('360', '540')}
+            for quality in channel_quality_map[channel]:
                 item = self.video_item()
-                item['quality'] = resolution
-                item['url'] = 'http://http-stream.joj.sk/joj/' + channel + '/index-' + quality + '.m3u8'
+                item['quality'] = quality + 'p'
+                item['url'] = 'https://nn.geo.joj.sk/live/hls/' + channel + '-' + quality + '.m3u8'
                 result.append(item)
         else:
             data = util.request(url)
-            data = util.substr(data, '<div class="s-archive">','<div class="s s-container s-archive">')
+            data = util.substr(data, '<div class="s-archive">',
+                                     '<div class="s s-container s-archive">')
             iframe_url = re.search('<iframe src="([^"]+)"', data).group(1)
             #print 'iframe_url = ', iframe_url
             player_str = urllib2.urlopen(iframe_url).read()
