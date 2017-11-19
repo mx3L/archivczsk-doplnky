@@ -234,8 +234,7 @@ def add_video(name, params={}, logo=None, infoLabels={}, menuItems={}):
         add_dir(name, params, logo=logo, infoLabels=infoLabels, menuItems=menuItems)
 
 def add_play(title, provider_name, quality, url, subs=None, filename=None, image=None, infoLabels={}, menuItems={},headers={}, lang=None):
-    if not 'title' in infoLabels:
-        infoLabels['title'] = replace_diacritic2(title)
+    infoLabels['title'] = replace_diacritic2(title)
 
     settings = {"extra-headers":headers}
     title = replace_diacritic2(title)
