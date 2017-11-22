@@ -107,6 +107,8 @@ class StreamCinemaContentProvider(ContentProvider):
             self.itemOrderGenre = '0'
             self.itemOrderCountry = '0'
             self.itemOrderQuality = '0'
+            self.langFilter = '0'
+            #self.automaticSubs = False
             self.session = None
         except:
             self.write("init stream-cinema failed...")
@@ -132,8 +134,9 @@ class StreamCinemaContentProvider(ContentProvider):
             "30902": {"sk_SK":"Seriály","en_EN":"Series", "cs_CZ":"Seriály"},
             "30903": {"sk_SK":"A-Z","en_EN":"A-Z", "cs_CZ":"A-Z"},
             "30904": {"sk_SK":"Najnovšie","en_EN":"New", "cs_CZ":"Nově přidané streamy"},
-            "30950": {"sk_SK":"Najnovšie","en_EN":"New", "cs_CZ":"Nově přidané streamy"},
-            "30905": {"sk_SK":"Populárne","en_EN":"Popular", "cs_CZ":"Nejsledovanější"},
+            "30950": {"sk_SK":"Najnovšie","en_EN":"New", "cs_CZ":"Nejnovější"},
+            "30950 dub": {"sk_SK":"Najnovšie (dabing)","en_EN":"New (dubbing)", "cs_CZ":"Nejnovější (dabing)"},
+            "30905": {"sk_SK":"Populárne","en_EN":"Popular", "cs_CZ":"Populární"},
             "30956": {"sk_SK":"Práve sledované","en_EN":"Watching now", "cs_CZ":"Právě sledované"},
             "30906": {"sk_SK":"Krajina","en_EN":"Country", "cs_CZ":"Země"},
             "30907": {"sk_SK":"Kvalita","en_EN":"Quality", "cs_CZ":"Kvalita"},
@@ -312,6 +315,8 @@ class StreamCinemaContentProvider(ContentProvider):
     def write(self, msg):
         # prerobit na HDD plus cas tam dat a tak
         f = open('/tmp/stream_cinema_info.log', 'a')
+        #from Components.config import config
+        #f = open(os.path.join(config.plugins.archivCZSK.logPath.getValue(),'stream_cinema_info.log'), 'a')
         dtn = datetime.datetime.now()
         f.write(dtn.strftime("%H:%M:%S.%f")[:-3] +" %s\n" % msg)
         #f.write(strftime("%H:%M:%S") +" %s\n" % msg)
@@ -393,7 +398,11 @@ class StreamCinemaContentProvider(ContentProvider):
                     if val=="xxx" or val=="yyy":
                         return id+"(no translation)"
                     return val
-                else: # day of week tranlation, series etc...
+                else: 
+                    # hacky dubbing label
+                    if spl[1]=='dub': 
+                        return self.trans[id][self.language]
+                    # day of week tranlation, series etc...
                     val = self.trans[spl[0]][self.language]
                     if val=="xxx" or val=="yyy":
                         return  id+"(no translation)"
@@ -480,6 +489,23 @@ class StreamCinemaContentProvider(ContentProvider):
 
                 itemUrl = BASE_URL+str(m['url'])
                 try:
+                    # filter lang
+                    if 'lang' in m and self.langFilter!= '0':
+                        # 0 all, 1-CZ&SK, 2-CZ 3-SK, 4-EN
+                        lng = m['lang'].lower()
+                        if self.langFilter == '1':
+                            if not lng.startswith("cz") and not lng.startswith("sk"):
+                                continue
+                        elif self.langFilter == '2':
+                            if not lng.startswith("cz"):
+                                continue
+                        elif  self.langFilter == '3':
+                            if not lng.startswith("sk"):
+                                continue
+                        elif  self.langFilter == '4':
+                            if not lng.startswith("en"):
+                                continue
+
                     if m['type'] == 'dir' and m['url'].startswith('/'):
                         item = self.dir_item(title=self._getName(m['title']), url=itemUrl)
                     elif m['type'] == 'dir' and ("/genre" in url or "/year" in url or "/country" in url or "/quality" in url or "Tv/archiv" in url):
@@ -579,12 +605,17 @@ class StreamCinemaContentProvider(ContentProvider):
                     self.write("Ws account login not ok.")
                 
                 # send stats
+                isVipAccount = False
                 try:
                     udata = self.ws.sendStats(statsData, BASE_URL, API_VERSION, self.deviceUid)
                     # check VIP
                     if udata.isVip == "0":
                         #self.showMsg("$66668", 10)
                         self.write("Ws account is not VIP.")
+                    else:
+                        isVipAccount = True
+                    from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
+                    ArchivCZSK.get_xbmc_addon('plugin.video.stream-cinema').setSetting('wsvipdays', udata.vipDaysLeft)
                 except:
                     self.write("send stats failed...")
                     self.write(traceback.format_exc())
@@ -595,16 +626,27 @@ class StreamCinemaContentProvider(ContentProvider):
                 try:
                     #self.write("_resolve start...")
                     for m in data:
+                        tmp = self._resolve(m, isVipAccount)
                         # better info for render
-                        if 'size' in m and 'ainfo' in m:
-                            m['lang'] = m['size']+m['ainfo']
-                        tmp = self._resolve(m)
+                        size = ""
+                        if 'size' in tmp:
+                            size = "[%s]"%tmp['size']
+                        ainfo = ""
+                        if 'ainfo' in tmp:
+                            tstr = "%s"%tmp['ainfo']
+                            ainfo = tstr.replace(", ","").replace("][",", ")
+                        tmp['resolveTitle'] = "[%s]%s[%s]%s - %s"%(tmp['quality'], size, tmp['lang'],ainfo, tmp['title'])
+
                         self._filter(res, tmp)
+                        # maybe sleep if not is VIP account to fix many request to webshare
+                        #if not isVipAccount:
+                        #    from time import sleep
+                        #    sleep(2)
+
                     #self.write("_resolve end...")
                     return res
                 except:
-                    self.write("_resolve failed")
-                    self.write(traceback.format_exc())
+                    self.write("_resolve failed.\n%s"%traceback.format_exc())
                     # soemthing happend with resolve webshare
                     pass
             else:
@@ -615,7 +657,7 @@ class StreamCinemaContentProvider(ContentProvider):
             # too many request per minute
             self.showMsg("$66667",20)
             pass
-    def _resolve(self, itm):
+    def _resolve(self, itm, isVipAccount):
         if itm is None:
             return None;
         #self.write("_resolve itm: " + str(itm) + itm['provider'])
@@ -627,9 +669,26 @@ class StreamCinemaContentProvider(ContentProvider):
                     
             try:
                 itm['url'] = self.ws.resolve(itm['params']['play']['ident'])
+                if isVipAccount and 'subs' in itm and not itm['subs'] is None and 'webshare.cz' in itm['subs']:
+                    try:
+                        self.write("subs url=%s"%itm['subs'])
+                        tmp = itm['subs']
+                        if '/file/' in tmp:
+                            idx = tmp.index('/file/')
+                            tmp = tmp[idx+len('/file/'):]
+                            tmp = tmp.split('/')[0]
+                            itm['subs'] = self.ws.resolve(tmp)
+                            itm['subExist'] = True
+                            #self.write("resolved subs url=%s"%itm['subs'])
+                        #else:
+                        #    self.write("Substitles not supported...\n%s"%tmp)
+                    except:
+                        #self.write("Resolve substitles failed.\n%s"%traceback.format_exc())
+                        pass
+
             except:
                 # reset ws reason: singleton
-                #self.write("ws resolve reinit...");
+                #self.write("ws _resolve failed...\n%s"%traceback.format_exc());
                 self.ws = None
                 raise
                     

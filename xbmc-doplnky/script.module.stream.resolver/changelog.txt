@@ -1,3 +1,7 @@
+1.7.0 (2017-11-22)
+	- SVK language support
+	- support custom format in stream choice
+
 [B]1.6.16:[/B]
 - support for disabled subtitles by plugin setting
 - #217 - incorrect item title on some skins

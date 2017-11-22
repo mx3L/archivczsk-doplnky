@@ -6,6 +6,10 @@
     <setting label="30103" id="item_order_country" type="enum" lvalues="301031|301032" default="0" />
     <setting label="30104" id="item_order_quality" type="enum" lvalues="301031|301032" default="0" />
     <setting label="30105" id="item_order_genre" type="enum" lvalues="301031|301032" default="0" />
+    <setting label="30107" id="item_filter_lang" type="enum" lvalues="301071|301072|301073|301074|301075" default="0" />
+  
+    <!--<setting label="30106" id="auto_subs" type="bool" default="true" />-->
+    
   
     <setting label="DeviceId" id="deviceid" type="text" default="" visible="false"/>
 </settings>

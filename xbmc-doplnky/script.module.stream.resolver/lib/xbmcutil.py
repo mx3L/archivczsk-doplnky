@@ -233,7 +233,7 @@ def add_video(name, params={}, logo=None, infoLabels={}, menuItems={}):
     except Exception:
         add_dir(name, params, logo=logo, infoLabels=infoLabels, menuItems=menuItems)
 
-def add_play(title, provider_name, quality, url, subs=None, filename=None, image=None, infoLabels={}, menuItems={},headers={}, lang=None):
+def add_play(title, provider_name, quality, url, subs=None, filename=None, image=None, infoLabels={}, menuItems={},headers={}, lang=None, resolveTitle=None):
     infoLabels['title'] = replace_diacritic2(title)
 
     settings = {"extra-headers":headers}
@@ -246,16 +246,22 @@ def add_play(title, provider_name, quality, url, subs=None, filename=None, image
         if client_version > 1:
             client.add_video(title, url, subs=subs, quality = quality, provider_name = provider_name, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems, settings=settings, lang=lang)
         else:
-            if lang:
-                name = '[%s][%s] %s - %s'%(quality, lang, provider_name, title)
+            if resolveTitle:
+                name = resolveTitle
             else:
-                name = '[%s] %s - %s' % (quality,provider_name, title)
+                if lang:
+                    name = '[%s][%s] %s - %s'%(quality, lang, provider_name, title)
+                else:
+                    name = '[%s] %s - %s' % (quality,provider_name, title)
             client.add_video(name, url, subs=subs, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems, settings=settings)
     else:
-        if lang:
-                name = '[%s][%s] %s - %s'%(quality, lang, provider_name, title)
+        if resolveTitle:
+            name = resolveTitle
         else:
-            name = '[%s] %s - %s' % (quality, provider_name, title)
+            if lang:
+                    name = '[%s][%s] %s - %s'%(quality, lang, provider_name, title)
+            else:
+                name = '[%s] %s - %s' % (quality, provider_name, title)
         client.add_video(name, url, subs=subs, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems)
 
 def create_play_it(title, provider_name, quality, url, subs=None, filename=None, image=None, infoLabels={}, menuItems={},headers={}):

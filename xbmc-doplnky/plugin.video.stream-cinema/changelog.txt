@@ -1,3 +1,7 @@
+2017-11-21 verzia 1.1.9
+	- automaticke titulky ak su k dispozicii k videu a mate VIP ucet
+	- zmena formatu vypisu pre vyber streamu
+	- filter zoznamu podla jazyka (pozor filtruje to uplne vsetko)
 2017-11-08 verzia 1.1.8
 	- fix paralelneho pouzivania Sosac & Sctream-Cinema
 2017-10-10 verzia 1.1.6

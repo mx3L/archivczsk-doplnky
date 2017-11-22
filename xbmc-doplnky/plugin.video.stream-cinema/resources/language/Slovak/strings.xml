@@ -6,7 +6,14 @@
     <string id="30103">Radenie kategórie Krajina</string>
     <string id="30104">Radenie kategórie Kvalita</string>
     <string id="30105">Radenie kategórie Žáner</string>
-	  <string id="301031">Predvolené</string>
-	  <string id="301032">Rok</string>
-	  <string id="301033">Hodnotenie</string>
+    <string id="301031">Predvolené</string>
+    <string id="301032">Rok</string>
+    <string id="301033">Hodnotenie</string>
+    <string id="30106">Automatické titulky</string>
+    <string id="30107">Jazykový filter</string>
+    <string id="301071">Všetko</string>
+    <string id="301072">CZ &amp; SK</string>
+    <string id="301073">CZ</string>
+    <string id="301074">SK</string>
+    <string id="301075">EN</string>
 </strings>

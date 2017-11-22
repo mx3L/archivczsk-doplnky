@@ -102,6 +102,8 @@ scinema.deviceUid = getDeviceUid()
 scinema.itemOrderGenre = __gets('item_order_genre')
 scinema.itemOrderCountry = __gets('item_order_country')
 scinema.itemOrderQuality = __gets('item_order_quality')
+#scinema.automaticSubs = __gets('auto_subs')=='true'
+scinema.langFilter = __gets('item_filter_lang')
 scinema.session = session
 
 #scinema.write("PARAMS="+str(params))
