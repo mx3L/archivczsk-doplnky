@@ -153,7 +153,7 @@ class XBMContentProvider(object):
                         filename=params['title'],
                         headers=streams.get('headers',dict()),
                         lang=streams.get('lang',''),
-                        resolveTitle = stream.get('resolveTitle',''))
+                        resolveTitle = streams.get('resolveTitle',''))
 
 
 
