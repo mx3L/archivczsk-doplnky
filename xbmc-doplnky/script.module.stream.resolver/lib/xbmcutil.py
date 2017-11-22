@@ -256,7 +256,7 @@ def add_play(title, provider_name, quality, url, subs=None, filename=None, image
             client.add_video(name, url, subs=subs, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems, settings=settings)
     else:
         if resolveTitle:
-            name = resolveTitle
+            name = replace_diacritic2(resolveTitle)
         else:
             if lang:
                     name = '[%s][%s] %s - %s'%(quality, lang, provider_name, title)
