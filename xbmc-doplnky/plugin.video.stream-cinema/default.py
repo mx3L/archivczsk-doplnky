@@ -28,6 +28,7 @@ import re
 import util,xbmcprovider,xbmcutil
 from scinema import StreamCinemaContentProvider
 from scinema import StaticDataSC
+from scinema import sclog
 
 
 
@@ -106,9 +107,7 @@ scinema.itemOrderQuality = __gets('item_order_quality')
 scinema.langFilter = __gets('item_filter_lang')
 scinema.session = session
 
-#scinema.write("PARAMS="+str(params))
-
-print("Running stream cinema provider with params:", params)
+sclog.logDebug("PARAMS=%s"%params)
 xbmcprovider.XBMCMultiResolverContentProvider(
     scinema,
     settings,

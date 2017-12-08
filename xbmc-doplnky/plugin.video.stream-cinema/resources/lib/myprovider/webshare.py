@@ -33,6 +33,7 @@ import urlparse
 import util
 import datetime
 from time import strftime
+from scinema import sclog
 
 class wsUserData(object):
     def __init__(self, isVip, vipDaysLeft, userId):
@@ -75,13 +76,13 @@ class Webshare():
             return True # fall back to free account
         elif self.username and self.password and len(self.username)>0 and len(self.password)>0:
             #util.info('Login user=%s, pass=*****' % self.username)
-            #self.write("Login start...")
+            #sclog.logDebug("Login start...")
             # get salt
             headers,req = self._create_request('',{'username_or_email':self.username})
             data = util.post(self._url('api/salt/'),req,headers=headers)
             xml = ET.fromstring(data)
             if not xml.find('status').text == 'OK':
-                #self.write("Login end salt...")
+                #sclog.logDebug("Login end salt...")
                 #util.error('Server returned error status, response: %s' % data)
                 return False
             salt = xml.find('salt').text
@@ -92,7 +93,7 @@ class Webshare():
             headers,req = self._create_request('',{'username_or_email':self.username,'password':password,'digest':digest,'keep_logged_in':1})
             data = util.post(self._url('api/login/'),req,headers=headers)
             xml = ET.fromstring(data)
-            #self.write("Login end...")
+            #sclog.logDebug("Login end...")
             if not xml.find('status').text == 'OK':
                 #util.error('Server returned error status, response: %s' % data)
                 return False
@@ -117,17 +118,9 @@ class Webshare():
             return wsUserData(isVip, vipDays, ident)
         return wsUserData('-1', '0', '')
 
-    def write(self, msg):
-        # prerobit na HDD plus cas tam dat a tak
-        f = open('/tmp/stream_cinema_info.log', 'a')
-        dtn = datetime.datetime.now()
-        f.write(dtn.strftime("%H:%M:%S.%f")[:-3] +" %s\n" % msg)
-        #f.write(strftime("%H:%M:%S") +" %s\n" % msg)
-        f.close()
-
-    def sendStats(self, item, baseUrl, apiVer, deviceId):
+    def sendStats(self, item, action, baseUrl, apiVer, deviceId):
         #send data to server about watching movie
-        #self.write('Stats start...')
+        #sclog.logDebug('Stats start...')
         udata = self.userData()
         urlStats = baseUrl + '/Stats?ver='+apiVer+'&uid='+deviceId
         
@@ -143,15 +136,15 @@ class Webshare():
         endStr = endIn.strftime('%H:%M:%S')
 
         data = { 'vip':udata.isVip, 'vd': udata.vipDaysLeft, 'est':endStr, 'scid':str(item['id']), 
-                    'action':'start', 'ws':udata.userId, 'dur':dur, 
+                    'action': action, 'ws':udata.userId, 'dur':dur, 
                     'ep':ep, 'se':se }
             
-        #self.write('data='+str(data))
+        #sclog.logDebug('data=%'%data)
 
         headers = {'Content-Type':'application/json', 'X-Uid':deviceId}
         response = util.post_json(urlStats, data, headers)
 
-        self.write('Stats('+str(item['id'])+')='+str(response))
+        sclog.logDebug('Stats(%s)=%s'%(item['id'], response))
 
         return udata
 

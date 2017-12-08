@@ -22,10 +22,10 @@
 
 
 #todo
-# - get language
 # - call back for some message with continue functionality
 # - util.request dont read next when get 302 (Redirect)
 # - new capabilities 'stats' (implement later for play stop etc...)
+# - kodi got some diffrent resolve method only to one call maybe redo
 
 import urllib
 import urllib2
@@ -37,6 +37,7 @@ import traceback
 import datetime
 import util
 
+from Components.config import config
 from provider import ContentProvider, cached, ResolveException
 from Components.Language import language
 from time import strftime
@@ -47,6 +48,44 @@ sys.path.append( os.path.join ( os.path.dirname(__file__),'myprovider') )
 
 BASE_URL="http://stream-cinema.online/kodi"
 API_VERSION="1.2"
+
+class sclog(object):
+    ERROR = 0
+    INFO = 1
+    DEBUG = 2
+    mode = INFO
+
+    logEnabled = True
+    logDebugEnabled = True
+    LOG_FILE = ""
+    
+
+    @staticmethod
+    def logDebug(msg):
+        if sclog.logDebugEnabled:
+            sclog.writeLog(msg, 'DEBUG')
+    @staticmethod
+    def logInfo(msg):
+        sclog.writeLog(msg, 'INFO')
+    @staticmethod
+    def logError(msg):
+        sclog.writeLog(msg, 'ERROR')
+    @staticmethod
+    def writeLog(msg, type):
+        try:
+            if not sclog.logEnabled:
+                return
+            #if log.LOG_FILE=="":
+            sclog.LOG_FILE = os.path.join(config.plugins.archivCZSK.logPath.getValue(),'stream-cinema.log')
+            f = open(sclog.LOG_FILE, 'a')
+            dtn = datetime.datetime.now()
+            f.write(dtn.strftime("%H:%M:%S.%f")[:-3] +" ["+type+"] %s\n" % msg)
+            f.close()
+        except:
+            print "####STREAM-CINEMA#### write log failed!!!"
+            pass
+        finally:
+            print "####STREAM-CINEMA#### ["+type+"] "+msg
 
 class Singleton(type):
     _instances = {}
@@ -60,7 +99,7 @@ class StaticDataSC():
     
     def __init__(self, username=None, password=None):
         self.vipDaysLeft = "-1"
-        self.write("StaticDataSC init...")
+        sclog.logInfo("StaticDataSC init...")
 
         if username and password:
             try:
@@ -74,17 +113,8 @@ class StaticDataSC():
                 else:
                     self.vipDaysLeft = "0"
             except:
-                self.write("get vip days left failed")
-                self.write(traceback.format_exc())
+                sclog.logError("get vip days left failed.\n%s"%traceback.format_exc())
                 pass
-
-    def write(self, msg):
-        # prerobit na HDD plus cas tam dat a tak
-        f = open('/tmp/stream_cinema_info.log', 'a')
-        dtn = datetime.datetime.now()
-        f.write(dtn.strftime("%H:%M:%S.%f")[:-3] +" %s\n" % msg)
-        #f.write(strftime("%H:%M:%S") +" %s\n" % msg)
-        f.close()
 
 class StreamCinemaContentProvider(ContentProvider):
     __metaclass__ = Singleton
@@ -102,7 +132,7 @@ class StreamCinemaContentProvider(ContentProvider):
             self.wspass = password
             self.language = language.getLanguage()
             self.init_trans()
-            self.write("init stream-cinema...");
+            sclog.logDebug("init stream-cinema...");
             self.deviceUid = None
             self.itemOrderGenre = '0'
             self.itemOrderCountry = '0'
@@ -111,8 +141,7 @@ class StreamCinemaContentProvider(ContentProvider):
             #self.automaticSubs = False
             self.session = None
         except:
-            self.write("init stream-cinema failed...")
-            self.write(traceback.format_exc())
+            sclog.logError("init stream-cinema failed.\n%s"%traceback.format_exc())
             pass
 
     def init_trans(self):
@@ -310,17 +339,8 @@ class StreamCinemaContentProvider(ContentProvider):
             "32966": {"sk_SK":"Západné Nemecko","en_EN":"West Germany", "cs_CZ":"Západní Německo"}
             }
     def capabilities(self):
-        return ['resolve', 'categories', 'search']
+        return ['resolve', 'categories', 'search', 'stats']
 
-    def write(self, msg):
-        # prerobit na HDD plus cas tam dat a tak
-        f = open('/tmp/stream_cinema_info.log', 'a')
-        #from Components.config import config
-        #f = open(os.path.join(config.plugins.archivCZSK.logPath.getValue(),'stream_cinema_info.log'), 'a')
-        dtn = datetime.datetime.now()
-        f.write(dtn.strftime("%H:%M:%S.%f")[:-3] +" %s\n" % msg)
-        #f.write(strftime("%H:%M:%S") +" %s\n" % msg)
-        f.close()
     def showMsg(self, msgId, showSec):
         try:
             # show info message dialog
@@ -338,18 +358,17 @@ class StreamCinemaContentProvider(ContentProvider):
         
             #sleep(showSec)
         except:
-            self.write("showMsg failed ")
-            self.write(traceback.format_exc())
-            pass;
+            sclog.logError("showMsg failed.\n%s"%traceback.format_exc())
+            pass
 
     def mycb(self, answer):
         # toto sa zavola ked sa closne window 
         # answer je vyplnena ak da niekto dialog yesNO
-        self.write("session call back")
         #if answer:
-        #	self.write("session call back set")
+        #	sclog.logError("session call back set")
         #else:
-        #	self.write("session call back set no answer")
+        #	sclog.logError("session call back set no answer")
+        pass
 
     def on_init(self):
         kodilang = self.lang or 'cs'
@@ -366,7 +385,7 @@ class StreamCinemaContentProvider(ContentProvider):
 
     @cached(ttl=24)
     def get_data_cached(self, url):
-        #self.write("Cache URL: " + url)
+        #sclog.logDebug("Cache URL: %s" % url)
         return util.request(url)
 
     def _json(self, url):
@@ -376,11 +395,10 @@ class StreamCinemaContentProvider(ContentProvider):
                 qs='&'
 
             urlapi = url+qs+'ver='+API_VERSION+'&uid='+self.deviceUid
-            #self.write("json url: " + str(urlapi))
+            #sclog.logDebug("json url: %s" % urlapi)
             return json.loads(self.get_data_cached(urlapi))
         except:
-            self.write("Chyba pripojenia...")
-            self.write(traceback.format_exc())
+            sclog.logError("Chyba pripojenia.\n%s"%traceback.format_exc())
             pass
 
     def _getName(self, id):
@@ -409,7 +427,7 @@ class StreamCinemaContentProvider(ContentProvider):
                     return id.replace(spl[0], val)
             return id
         except Exception:
-            #self.write(traceback.format_exc())
+            #sclog.logError(traceback.format_exc())
             pass
         return id
     
@@ -432,8 +450,7 @@ class StreamCinemaContentProvider(ContentProvider):
                                 item = self.dir_item(title=tmpTrans, url=BASE_URL+str(m['url']))
                                 result.append(item)
                     except Exception:
-                        self.write("get category failed ("+m['url']+', title='+m['title']+")...")
-                        self.write(traceback.format_exc())
+                        sclog.logError("get category failed (%s, title=%s).\n%s"%(m['url'],m['title'],traceback.format_exc()))
                         pass
             else:
                 raise Exception("Get main menu category failed.")
@@ -443,8 +460,7 @@ class StreamCinemaContentProvider(ContentProvider):
                 #result = [{'title': 'Get category menu failed...', 'url':'failed_url'}]
         except:
             self.showMsg("$66669", 20)
-            self.write("get categories failed...")
-            self.write(traceback.format_exc())
+            sclog.logError("get categories failed.\n%s"%traceback.format_exc())
             pass
 
         return result
@@ -456,8 +472,7 @@ class StreamCinemaContentProvider(ContentProvider):
         try:
             return self._renderItem(url)
         except:
-            self.write("list failed "+url)
-            self.write(traceback.format_exc())
+            sclog.logError("list failed %s.\n%s"%(url, traceback.format_exc()))
             pass
         return [self.dir_item(title="Load items failed...", url="failed_url")]
 
@@ -513,6 +528,13 @@ class StreamCinemaContentProvider(ContentProvider):
                     elif m['type'] == 'dir' and not m['url'].startswith('/'):
                         continue
 
+                    if  m['type'] == 'dir' and '/series' in url.lower(): # set aditional info for series
+                        try:
+                            item['img'] = str(m['art']['poster'])
+                        except:
+                            pass;
+                        self.setAditionalVideoItemInfo(m, item)
+
                     if m['type'] == 'video':
                         image = ""
                         try:
@@ -521,6 +543,7 @@ class StreamCinemaContentProvider(ContentProvider):
                             pass;
                         
                         item = self.video_item(url=itemUrl, img=image, quality='tvoj kvet')
+
                         item['title']= m['title']
                         if '/Tv' in url:
                             item['title'] = m['title'].replace('[LIGHT]','').replace('[/LIGHT]','')
@@ -528,8 +551,7 @@ class StreamCinemaContentProvider(ContentProvider):
                         self.setAditionalVideoItemInfo(m, item)
                     self._filter(result, item)
                 except:
-                    self.write("item render failed "+itemUrl)
-                    self.write(traceback.format_exc())
+                    sclog.logError("item render failed %s.\n%s"%(itemUrl, traceback.format_exc()))
                     pass
         else:
             result = [{'title': 'Render item failed (invalid data)...', 'url':'failed_url'}]
@@ -539,46 +561,45 @@ class StreamCinemaContentProvider(ContentProvider):
         try:
             # need also 'id' send to XBMC 
             # supprot ['plot', 'year', 'genre', 'rating', 'director', 'votes', 'cast', 'trailer'] ... feature 'duration'
-            if scItem['type'] == 'video':
+            #if scItem['type'] == 'video':
+            try:
+                if 'postersmall' in scItem:
+                    videoItem['img']= scItem['postersmall']
+                else:
+                    videoItem['img']= scItem['art']['postersmall']
+            except:
+                pass
+            if 'year' in scItem:
+                videoItem['year'] = scItem['year']
+            if 'rating' in scItem:
                 try:
-                    if 'postersmall' in scItem:
-                        videoItem['img']= scItem['postersmall']
-                    else:
-                        videoItem['img']= scItem['art']['postersmall']
+                    videoItem['rating'] = scItem['rating']
                 except:
                     pass
-                if 'year' in scItem:
-                    videoItem['year'] = scItem['year']
-                if 'rating' in scItem:
-                    try:
-                        videoItem['rating'] = scItem['rating']
-                    except:
-                        pass
-                if 'id' in scItem:
-                    videoItem['videoid'] = scItem['id']
-                if 'mvideo' in scItem:
-                    videoItem['videowidth'] = scItem['mvideo']['width']
+            if 'id' in scItem:
+                videoItem['videoid'] = scItem['id']
+            if 'mvideo' in scItem:
+                videoItem['videowidth'] = scItem['mvideo']['width']
 
-                if 'duration' in scItem:
-                    try:
-                        videoItem['duration'] = scItem['duration']
-                    except:
-                        pass
-                if 'plot' in scItem:
-                    try:
-                        videoItem['plot'] = util.decode_html(scItem['plot'])
-                    except:
-                        pass
-                if 'genre' in scItem:
-                    try:
-                        videoItem['genre'] = util.decode_html(scItem['genre'])
-                    except:
-                        pass
+            if 'duration' in scItem:
+                try:
+                    videoItem['duration'] = scItem['duration']
+                except:
+                    pass
+            if 'plot' in scItem:
+                try:
+                    videoItem['plot'] = util.decode_html(scItem['plot'])
+                except:
+                    pass
+            if 'genre' in scItem:
+                try:
+                    videoItem['genre'] = util.decode_html(scItem['genre'])
+                except:
+                    pass
         except:
-            self.write("getAditionalVideoItemInfo failed.\n"+ traceback.format_exc())
+            sclog.logError("getAditionalVideoItemInfo failed.\n%s" % traceback.format_exc())
             pass
         
-
     def resolve(self, item, captcha_cb=None, select_cb=None):
         # tu to zbehne na zoznam streamov
         try:
@@ -594,7 +615,7 @@ class StreamCinemaContentProvider(ContentProvider):
                     raise ResolveException('Video is not available.')
 
                 if self.ws is None:
-                    #self.write("Resolve ws is null (reinit)...");
+                    #sclog.logDebug("Resolve ws is null (reinit)...");
                     from webshare import Webshare as wx
                     self.ws = wx(self.wsuser, self.wspass)
 
@@ -602,31 +623,48 @@ class StreamCinemaContentProvider(ContentProvider):
                 # check login
                 if not self.ws.loginOk:
                     #self.showMsg("$66666", 10)
-                    self.write("Ws account login not ok.")
+                    sclog.logInfo("Ws account login not ok.")
                 
+                isVipAccount = False
+                try:
+                    isVipAccount = int(StaticDataSC().vipDaysLeft) > 0
+                except:
+                    sclog.logError("get static vip status failed.\n%s"%s)
+
                 # send stats
+                # !!!!!!!! remove this when stats event goes
                 isVipAccount = False
                 try:
                     udata = self.ws.sendStats(statsData, BASE_URL, API_VERSION, self.deviceUid)
                     # check VIP
                     if udata.isVip == "0":
                         #self.showMsg("$66668", 10)
-                        self.write("Ws account is not VIP.")
+                        sclog.logInfo("Ws account is not VIP.")
                     else:
                         isVipAccount = True
                     from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
                     ArchivCZSK.get_xbmc_addon('plugin.video.stream-cinema').setSetting('wsvipdays', udata.vipDaysLeft)
                 except:
-                    self.write("send stats failed...")
-                    self.write(traceback.format_exc())
+                    sclog.logError("send stats failed.")
+                    sclog.logError(traceback.format_exc())
                     pass
                 
 
                 res = []
                 try:
-                    #self.write("_resolve start...")
+                    
+
+                    #sclog.logDebug("_resolve start...")
                     for m in data:
                         tmp = self._resolve(m, isVipAccount)
+
+                        #custom title
+                        series = ""
+                        if 'tvshowtitle' in m:
+                            tmp['customTitle'] = m['title']
+                        #custom file name
+                        tmp['customFname'] = m['fname']
+
                         # better info for render
                         size = ""
                         if 'size' in tmp:
@@ -635,7 +673,10 @@ class StreamCinemaContentProvider(ContentProvider):
                         if 'ainfo' in tmp:
                             tstr = "%s"%tmp['ainfo']
                             ainfo = tstr.replace(", ","").replace("][",", ")
-                        tmp['resolveTitle'] = "[%s]%s[%s]%s - %s"%(tmp['quality'], size, tmp['lang'],ainfo, tmp['title'])
+                        subExist = ""
+                        if 'subExist' in tmp:
+                            subExist = " tit"
+                        tmp['resolveTitle'] = "[%s]%s[%s%s]%s - %s"%(tmp['quality'], size, tmp['lang'],subExist,ainfo, tmp['title'])
 
                         self._filter(res, tmp)
                         # maybe sleep if not is VIP account to fix many request to webshare
@@ -643,27 +684,26 @@ class StreamCinemaContentProvider(ContentProvider):
                         #    from time import sleep
                         #    sleep(2)
 
-                    #self.write("_resolve end...")
+                    #sclog.logDebug("_resolve end...")
                     return res
                 except:
-                    self.write("_resolve failed.\n%s"%traceback.format_exc())
+                    sclog.logError("_resolve failed.\n%s"%traceback.format_exc())
                     # soemthing happend with resolve webshare
                     pass
             else:
-                self.write('resolve item failed!')
+                sclog.logError('resolve item failed!')
         except:
-            self.write("resolve failed "+item['url'])
-            self.write(traceback.format_exc())
+            sclog.logError("resolve failed %s.\n%s" % (item['url'], traceback.format_exc()))
             # too many request per minute
             self.showMsg("$66667",20)
             pass
     def _resolve(self, itm, isVipAccount):
         if itm is None:
             return None;
-        #self.write("_resolve itm: " + str(itm) + itm['provider'])
+        #sclog.logDebug("_resolve itm: %s %s"%(itm, itm['provider']))
         if itm['provider'] == 'plugin.video.online-files' and itm['params']['cp'] == 'webshare.cz':
             if self.ws is None:
-                #self.write("_resolve ws is null...");
+                #sclog.logDebug("_resolve ws is null...");
                 from webshare import Webshare as wx
                 self.ws = wx(self.wsuser, self.wspass)
                     
@@ -671,7 +711,7 @@ class StreamCinemaContentProvider(ContentProvider):
                 itm['url'] = self.ws.resolve(itm['params']['play']['ident'])
                 if isVipAccount and 'subs' in itm and not itm['subs'] is None and 'webshare.cz' in itm['subs']:
                     try:
-                        self.write("subs url=%s"%itm['subs'])
+                        sclog.logDebug("subs url=%s"%itm['subs'])
                         tmp = itm['subs']
                         if '/file/' in tmp:
                             idx = tmp.index('/file/')
@@ -679,16 +719,16 @@ class StreamCinemaContentProvider(ContentProvider):
                             tmp = tmp.split('/')[0]
                             itm['subs'] = self.ws.resolve(tmp)
                             itm['subExist'] = True
-                            #self.write("resolved subs url=%s"%itm['subs'])
+                            #sclog.logDebug("resolved subs url=%s"%itm['subs'])
                         #else:
-                        #    self.write("Substitles not supported...\n%s"%tmp)
+                        #    sclog.logDebug("Substitles not supported...\n%s"%tmp)
                     except:
-                        #self.write("Resolve substitles failed.\n%s"%traceback.format_exc())
+                        #sclog.logError("Resolve substitles failed.\n%s"%traceback.format_exc())
                         pass
 
             except:
                 # reset ws reason: singleton
-                #self.write("ws _resolve failed...\n%s"%traceback.format_exc());
+                #sclog.logError("ws _resolve failed...\n%s"%traceback.format_exc());
                 self.ws = None
                 raise
                     
@@ -697,3 +737,12 @@ class StreamCinemaContentProvider(ContentProvider):
 
             return itm
         raise Exception("Not supported item to resolve!")
+
+    def stats(self, item, action):
+        try:
+            sclog.logDebug("stats action hit %s, %s ..."%(item, action))
+            # actions start
+            udata = self.ws.sendStats(item, action, BASE_URL, API_VERSION, self.deviceUid)
+        except:
+            sclog.logDebug("send stats failed...\n%s"%traceback.format_exc())
+            pass

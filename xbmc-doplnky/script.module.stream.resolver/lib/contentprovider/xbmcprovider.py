@@ -143,7 +143,9 @@ class XBMContentProvider(object):
                             filename=params['title'],
                             headers=stream.get('headers',dict()),
                             lang=stream.get('lang',''),
-                            resolveTitle = stream.get('resolveTitle',''))
+                            resolveTitle = stream.get('resolveTitle',''),
+                            customTitle = stream.get('customTitle',''),
+                            customFname = stream.get('customFname',''))
             else:
                 xbmcutil.add_play(params['title'],
                         streams['title'],
@@ -153,7 +155,9 @@ class XBMContentProvider(object):
                         filename=params['title'],
                         headers=streams.get('headers',dict()),
                         lang=streams.get('lang',''),
-                        resolveTitle = streams.get('resolveTitle',''))
+                        resolveTitle = streams.get('resolveTitle',''),
+                        customTitle = stream.get('customTitle',''),
+                        customFname = stream.get('customFname',''))
 
 
 

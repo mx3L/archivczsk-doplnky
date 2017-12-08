@@ -233,7 +233,13 @@ def add_video(name, params={}, logo=None, infoLabels={}, menuItems={}):
     except Exception:
         add_dir(name, params, logo=logo, infoLabels=infoLabels, menuItems=menuItems)
 
-def add_play(title, provider_name, quality, url, subs=None, filename=None, image=None, infoLabels={}, menuItems={},headers={}, lang=None, resolveTitle=None):
+def add_play(title, provider_name, quality, url, subs=None, filename=None, image=None, infoLabels={}, menuItems={},headers={}, lang=None, resolveTitle=None, customTitle=None, customFname=None):
+    
+    if customTitle:
+        title = customTitle
+    if customFname:
+        filename = customFname
+
     infoLabels['title'] = replace_diacritic2(title)
 
     settings = {"extra-headers":headers}

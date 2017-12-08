@@ -197,6 +197,18 @@ class ContentProvider(object):
     def error(self, msg):
         util.error('[%s] %s' % (self.name, msg))
 
+    def stats(self, item, action):
+        """
+        Lists content on given url
+        Args:
+                    item
+
+        Returns:
+            nothing
+
+        """
+        pass
+
 
 class cached(object):
     """

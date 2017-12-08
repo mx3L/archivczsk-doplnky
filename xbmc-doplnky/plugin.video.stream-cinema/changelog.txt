@@ -1,3 +1,6 @@
+2017-11-21 verzia 1.2.0
+	- show '+tit' if stream got substitle
+	- show serries name before episodes
 2017-11-21 verzia 1.1.9
 	- automaticke titulky ak su k dispozicii k videu a mate VIP ucet
 	- zmena formatu vypisu pre vyber streamu
