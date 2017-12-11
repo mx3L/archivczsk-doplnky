@@ -56,7 +56,7 @@ class sclog(object):
     mode = INFO
 
     logEnabled = True
-    logDebugEnabled = True
+    logDebugEnabled = False
     LOG_FILE = ""
     
 
@@ -146,6 +146,8 @@ class StreamCinemaContentProvider(ContentProvider):
 
     def init_trans(self):
         self.trans = {
+            #<!-- custom -->
+            
             "66666": {"sk_SK":"Prihlasovacie údaje sú nesprávne alebo nie sú v plugine nastavené. \n\nAk nemáte účet tak sa prosím zaregistrujte na webshare.cz",
                       "en_EN":"Login data is wrong or is not set in the plugin settings. \n\nIf you do not have an account so please register at webshare.cz",
                       "cs_CZ":"Přihlašovací údaje jsou nesprávné nebo nejsou v pluginu nastaveny. \n\nPokud nemáte účet tak se prosím zaregistrujte na webshare.cz"},
@@ -158,6 +160,7 @@ class StreamCinemaContentProvider(ContentProvider):
             "66669": {"sk_SK":"Nepodarilo sa načítať hlavné menu (chyba pripojenia). \n\nZa vzniknuté problémy sa ospravedlňujeme.",
                       "en_EN":"Unable to load main menu (connection error). \ n\nWe are apologizing for the problems you have encountered.", 
                       "cs_CZ":"Nepodařilo se načíst hlavní menu (chyba připojení). \n\nZa vzniklé problémy se omlouváme."},
+            "66670": {"sk_SK":"+tit","en_EN":"+sub", "cs_CZ":"+tit"},
             #<!-- texty v menu -->
             "30901": {"sk_SK":"Filmy","en_EN":"Movies", "cs_CZ":"Filmy"},
             "30902": {"sk_SK":"Seriály","en_EN":"Series", "cs_CZ":"Seriály"},
@@ -536,6 +539,17 @@ class StreamCinemaContentProvider(ContentProvider):
                         self.setAditionalVideoItemInfo(m, item)
 
                     if m['type'] == 'video':
+                        # check subs
+                        try:
+                            isVipAccount = int(StaticDataSC().vipDaysLeft) > 0
+                            lngtmp = m['lang'].lower()
+                            if isVipAccount and 'subs' in m and not lngtmp.startswith("cz") and not lngtmp.startswith("sk"):
+                                if 'webshare.cz' in m['subs'] and '/file/' in m['subs']:
+                                    m['title'] = m['title'] + " (%s)"%self._getName("$66670")
+                        except:
+                            sclog.logError("Check substitle failed.\n%s"%traceback.format_exc())
+                            pass
+
                         image = ""
                         try:
                             image = str(m['art']['poster'])
@@ -625,17 +639,18 @@ class StreamCinemaContentProvider(ContentProvider):
                     #self.showMsg("$66666", 10)
                     sclog.logInfo("Ws account login not ok.")
                 
-                isVipAccount = False
-                try:
-                    isVipAccount = int(StaticDataSC().vipDaysLeft) > 0
-                except:
-                    sclog.logError("get static vip status failed.\n%s"%s)
+                #isVipAccount = False
+                #try:
+                #    isVipAccount = int(StaticDataSC().vipDaysLeft) > 0
+                #except:
+                #    sclog.logError("get static vip status failed.\n%s"%s)
+
 
                 # send stats
                 # !!!!!!!! remove this when stats event goes
                 isVipAccount = False
                 try:
-                    udata = self.ws.sendStats(statsData, BASE_URL, API_VERSION, self.deviceUid)
+                    udata = self.ws.sendStats(statsData, 'start', BASE_URL, API_VERSION, self.deviceUid)
                     # check VIP
                     if udata.isVip == "0":
                         #self.showMsg("$66668", 10)
@@ -675,7 +690,7 @@ class StreamCinemaContentProvider(ContentProvider):
                             ainfo = tstr.replace(", ","").replace("][",", ")
                         subExist = ""
                         if 'subExist' in tmp:
-                            subExist = " tit"
+                            subExist = " %s"%self._getName("$66670") #" +tit"
                         tmp['resolveTitle'] = "[%s]%s[%s%s]%s - %s"%(tmp['quality'], size, tmp['lang'],subExist,ainfo, tmp['title'])
 
                         self._filter(res, tmp)

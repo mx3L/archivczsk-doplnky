@@ -1,4 +1,6 @@
-2017-11-21 verzia 1.2.0
+2017-12-11 verzia 1.2.1
+	- show substitles in movie list
+2017-12-08 verzia 1.2.0
 	- show '+tit' if stream got substitle
 	- show serries name before episodes
 2017-11-21 verzia 1.1.9

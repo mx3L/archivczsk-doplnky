@@ -131,33 +131,33 @@ class XBMContentProvider(object):
         return url
 
     def play(self, params):
-        streams = self.resolve(params['play'])
-        if streams is not None:
-            if type(streams) == type([]):
-                for stream in streams:
+        data = self.resolve(params['play'])
+        if data is not None:
+            if type(data) == type([]):
+                for item in data:
                     xbmcutil.add_play(params['title'],
-                            stream['title'],
-                            stream['quality'],
-                            stream['url'],
-                            subs=self.get_subtitle(stream['subs'], stream.get('headers')),
+                            item['title'],
+                            item['quality'],
+                            item['url'],
+                            subs=self.get_subtitle(item['subs'], item.get('headers')),
                             filename=params['title'],
-                            headers=stream.get('headers',dict()),
-                            lang=stream.get('lang',''),
-                            resolveTitle = stream.get('resolveTitle',''),
-                            customTitle = stream.get('customTitle',''),
-                            customFname = stream.get('customFname',''))
+                            headers=item.get('headers',dict()),
+                            lang=item.get('lang',''),
+                            resolveTitle = item.get('resolveTitle',''),
+                            customTitle = item.get('customTitle',''),
+                            customFname = item.get('customFname',''))
             else:
                 xbmcutil.add_play(params['title'],
-                        streams['title'],
-                        streams['quality'],
-                        streams['url'],
-                        subs=self.get_subtitle(streams['subs'], streams.get('headers')),
+                        data['title'],
+                        data['quality'],
+                        data['url'],
+                        subs=self.get_subtitle(data['subs'], data.get('headers')),
                         filename=params['title'],
-                        headers=streams.get('headers',dict()),
-                        lang=streams.get('lang',''),
-                        resolveTitle = streams.get('resolveTitle',''),
-                        customTitle = stream.get('customTitle',''),
-                        customFname = stream.get('customFname',''))
+                        headers=data.get('headers',dict()),
+                        lang=data.get('lang',''),
+                        resolveTitle = data.get('resolveTitle',''),
+                        customTitle = data.get('customTitle',''),
+                        customFname = data.get('customFname',''))
 
 
 
