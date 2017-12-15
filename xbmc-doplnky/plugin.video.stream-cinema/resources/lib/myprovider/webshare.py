@@ -125,6 +125,7 @@ class Webshare():
         urlStats = baseUrl + '/Stats?ver='+apiVer+'&uid='+deviceId
         
         dur = float(item['duration'])
+        brate = int(item['bitrate'])
         ep = ''
         se = ''
         if 'episode' in item:
@@ -136,8 +137,8 @@ class Webshare():
         endStr = endIn.strftime('%H:%M:%S')
 
         data = { 'vip':udata.isVip, 'vd': udata.vipDaysLeft, 'est':endStr, 'scid':str(item['id']), 
-                    'action': action, 'ws':udata.userId, 'dur':dur, 
-                    'ep':ep, 'se':se }
+                 'action': action, 'ws':udata.userId, 'dur':dur, 'bitrate':brate,
+                 'ep':ep, 'se':se }
             
         #sclog.logDebug('data=%'%data)
 

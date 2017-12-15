@@ -19,6 +19,49 @@
 # */
 
 import sys,os,util,re,traceback
+import datetime
+from Components.config import config
+
+
+
+class rslog(object):
+    ERROR = 0
+    INFO = 1
+    DEBUG = 2
+    mode = INFO
+
+    logEnabled = True
+    logDebugEnabled = False
+    LOG_FILE = ""
+    
+
+    @staticmethod
+    def logDebug(msg):
+        if rslog.logDebugEnabled:
+            rslog.writeLog(msg, 'DEBUG')
+    @staticmethod
+    def logInfo(msg):
+        rslog.writeLog(msg, 'INFO')
+    @staticmethod
+    def logError(msg):
+        rslog.writeLog(msg, 'ERROR')
+    @staticmethod
+    def writeLog(msg, type):
+        try:
+            if not rslog.logEnabled:
+                return
+            #if log.LOG_FILE=="":
+            rslog.LOG_FILE = os.path.join(config.plugins.archivCZSK.logPath.getValue(),'resolver.log')
+            f = open(rslog.LOG_FILE, 'a')
+            dtn = datetime.datetime.now()
+            f.write(dtn.strftime("%H:%M:%S.%f")[:-3] +" ["+type+"] %s\n" % msg)
+            f.close()
+        except:
+            print "####RESOLVER#### write log failed!!!"
+            pass
+        finally:
+            print "####RESOLVER#### ["+type+"] "+msg
+
 
 sys.path.append( os.path.join ( os.path.dirname(__file__),'server') )
 

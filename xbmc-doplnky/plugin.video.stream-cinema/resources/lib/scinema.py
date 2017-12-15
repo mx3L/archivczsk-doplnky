@@ -24,7 +24,7 @@
 #todo
 # - call back for some message with continue functionality
 # - util.request dont read next when get 302 (Redirect)
-# - new capabilities 'stats' (implement later for play stop etc...)
+# - debug moznost zapnut ale na inej karte
 # - kodi got some diffrent resolve method only to one call maybe redo
 
 import urllib
@@ -639,31 +639,11 @@ class StreamCinemaContentProvider(ContentProvider):
                     #self.showMsg("$66666", 10)
                     sclog.logInfo("Ws account login not ok.")
                 
-                #isVipAccount = False
-                #try:
-                #    isVipAccount = int(StaticDataSC().vipDaysLeft) > 0
-                #except:
-                #    sclog.logError("get static vip status failed.\n%s"%s)
-
-
-                # send stats
-                # !!!!!!!! remove this when stats event goes
                 isVipAccount = False
                 try:
-                    udata = self.ws.sendStats(statsData, 'start', BASE_URL, API_VERSION, self.deviceUid)
-                    # check VIP
-                    if udata.isVip == "0":
-                        #self.showMsg("$66668", 10)
-                        sclog.logInfo("Ws account is not VIP.")
-                    else:
-                        isVipAccount = True
-                    from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
-                    ArchivCZSK.get_xbmc_addon('plugin.video.stream-cinema').setSetting('wsvipdays', udata.vipDaysLeft)
+                    isVipAccount = int(StaticDataSC().vipDaysLeft) > 0
                 except:
-                    sclog.logError("send stats failed.")
-                    sclog.logError(traceback.format_exc())
-                    pass
-                
+                    sclog.logError("get static vip status failed.\n%s"%s)
 
                 res = []
                 try:
@@ -679,8 +659,13 @@ class StreamCinemaContentProvider(ContentProvider):
                             tmp['customTitle'] = m['title']
                         #custom file name
                         tmp['customFname'] = m['fname']
+                        #custom data item usings for stats
+                        tmp['customDataItem'] = m
 
                         # better info for render
+                        vinfo = ''
+                        if 'vinfo' in tmp:
+                            vinfo = tmp['vinfo']
                         size = ""
                         if 'size' in tmp:
                             size = "[%s]"%tmp['size']
@@ -691,7 +676,7 @@ class StreamCinemaContentProvider(ContentProvider):
                         subExist = ""
                         if 'subExist' in tmp:
                             subExist = " %s"%self._getName("$66670") #" +tit"
-                        tmp['resolveTitle'] = "[%s]%s[%s%s]%s - %s"%(tmp['quality'], size, tmp['lang'],subExist,ainfo, tmp['title'])
+                        tmp['resolveTitle'] = "[%s%s]%s[%s%s]%s"%(tmp['quality'], vinfo, size, tmp['lang'],subExist,ainfo)
 
                         self._filter(res, tmp)
                         # maybe sleep if not is VIP account to fix many request to webshare
@@ -755,9 +740,21 @@ class StreamCinemaContentProvider(ContentProvider):
 
     def stats(self, item, action):
         try:
-            sclog.logDebug("stats action hit %s, %s ..."%(item, action))
-            # actions start
-            udata = self.ws.sendStats(item, action, BASE_URL, API_VERSION, self.deviceUid)
+            # action:
+            #   - play
+            #   - watching /every 10minutes/
+            #   - end
+            scAction=''
+            if action.lower()=='play':
+                scAction = 'start'
+            if action.lower()=='watching':
+                scAction = 'ping'
+            if action.lower()=='end':
+                scAction = 'end'
+            
+            sclog.logDebug("Stats hit action='%s' scAction='%s' ..."%(action, scAction))
+
+            udata = self.ws.sendStats(item, scAction, BASE_URL, API_VERSION, self.deviceUid)
         except:
-            sclog.logDebug("send stats failed...\n%s"%traceback.format_exc())
+            sclog.logError("Send stats failed.\n%s"%traceback.format_exc())
             pass

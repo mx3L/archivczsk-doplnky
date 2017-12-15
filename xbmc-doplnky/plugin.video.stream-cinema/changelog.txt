@@ -1,3 +1,6 @@
+2017-12-15 verzia 1.2.2
+	- remove movie name from stream selection
+	- add codec info such as HEVC (h265) in stream selection
 2017-12-11 verzia 1.2.1
 	- show substitles in movie list
 2017-12-08 verzia 1.2.0

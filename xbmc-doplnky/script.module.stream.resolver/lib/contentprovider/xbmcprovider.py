@@ -24,6 +24,7 @@ from Plugins.Extensions.archivCZSK.engine import client
 from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
 
 from provider import ResolveException
+from resolver import rslog
 
 class XBMContentProvider(object):
     '''
@@ -53,6 +54,7 @@ class XBMContentProvider(object):
         return {'cp':self.provider.name}
 
     def run(self, params):
+        rslog.logDebug("XBMC run params=%s"%params)
         if params == {} or params == self.params():
             return self.root()
         elif 'list' in params.keys():
@@ -67,6 +69,15 @@ class XBMContentProvider(object):
             return self.search_remove(params['search-remove'])
         elif 'search-edit' in params.keys():
             return self.search_edit(params['search-edit'])
+        elif 'stats' in params.keys():
+            if 'stats' in self.provider.capabilities():
+                itm = None
+                if 'item' in params.keys():
+                    itm = params['item']
+                rslog.logDebug("XBMC run stats '%s'"%params['stats'])
+                self.provider.stats(itm, params['stats'])
+            else:
+                rslog.logDebug("'%s' dont have capability 'stats'"%self.provider)
         elif self.run_custom:
             return self.run_custom(params)
 
@@ -145,7 +156,8 @@ class XBMContentProvider(object):
                             lang=item.get('lang',''),
                             resolveTitle = item.get('resolveTitle',''),
                             customTitle = item.get('customTitle',''),
-                            customFname = item.get('customFname',''))
+                            customFname = item.get('customFname',''),
+                            addonDataItem = item.get('customDataItem',''))
             else:
                 xbmcutil.add_play(params['title'],
                         data['title'],
@@ -157,7 +169,8 @@ class XBMContentProvider(object):
                         lang=data.get('lang',''),
                         resolveTitle = data.get('resolveTitle',''),
                         customTitle = data.get('customTitle',''),
-                        customFname = data.get('customFname',''))
+                        customFname = data.get('customFname',''),
+                        addonDataItem = data.get('customDataItem',''))
 
 
 

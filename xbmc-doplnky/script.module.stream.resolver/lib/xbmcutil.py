@@ -24,6 +24,7 @@ import simplejson as json
 import util
 from Plugins.Extensions.archivCZSK.engine import client
 from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
+from resolver import rslog
 
 try:
     from Plugins.Extensions.archivCZSK.settings import USER_AGENT
@@ -115,14 +116,17 @@ def decode_html(data):
 
 def debug(text):
         text = "xbmc_doplnky: debug " + (str([text]))
+        rslog.logDebug(text)
         client.log.debug(text)
 
 def info(text):
         text = "xbmc_doplnky: info " + (str([text]))
+        rslog.logInfo(info)
         client.log.info(text)
 
 def error(text):
         text = "xbmc_doplnky: error" + (str([text]))
+        rslog.logError(error)
         client.log.error(text)
 
 
@@ -233,8 +237,8 @@ def add_video(name, params={}, logo=None, infoLabels={}, menuItems={}):
     except Exception:
         add_dir(name, params, logo=logo, infoLabels=infoLabels, menuItems=menuItems)
 
-def add_play(title, provider_name, quality, url, subs=None, filename=None, image=None, infoLabels={}, menuItems={},headers={}, lang=None, resolveTitle=None, customTitle=None, customFname=None):
-    
+def add_play(title, provider_name, quality, url, subs=None, filename=None, image=None, infoLabels={}, menuItems={},headers={}, lang=None, resolveTitle=None, customTitle=None, customFname=None, addonDataItem=None):
+
     if customTitle:
         title = customTitle
     if customFname:
@@ -250,7 +254,13 @@ def add_play(title, provider_name, quality, url, subs=None, filename=None, image
         lang = replace_diacritic2(lang)
     if client_version != 0:
         if client_version > 1:
-            client.add_video(title, url, subs=subs, quality = quality, provider_name = provider_name, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems, settings=settings, lang=lang)
+            if addonDataItem is None:
+                client.add_video(title, url, subs=subs, quality = quality, provider_name = provider_name, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems, settings=settings, lang=lang)
+            else: # back compatibility
+                try:
+                    client.add_video(title, url, subs=subs, quality = quality, provider_name = provider_name, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems, settings=settings, lang=lang, dataItem=addonDataItem)
+                except: # old version archiv using
+                    client.add_video(title, url, subs=subs, quality = quality, provider_name = provider_name, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems, settings=settings, lang=lang)
         else:
             if resolveTitle:
                 name = replace_diacritic2(resolveTitle)
@@ -259,7 +269,14 @@ def add_play(title, provider_name, quality, url, subs=None, filename=None, image
                     name = '[%s][%s] %s - %s'%(quality, lang, provider_name, title)
                 else:
                     name = '[%s] %s - %s' % (quality,provider_name, title)
-            client.add_video(name, url, subs=subs, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems, settings=settings)
+            
+            if addonDataItem is None:
+                client.add_video(name, url, subs=subs, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems, settings=settings)
+            else: # back compatibility
+                try:
+                    client.add_video(name, url, subs=subs, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems, settings=settings, dataItem=addonDataItem)
+                except:
+                    client.add_video(name, url, subs=subs, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems, settings=settings)
     else:
         if resolveTitle:
             name = replace_diacritic2(resolveTitle)
@@ -268,7 +285,13 @@ def add_play(title, provider_name, quality, url, subs=None, filename=None, image
                     name = '[%s][%s] %s - %s'%(quality, lang, provider_name, title)
             else:
                 name = '[%s] %s - %s' % (quality, provider_name, title)
-        client.add_video(name, url, subs=subs, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems)
+        if addonDataItem is None:
+            client.add_video(name, url, subs=subs, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems)
+        else: # back compatibility
+            try:
+                client.add_video(name, url, subs=subs, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems, dataItem=addonDataItem)
+            except:
+                client.add_video(name, url, subs=subs, filename=filename, image=image, infoLabels=infoLabels, menuItems=menuItems)
 
 def create_play_it(title, provider_name, quality, url, subs=None, filename=None, image=None, infoLabels={}, menuItems={},headers={}):
     name = '%s - %s[%s]' % (decode_html(title), decode_html(provider_name), decode_html(quality))
