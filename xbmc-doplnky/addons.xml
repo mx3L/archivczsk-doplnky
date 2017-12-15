@@ -179,7 +179,7 @@
   </extension>
 </addon>
 
-<addon id="script.module.stream.resolver" name="stream resolver" provider-name="Libor Zoubek" version="1.7.5">
+<addon id="script.module.stream.resolver" name="stream resolver" provider-name="Libor Zoubek" version="1.7.6">
   <requires>
     <import addon="xbmc.python" version="2.1.0" />
     <import addon="script.module.simplejson" version="2.0.10" />
@@ -333,7 +333,7 @@
   </extension>
 </addon>
 
-<addon id="plugin.video.stream-cinema" name="Stream Cinema" provider-name="chaoss (origin bbaron)" version="1.2.1">
+<addon id="plugin.video.stream-cinema" name="Stream Cinema" provider-name="chaoss (origin bbaron)" version="1.2.2">
   <requires>
         <import addon="xbmc.python" version="2.1.0" />
         <import addon="script.module.stream.resolver" version="1.6.25" />
