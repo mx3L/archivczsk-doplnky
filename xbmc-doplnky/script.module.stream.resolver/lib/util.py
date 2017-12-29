@@ -71,14 +71,39 @@ def cache_cookies(cache):
     if _cookie_jar:
         cache.set(CACHE_COOKIES, _cookie_jar.dump())
 
+#def request(url, headers={}):
+#    debug('request: %s' % url)
+#    req = urllib2.Request(url, headers=headers)
+#    req.add_header('User-Agent', UA)
+#    response = urllib2.urlopen(req)
+#    data = response.read()
+#    response.close()
+#    debug('len(data) %s' % len(data))
+#    return data
+
+def _solve_http_errors(url, err):
+    global _cookie_jar
+    import cloudflare
+    data = err.read()
+    if err.code == 503 and 'cf-browser-verification' in data:
+        data = cloudflare.solve(url, _cookie_jar, UA)
+    err.close()
+    return data
 def request(url, headers={}):
-    debug('request: %s' % url)
-    req = urllib2.Request(url, headers=headers)
-    req.add_header('User-Agent', UA)
-    response = urllib2.urlopen(req)
-    data = response.read()
-    response.close()
-    debug('len(data) %s' % len(data))
+    try:
+        debug('request: %s' % url)
+        req = urllib2.Request(url, headers=headers)
+        req.add_header('User-Agent', UA)
+        if _cookie_jar is not None:
+            _cookie_jar.add_cookie_header(req)
+        response = urllib2.urlopen(req)
+        data = response.read()
+        response.close()
+        debug('len(data) %s' % len(data))
+        
+    except urllib2.HTTPError, err:
+        data = _solve_http_errors(url, err)
+        debug('len(data) %s' % len(data))
     return data
 
 def post(url, data, headers={}):

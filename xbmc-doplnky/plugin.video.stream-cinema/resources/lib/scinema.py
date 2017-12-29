@@ -124,8 +124,10 @@ class StreamCinemaContentProvider(ContentProvider):
     def __init__(self, username=None, password=None, filter=None, reverse_eps=False):
         try:
             ContentProvider.__init__(self, name='czsklib', base_url=BASE_URL, username=username, password=password, filter=filter)
-            opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.LWPCookieJar()))
-            urllib2.install_opener(opener)
+            #opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.LWPCookieJar()))
+            #urllib2.install_opener(opener)
+            # init openner
+            util.init_urllib()
             self.reverse_eps = reverse_eps
             self.ws = None
             self.wsuser = username

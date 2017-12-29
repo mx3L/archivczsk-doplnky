@@ -1,3 +1,5 @@
+2017-12-29 verzia 1.2.3
+	- fix behaviour under DDoS attack
 2017-12-15 verzia 1.2.2
 	- remove movie name from stream selection
 	- add codec info such as HEVC (h265) in stream selection
