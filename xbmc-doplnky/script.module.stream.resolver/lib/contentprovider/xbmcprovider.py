@@ -64,7 +64,7 @@ class XBMContentProvider(object):
         elif 'search-list' in params.keys():
             return self.search_list()
         elif 'search' in params.keys():
-            return self.do_search(params['search'])
+            return self.do_search2(params['search'], params)
         elif 'search-remove' in params.keys():
             return self.search_remove(params['search-remove'])
         elif 'search-edit' in params.keys():
@@ -107,6 +107,22 @@ class XBMContentProvider(object):
             xbmcutil.edit_search(self.addon, self.provider.name, what, replacement)
             client.refresh_screen()
 
+    def do_search2(self, what, params):
+        if what == '':
+            what = client.getTextInput(self.session, xbmcutil.__lang__(30003))
+        if not what == '':
+            maximum = 20
+            try:
+                maximum = int(self.settings['keep-searches'])
+            except:
+                util.error('Unable to parse convert addon setting to number')
+                pass
+            if 'search-no-history' in params and params['search-no-history']:
+                # do nothing dont save history
+                a = 'nothing'
+            else:
+                xbmcutil.add_search(self.addon, self.provider.name, what, maximum)
+            self.search(what)
     def do_search(self, what):
         if what == '':
             what = client.getTextInput(self.session, xbmcutil.__lang__(30003))
