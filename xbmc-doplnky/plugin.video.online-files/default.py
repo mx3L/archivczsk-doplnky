@@ -196,9 +196,9 @@ if __settings__('fastshare_enabled'):
 	providers[p.name] = xbmcprovider.XBMCLoginOptionalContentProvider(p, extra, __addon__, session)
 
 if __settings__('webshare_enabled'):
-	p = webshare.WebshareContentProvider(username='', password='',filter=webshare_filter)
+	p = webshare.WebshareContentProvider(username=__settings__('webshare_user'), password=__settings__('webshare_pass'),filter=webshare_filter)
 	extra = {
-			'vip':'0',
+            'vip':'0',
 			'keep-searches':__settings__('webshare_keep-searches')
 	}
 	extra.update(settings)
