@@ -87,7 +87,11 @@ def _solve_http_errors(url, err):
     data = err.read()
     if err.code == 503 and 'cf-browser-verification' in data:
         data = cloudflare.solve(url, _cookie_jar, UA)
-    err.close()
+        err.close()
+    else:
+        err.close() # throw exception
+        raise err
+    
     return data
 def request(url, headers={}):
     try:
@@ -101,7 +105,8 @@ def request(url, headers={}):
         response.close()
         debug('len(data) %s' % len(data))
         
-    except urllib2.HTTPError, err:
+    except urllib2.HTTPError as err:
+        debug('Request error (%s)\n%s' % (err.code,traceback.format_exc()))
         data = _solve_http_errors(url, err)
         debug('len(data) %s' % len(data))
     return data
@@ -197,15 +202,19 @@ def decode_html(data):
         return data
 
 def debug(text):
+        
         text = "xbmc_doplnky: debug " + (str([text]))
+        print "############## RESOLVER ############## [DEBUG] %s"%text
         client.log.debug(text)
 
 def info(text):
         text = "xbmc_doplnky: info " + (str([text]))
+        print "############## RESOLVER ############## [INFO] %s"%text
         client.log.info(text)
 
 def error(text):
         text = "xbmc_doplnky: error" + (str([text]))
+        print "############## RESOLVER ############## [ERROR] %s"%text
         client.log.error(text)
 
 

@@ -43,10 +43,12 @@ class wsUserData(object):
 
 class Webshare():
 
-    def __init__(self,username=None,password=None,cache=None):
+    def __init__(self,username=None,password=None,useHttps=False,cache=None):
         self.username = username
         self.password = password
         self.base_url = 'http://webshare.cz/'
+        if useHttps:
+            self.base_url = 'https://webshare.cz/'
         self.token = ''
         #util.init_urllib()
         self.login()
@@ -79,6 +81,7 @@ class Webshare():
             #sclog.logDebug("Login start...")
             # get salt
             headers,req = self._create_request('',{'username_or_email':self.username})
+            sclog.logDebug("Webshare login try '%s' ..."%self._url('api/salt/'))
             data = util.post(self._url('api/salt/'),req,headers=headers)
             xml = ET.fromstring(data)
             if not xml.find('status').text == 'OK':

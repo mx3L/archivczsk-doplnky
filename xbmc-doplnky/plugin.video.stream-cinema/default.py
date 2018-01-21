@@ -24,13 +24,10 @@ sys.path.append( os.path.join ( os.path.dirname(__file__),'resources','lib') )
 sys.path.append( os.path.join ( os.path.dirname(__file__),'myprovider') )
 
 from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
+
 import re
-import util,xbmcprovider,xbmcutil
-from scinema import StreamCinemaContentProvider
-from scinema import StaticDataSC
-from scinema import sclog
-
-
+#import util,xbmcprovider,xbmcutil
+from scinema import StreamCinemaContentProvider, StreamCinemaProvider, StaticDataSC, sclog
 
 
 __scriptid__   = 'plugin.video.stream-cinema'
@@ -39,6 +36,8 @@ __addon__      = ArchivCZSK.get_xbmc_addon(__scriptid__)
 __language__   = __addon__.getLocalizedString
 __gets         = __addon__.getSetting
 __sets         = __addon__.setSetting
+
+sclog.logDebugEnabled = __gets('debug_enabled') == 'true'
 
 def getDeviceUid():
     uid = str(__gets('deviceid'))
@@ -76,9 +75,9 @@ def fixXcursor():
             __sets('wspass', pwd)
     except:
         pass
-def checkSetVIP(u, p):
+def checkSetVIP(u, p, https):
     try:
-        tmp = StaticDataSC(username=u, password=p)
+        tmp = StaticDataSC(username=u, password=p, useHttps=https)
         __sets('wsvipdays', tmp.vipDaysLeft)
     except:
         pass
@@ -87,17 +86,21 @@ def checkSetVIP(u, p):
 settings = {'quality':__addon__.getSetting('quality')}
 
 reverse_eps = __gets('order-episodes') == '0'
+use_https = __gets('use_https') == 'true'
 
 # fix crazy entry by virtual keyboard
 fixXcursor()
 # set number of days left for VIP account
-checkSetVIP(__gets('wsuser'), __gets('wspass'))
+checkSetVIP(__gets('wsuser'), __gets('wspass'), use_https)
 
 
-scinema = StreamCinemaContentProvider(username=__gets('wsuser'),password=__gets('wspass'),reverse_eps=reverse_eps)
+
+scinema = StreamCinemaContentProvider(username=__gets('wsuser'),password=__gets('wspass'), useHttps=use_https,reverse_eps=reverse_eps)
 # must set again (reason: singleton)
 scinema.wsuser = __gets('wsuser')
 scinema.wspass = __gets('wspass')
+scinema.useHttps = use_https
+
 # must set again (reason: singleton)
 scinema.deviceUid = getDeviceUid()
 scinema.itemOrderGenre = __gets('item_order_genre')
@@ -105,14 +108,12 @@ scinema.itemOrderCountry = __gets('item_order_country')
 scinema.itemOrderQuality = __gets('item_order_quality')
 #scinema.automaticSubs = __gets('auto_subs')=='true'
 scinema.langFilter = __gets('item_filter_lang')
+scinema.streamSizeFilter = __gets('stream_max_size')
+scinema.streamHevc3dFilter = __gets('filter_hevc_3d') == 'true'
+
 scinema.session = session
 
-sclog.logDebug("PARAMS=%s"%params)
-xbmcprovider.XBMCMultiResolverContentProvider(
-    scinema,
-    settings,
-    __addon__, 
-    session
-).run(params)
 
+sclog.logDebug("PARAMS=%s"%params)
+StreamCinemaProvider(scinema,settings,__addon__, session).run(params)
 

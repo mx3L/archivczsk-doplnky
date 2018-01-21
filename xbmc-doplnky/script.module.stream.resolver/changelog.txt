@@ -1,3 +1,5 @@
+1.7.9 (2018-01-20)
+    - fix util request method throw exception 
 1.7.8 (2018-01-14)
     - support search without save to history for plugin
 1.7.7 (2017-12-29)

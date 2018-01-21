@@ -8,7 +8,8 @@
     <string id="30105">Řazení kategorie Žánr</string>
     <string id="301031">Výchozí</string>
     <string id="301032">Rok</string>
-    <string id="301033">Hodnocení</string>
+    <!--<string id="301033">Hodnocení</string>
+    <string id="301034">Datum přidání</string>-->
     <string id="30106">Automatické titulky</string>
     <string id="30107">Jazykový filtr</string>
     <string id="301071">Všechno</string>
@@ -16,4 +17,17 @@
     <string id="301073">CZ</string>
     <string id="301074">SK</string>
     <string id="301075">EN</string>
+
+    <string id="30200">Různé</string>
+    <string id="30201">Používat HTTPS protokol</string>
+    <string id="30202">Max. velikost nabízeného streamu</string>
+    <string id="302021">Bez omezení</string>
+    <string id="302022">1GB</string>
+    <string id="302023">1.5GB</string>
+    <string id="302024">2GB</string>
+    <string id="302025">2.5GB</string>
+    <string id="302026">3GB</string>
+    <string id="302027">3.5GB</string>
+    <string id="302028">4GB</string>
+    <string id="30203">Nezobrazovat HEVC a 3D streamy</string>
 </strings>

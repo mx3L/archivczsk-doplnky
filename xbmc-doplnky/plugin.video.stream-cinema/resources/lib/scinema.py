@@ -27,6 +27,7 @@
 # - debug moznost zapnut ale na inej karte
 # - kodi got some diffrent resolve method only to one call maybe redo
 
+
 import urllib
 import urllib2
 import cookielib
@@ -36,17 +37,19 @@ import json
 import traceback
 import datetime
 import util
+import xbmcprovider,xbmcutil
+#import resolver
 
 from Components.config import config
 from provider import ContentProvider, cached, ResolveException
 from Components.Language import language
 from time import strftime
+from Plugins.Extensions.archivCZSK.engine import client
 
 
 sys.path.append( os.path.join ( os.path.dirname(__file__),'myprovider') )
 #sys.setrecursionlimit(10000)
 
-BASE_URL="http://stream-cinema.online/kodi"
 API_VERSION="1.2"
 
 class sclog(object):
@@ -97,7 +100,7 @@ class Singleton(type):
 class StaticDataSC():
     __metaclass__ = Singleton
     
-    def __init__(self, username=None, password=None):
+    def __init__(self, username=None, password=None, useHttps=False):
         self.vipDaysLeft = "-1"
         sclog.logInfo("StaticDataSC init...")
 
@@ -106,7 +109,7 @@ class StaticDataSC():
                 login = username
                 pwd = password
                 from webshare import Webshare as wx
-                ws = wx(login, pwd)
+                ws = wx(login, pwd, useHttps)
                 if ws.loginOk:
                     udata = ws.userData()
                     self.vipDaysLeft = udata.vipDaysLeft
@@ -116,14 +119,45 @@ class StaticDataSC():
                 sclog.logError("get vip days left failed.\n%s"%traceback.format_exc())
                 pass
 
+class StreamCinemaProvider(xbmcprovider.XBMContentProvider):
+    def __init__(self, provider, settings, addon, session):
+        xbmcprovider.XBMContentProvider.__init__(self, provider, settings, addon, session)
+        #self.check_setting_keys(['quality'])
+
+    def resolve(self, url):
+        def select_cb(resolved):
+            #resolved = resolver.filter_by_quality(resolved, self.settings['quality'] or '0')
+            if len(resolved) == 1:
+                return resolved[0]
+            else:
+                stream_list = []
+                if 'resolveTitle' in resolved[0]:
+                    stream_list = ['%s'%(s['resolveTitle']) for s in resolved]
+                else:
+                    strem_list = ['%s empty'%(s['quality']) for s in resolved]
+                idx = client.getListInput(self.session, stream_list, '')
+                if idx == -1:
+                    return None
+                return resolved[idx]
+
+        item = self.provider.video_item()
+        item.update({'url':url})
+        try:
+            return self.provider.resolve(item, select_cb=select_cb)
+        except ResolveException, e:
+            sclog.logError("Resolve item failed.\n%s"%traceback.format_exc())
+            self._handle_exc(e)
+
 class StreamCinemaContentProvider(ContentProvider):
     __metaclass__ = Singleton
     ISO_639_1_CZECH = None
     par = None
 
-    def __init__(self, username=None, password=None, filter=None, reverse_eps=False):
+    def __init__(self, username=None, password=None, useHttps=False, filter=None, reverse_eps=False):
         try:
-            ContentProvider.__init__(self, name='czsklib', base_url=BASE_URL, username=username, password=password, filter=filter)
+            self.useHttps = useHttps
+
+            ContentProvider.__init__(self, name='czsklib', base_url=self.getBaseUrl(), username=username, password=password, filter=filter)
             #opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.LWPCookieJar()))
             #urllib2.install_opener(opener)
             # init openner
@@ -140,6 +174,8 @@ class StreamCinemaContentProvider(ContentProvider):
             self.itemOrderCountry = '0'
             self.itemOrderQuality = '0'
             self.langFilter = '0'
+            self.streamSizeFilter = '0'
+            self.streamHevc3dFilter = False
             #self.automaticSubs = False
             self.session = None
         except:
@@ -153,9 +189,9 @@ class StreamCinemaContentProvider(ContentProvider):
             "66666": {"sk_SK":"Prihlasovacie údaje sú nesprávne alebo nie sú v plugine nastavené. \n\nAk nemáte účet tak sa prosím zaregistrujte na webshare.cz",
                       "en_EN":"Login data is wrong or is not set in the plugin settings. \n\nIf you do not have an account so please register at webshare.cz",
                       "cs_CZ":"Přihlašovací údaje jsou nesprávné nebo nejsou v pluginu nastaveny. \n\nPokud nemáte účet tak se prosím zaregistrujte na webshare.cz"},
-            "66667": {"sk_SK":"Príliš veľa požiadaviek, prosím počkajte (1min) a opakujte akciu.",
-                      "en_EN":"Too many requests, please wait (1min) and try again.", 
-                      "cs_CZ":"Příliš mnoho požadavků, prosím čekejte (1min) a opakujte akci."},
+            "66667": {"sk_SK":"Príliš veľa požiadaviek, prosím čakajte 1 minútu.",
+                      "en_EN":"Too many requests, please wait 1 minute", 
+                      "cs_CZ":"Příliš mnoho požadavků, prosím čekejte 1 minutu."},
             "66668": {"sk_SK":"Pre sledovanie videa bez sekania je potrebné mať VIP účet na webshare.cz. \n\nMinimálna rýchlosť internetu 5 Mb/s (0.625 MB/s)",
                       "en_EN":"To watch a video without freezing you need a VIP account at webshare.cz. Minimum internet speed 5 Mb/s (0.625 MB/s)", 
                       "cs_CZ":"Pro sledování videa bez sekání je třeba mít VIP účet na webshare.cz. Minimální rychlost internetu 5 Mb/s (0.625 MB/s)"},
@@ -163,6 +199,11 @@ class StreamCinemaContentProvider(ContentProvider):
                       "en_EN":"Unable to load main menu (connection error). \ n\nWe are apologizing for the problems you have encountered.", 
                       "cs_CZ":"Nepodařilo se načíst hlavní menu (chyba připojení). \n\nZa vzniklé problémy se omlouváme."},
             "66670": {"sk_SK":"+tit","en_EN":"+sub", "cs_CZ":"+tit"},
+            "66671": {"sk_SK":"Film nie je možné prehrať z dôvodu zapnutého filtra na veľkosť streamu.","en_EN":"Movie can not be played due to enabled stream size filter.", "cs_CZ":"Film není možné přehrát z důvodu zapnutého filtru na velikost streamu."},
+            "66672": {"sk_SK":"Váš účet (IP adresa) bol dočasne zablokovaný.",
+                      "en_EN":"Your account (IP address) was temporarily blocked.", 
+                      "cs_CZ":"Váš účet (IP adresa) byl dočasně zablokován."},
+            "66673": {"sk_SK":"Načítavanie zlyhalo.","en_EN":"Loadaing failed.", "cs_CZ":"Načítání selhalo."},
             #<!-- texty v menu -->
             "30901": {"sk_SK":"Filmy","en_EN":"Movies", "cs_CZ":"Filmy"},
             "30902": {"sk_SK":"Seriály","en_EN":"Series", "cs_CZ":"Seriály"},
@@ -346,6 +387,11 @@ class StreamCinemaContentProvider(ContentProvider):
     def capabilities(self):
         return ['resolve', 'categories', 'search', 'stats']
 
+    def getBaseUrl(self):
+        if self.useHttps:
+            return 'https://stream-cinema.online/kodi'
+        return 'http://stream-cinema.online/kodi'
+
     def showMsg(self, msgId, showSec):
         try:
             # show info message dialog
@@ -398,13 +444,17 @@ class StreamCinemaContentProvider(ContentProvider):
             qs = '?'
             if '?' in url:
                 qs='&'
-
+            sclog.logDebug("json url: %s" % url)
             urlapi = url+qs+'ver='+API_VERSION+'&uid='+self.deviceUid
             #sclog.logDebug("json url: %s" % urlapi)
-            return json.loads(self.get_data_cached(urlapi))
+            data = json.loads(self.get_data_cached(urlapi))
+            #sclog.logDebug("_json '%s' data:\n%s"%(urlapi, data))
+            return data
+        except urllib2.HTTPError as err:
+            #sclog.logError("HTTP error (%s), url=%s.\n%s" % (err.code, url, traceback.format_exc()))
+            raise err
         except:
             sclog.logError("Chyba pripojenia.\n%s"%traceback.format_exc())
-            pass
 
     def _getName(self, id):
         try:
@@ -440,7 +490,7 @@ class StreamCinemaContentProvider(ContentProvider):
         result = []
 
         try:
-            data = self._json(BASE_URL)
+            data = self._json(self.getBaseUrl())
             if type(data) is dict and data["menu"]:
                 for m in data["menu"]:
                     try:
@@ -452,34 +502,40 @@ class StreamCinemaContentProvider(ContentProvider):
                             # filter new search menu (not supported yet)
                             if m['url'] != '/Search/menu':
                                 tmpTrans = self._getName(str(m['title']))
-                                item = self.dir_item(title=tmpTrans, url=BASE_URL+str(m['url']))
+                                item = self.dir_item(title=tmpTrans, url=self.getBaseUrl()+str(m['url']))
                                 result.append(item)
                     except Exception:
                         sclog.logError("get category failed (%s, title=%s).\n%s"%(m['url'],m['title'],traceback.format_exc()))
-                        pass
+
             else:
                 raise Exception("Get main menu category failed.")
                 #item = self.dir_item(title='Get category menu failed...', url='failed_url')
                 #result.append(item)
                 # or let system to failed to author mus actualize .. this is incompatible type then failed
                 #result = [{'title': 'Get category menu failed...', 'url':'failed_url'}]
+        except urllib2.HTTPError as err:
+            if err.code == 500:
+                self.showMsg("$66672", 20)
+            else:
+                self.showMsg("$66673", 30)
+            sclog.logError("Get categories failed.\n%s"%traceback.format_exc())
         except:
-            self.showMsg("$66669", 20)
-            sclog.logError("get categories failed.\n%s"%traceback.format_exc())
-            pass
+            self.showMsg("$66673", 20)
+            sclog.logError("Get categories failed.\n%s"%traceback.format_exc())
 
         return result
 
     def search(self, keyword):
         sq = {'search': keyword}
-        return self._renderItem(BASE_URL+ '/Search?' + urllib.urlencode(sq))
+        return self._renderItem(self.getBaseUrl()+ '/Search?' + urllib.urlencode(sq))
     def list(self, url):
-        try:
-            return self._renderItem(url)
-        except:
-            sclog.logError("list failed %s.\n%s"%(url, traceback.format_exc()))
-            pass
-        return [self.dir_item(title="Load items failed...", url="failed_url")]
+        return self._renderItem(url)
+        #try:
+        #    return self._renderItem(url)
+        #except:
+        #    sclog.logError("list failed %s.\n%s"%(url, traceback.format_exc()))
+        #    pass
+        #return [self.dir_item(title="Load items failed...", url="failed_url")]
 
     def _renderItem(self, url):
         # sort 1-desc order by releasedate (year)
@@ -497,80 +553,84 @@ class StreamCinemaContentProvider(ContentProvider):
             # dont add etc. NextPage item (...?p=2), and other
             if not ('?' in url) and self.itemOrderQuality == '1': 
                 url = url+'/1'
+        try:
+            data = self._json(url)
+            result = []
 
-        data = self._json(url)
-        result = []
-
-        if data['menu']:
-            for m in data['menu']:
-                # skip not valid items
-                if not 'url' in m:
-                    continue
-
-                itemUrl = BASE_URL+str(m['url'])
-                try:
-                    # filter lang
-                    if 'lang' in m and self.langFilter!= '0':
-                        # 0 all, 1-CZ&SK, 2-CZ 3-SK, 4-EN
-                        lng = m['lang'].lower()
-                        if self.langFilter == '1':
-                            if not lng.startswith("cz") and not lng.startswith("sk"):
-                                continue
-                        elif self.langFilter == '2':
-                            if not lng.startswith("cz"):
-                                continue
-                        elif  self.langFilter == '3':
-                            if not lng.startswith("sk"):
-                                continue
-                        elif  self.langFilter == '4':
-                            if not lng.startswith("en"):
-                                continue
-
-                    if m['type'] == 'dir' and m['url'].startswith('/'):
-                        item = self.dir_item(title=self._getName(m['title']), url=itemUrl)
-                    elif m['type'] == 'dir' and ("/genre" in url or "/year" in url or "/country" in url or "/quality" in url or "Tv/archiv" in url):
-                        item = self.dir_item(title=self._getName(m['title']), url=url+'/'+m['url'])
-                    elif m['type'] == 'dir' and not m['url'].startswith('/'):
+            if 'menu' in data and data['menu']:
+                for m in data['menu']:
+                    # skip not valid items
+                    if not 'url' in m:
                         continue
 
-                    if  m['type'] == 'dir' and '/series' in url.lower(): # set aditional info for series
-                        try:
-                            item['img'] = str(m['art']['poster'])
-                        except:
-                            pass;
-                        self.setAditionalVideoItemInfo(m, item)
+                    itemUrl = self.getBaseUrl()+str(m['url'])
+                    try:
+                        # filter lang
+                        if 'lang' in m and self.langFilter!= '0':
+                            # 0 all, 1-CZ&SK, 2-CZ 3-SK, 4-EN
+                            lng = m['lang'].lower()
+                            if self.langFilter == '1':
+                                if not lng.startswith("cz") and not lng.startswith("sk"):
+                                    continue
+                            elif self.langFilter == '2':
+                                if not lng.startswith("cz"):
+                                    continue
+                            elif  self.langFilter == '3':
+                                if not lng.startswith("sk"):
+                                    continue
+                            elif  self.langFilter == '4':
+                                if not lng.startswith("en"):
+                                    continue
 
-                    if m['type'] == 'video':
-                        # check subs
-                        try:
-                            isVipAccount = int(StaticDataSC().vipDaysLeft) > 0
-                            lngtmp = m['lang'].lower()
-                            if isVipAccount and 'subs' in m and not lngtmp.startswith("cz") and not lngtmp.startswith("sk"):
-                                if 'webshare.cz' in m['subs'] and '/file/' in m['subs']:
-                                    m['title'] = m['title'] + " (%s)"%self._getName("$66670")
-                        except:
-                            sclog.logError("Check substitle failed.\n%s"%traceback.format_exc())
-                            pass
+                        if m['type'] == 'dir' and m['url'].startswith('/'):
+                            item = self.dir_item(title=self._getName(m['title']), url=itemUrl)
+                        elif m['type'] == 'dir' and ("/genre" in url or "/year" in url or "/country" in url or "/quality" in url or "Tv/archiv" in url):
+                            item = self.dir_item(title=self._getName(m['title']), url=url+'/'+m['url'])
+                        elif m['type'] == 'dir' and not m['url'].startswith('/'):
+                            continue
 
-                        image = ""
-                        try:
-                            image = str(m['art']['poster'])
-                        except:
-                            pass;
+                        if  m['type'] == 'dir' and '/series' in url.lower(): # set aditional info for series
+                            try:
+                                item['img'] = str(m['art']['poster'])
+                            except:
+                                pass;
+                            self.setAditionalVideoItemInfo(m, item)
+
+                        if m['type'] == 'video':
+                            # check subs
+                            try:
+                                isVipAccount = int(StaticDataSC().vipDaysLeft) > 0
+                                lngtmp = m['lang'].lower()
+                                if isVipAccount and 'subs' in m and not lngtmp.startswith("cz") and not lngtmp.startswith("sk"):
+                                    if 'webshare.cz' in m['subs'] and '/file/' in m['subs']:
+                                        m['title'] = m['title'] + " (%s)"%self._getName("$66670")
+                            except:
+                                sclog.logError("Check substitle failed.\n%s"%traceback.format_exc())
+                                pass
+
+                            image = ""
+                            try:
+                                image = str(m['art']['poster'])
+                            except:
+                                pass;
                         
-                        item = self.video_item(url=itemUrl, img=image, quality='tvoj kvet')
+                            item = self.video_item(url=itemUrl, img=image, quality='tvoj kvet')
 
-                        item['title']= m['title']
-                        if '/Tv' in url:
-                            item['title'] = m['title'].replace('[LIGHT]','').replace('[/LIGHT]','')
-                        # set data for item
-                        self.setAditionalVideoItemInfo(m, item)
-                    self._filter(result, item)
-                except:
-                    sclog.logError("item render failed %s.\n%s"%(itemUrl, traceback.format_exc()))
-                    pass
-        else:
-            result = [{'title': 'Render item failed (invalid data)...', 'url':'failed_url'}]
+                            item['title']= m['title']
+                            if '/Tv' in url:
+                                item['title'] = m['title'].replace('[LIGHT]','').replace('[/LIGHT]','')
+                            # set data for item
+                            self.setAditionalVideoItemInfo(m, item)
+                        self._filter(result, item)
+                    except:
+                        sclog.logError("item render failed %s.\n%s"%(itemUrl, traceback.format_exc()))
+                        pass
+            else:
+                result = [{'title': 'Render item failed (invalid data)...', 'url':'failed_url'}]
+        except:
+            sclog.logError("Render item failed.\n%s"%traceback.format_exc())
+            result = [{'title': 'Render item failed (CONNECTION ERROR)...', 'url':'failed_url'}]
+        
 
         return result
     def setAditionalVideoItemInfo(selft, scItem, videoItem):
@@ -616,12 +676,15 @@ class StreamCinemaContentProvider(ContentProvider):
             sclog.logError("getAditionalVideoItemInfo failed.\n%s" % traceback.format_exc())
             pass
         
+    
+
     def resolve(self, item, captcha_cb=None, select_cb=None):
-        # tu to zbehne na zoznam streamov
+        # shows list of streams
         try:
             data = self._json(item['url'])
+            #sclog.logDebug("resolve data %s\n%s"%(item['url'],data))
 
-            if 'info' in data and BASE_URL in item['url']:
+            if 'info' in data and self.getBaseUrl() in item['url']:
                 statsData = data['info']
                 if 'strms' in data:
                     out = [self.merge_dicts(data['info'], i) for i in data['strms']]
@@ -633,7 +696,7 @@ class StreamCinemaContentProvider(ContentProvider):
                 if self.ws is None:
                     #sclog.logDebug("Resolve ws is null (reinit)...");
                     from webshare import Webshare as wx
-                    self.ws = wx(self.wsuser, self.wspass)
+                    self.ws = wx(self.wsuser, self.wspass, self.useHttps)
 
                 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@todo
                 # check login
@@ -650,56 +713,139 @@ class StreamCinemaContentProvider(ContentProvider):
                 res = []
                 try:
                     
+                    # filter stream size if > 0, size=2.51 GB
+                    filterSizeEnabled = self.streamSizeFilter != '0' and len(data) > 1
+                    filterApplied = False
+                    sizeLimit = 0
+                    if self.streamSizeFilter=='1':
+                        sizeLimit = 1
+                    if self.streamSizeFilter=='2':
+                        sizeLimit = 1.5
+                    if self.streamSizeFilter=='3':
+                        sizeLimit = 2
+                    if self.streamSizeFilter=='4':
+                        sizeLimit = 2.5
+                    if self.streamSizeFilter=='5':
+                        sizeLimit = 3
+                    if self.streamSizeFilter=='6':
+                        sizeLimit = 3.5
+                    if self.streamSizeFilter=='7':
+                        sizeLimit = 4
+
 
                     #sclog.logDebug("_resolve start...")
                     for m in data:
-                        tmp = self._resolve(m, isVipAccount)
+                        # filter HEVC HDR (4K), 3D-SBS
+                        filterStreamType = False
+                        if self.streamHevc3dFilter:
+                            if 'quality' in m and '3D' in m['quality']:
+                                sclog.logDebug("Filtering 3D stream...")
+                                filterStreamType = True
+                            elif 'vinfo' in m and ('HEVC' in m['vinfo'] or 'HDR' in m['vinfo']):
+                                sclog.logDebug("Filtering HEVC,HDR stream...")
+                                filterStreamType = True
 
-                        #custom title
-                        series = ""
-                        if 'tvshowtitle' in m:
-                            tmp['customTitle'] = m['title']
-                        #custom file name
-                        tmp['customFname'] = m['fname']
-                        #custom data item usings for stats
-                        tmp['customDataItem'] = m
+                        sizeValid = True
+                        if filterSizeEnabled:
+                            try:
+                                sizeStr = "%s"%m['size']
+                                size = float(sizeStr.split(' ')[0])
+                                units = sizeStr.split(' ')[1]
+                                if units.lower()=='mb':
+                                    size = size / 1024
+                                sclog.logDebug("Filter stream size compare %sGB > %sGB ..."%(size, sizeLimit))
+                                if size > sizeLimit:
+                                    filterApplied = True
+                                    sizeValid = False
+                            except:
+                                sclog.logError("Check valid stream size failed.\n%s"%traceback.format_exc())
+                                pass
 
-                        # better info for render
-                        vinfo = ''
-                        if 'vinfo' in tmp:
-                            vinfo = tmp['vinfo']
-                        size = ""
-                        if 'size' in tmp:
-                            size = "[%s]"%tmp['size']
-                        ainfo = ""
-                        if 'ainfo' in tmp:
-                            tstr = "%s"%tmp['ainfo']
-                            ainfo = tstr.replace(", ","").replace("][",", ")
-                        subExist = ""
-                        if 'subExist' in tmp:
-                            subExist = " %s"%self._getName("$66670") #" +tit"
-                        tmp['resolveTitle'] = "[%s%s]%s[%s%s]%s"%(tmp['quality'], vinfo, size, tmp['lang'],subExist,ainfo)
+                        if sizeValid and not filterStreamType:
+                            if isVipAccount and 'subs' in m and not m['subs'] is None and 'webshare.cz' in m['subs']:
+                                try:
+                                    sclog.logDebug("subs url=%s"%m['subs'])
+                                    tmp2 = m['subs']
+                                    if '/file/' in tmp2:
+                                        idx = tmp2.index('/file/')
+                                        tmp2 = tmp2[idx+len('/file/'):]
+                                        tmp2 = tmp2.split('/')[0]
+                                        if self.ws is None:
+                                            #sclog.logDebug("_resolve ws is null...");
+                                            from webshare import Webshare as wx
+                                            self.ws = wx(self.wsuser, self.wspass, self.useHttps)
+                                        m['subs'] = self.ws.resolve(tmp2)
+                                        m['subExist'] = True
+                                        #sclog.logDebug("resolved subs url=%s"%itm['subs'])
+                                    #else:
+                                    #    sclog.logDebug("Substitles not supported...\n%s"%tmp)
+                                except:
+                                    sclog.logError("Resolve substitles failed.\n%s"%traceback.format_exc())
+                                    pass
+                            tmp = m
 
-                        self._filter(res, tmp)
-                        # maybe sleep if not is VIP account to fix many request to webshare
-                        #if not isVipAccount:
-                        #    from time import sleep
-                        #    sleep(2)
+                            #custom title
+                            series = ""
+                            if 'tvshowtitle' in m:
+                                tmp['customTitle'] = m['title']
+                            #custom file name
+                            tmp['customFname'] = m['fname']
+                            #custom data item usings for stats
+                            tmp['customDataItem'] = m
+
+                            # better info for render
+                            vinfo = ''
+                            if 'vinfo' in tmp:
+                                vinfo = tmp['vinfo']
+                            size = ""
+                            if 'size' in tmp:
+                                size = "[%s]"%tmp['size']
+                            ainfo = ""
+                            if 'ainfo' in tmp:
+                                tstr = "%s"%tmp['ainfo']
+                                ainfo = tstr.replace(", ","").replace("][",", ")
+                            subExist = ""
+                            if 'subExist' in tmp:
+                                subExist = " %s"%self._getName("$66670") #" +tit"
+                            tmp['resolveTitle'] = "[%s%s]%s[%s%s]%s"%(tmp['quality'], vinfo, size, tmp['lang'],subExist,ainfo)
+
+                            self._filter(res, tmp)
+                            # maybe sleep if not is VIP account to fix many request to webshare
+                            #if not isVipAccount:
+                            #    from time import sleep
+                            #    sleep(2)
 
                     #sclog.logDebug("_resolve end...")
-                    return res
+                    if filterApplied and len(res) == 0:
+                        self.showMsg("$66671", 15)
+
+                    if len(res) == 1:
+                        return self._resolve(res[0])
+                    elif len(res) > 1 and select_cb:
+                        return self._resolve(select_cb(res))
                 except:
                     sclog.logError("_resolve failed.\n%s"%traceback.format_exc())
                     # soemthing happend with resolve webshare
                     pass
             else:
-                sclog.logError('resolve item failed!')
+                sclog.logError('resolve item failed (invalid data)!')
+
+        except urllib2.HTTPError as err:
+            sclog.logError("HTTP error (%s) resolve failed %s.\n%s" % (err.code, item['url'], traceback.format_exc()))
+            # too many request per minute
+            if err.code == 429:
+                self.showMsg("$66667",61)
+                from time import sleep
+                sleep(60)
+            else:
+                self.showMsg("$66673",30)
         except:
             sclog.logError("resolve failed %s.\n%s" % (item['url'], traceback.format_exc()))
-            # too many request per minute
-            self.showMsg("$66667",20)
-            pass
-    def _resolve(self, itm, isVipAccount):
+            # service failed
+            self.showMsg("$66673",20)
+
+        return []
+    def _resolve(self, itm):
         if itm is None:
             return None;
         #sclog.logDebug("_resolve itm: %s %s"%(itm, itm['provider']))
@@ -707,7 +853,54 @@ class StreamCinemaContentProvider(ContentProvider):
             if self.ws is None:
                 #sclog.logDebug("_resolve ws is null...");
                 from webshare import Webshare as wx
-                self.ws = wx(self.wsuser, self.wspass)
+                self.ws = wx(self.wsuser, self.wspass, self.useHttps)
+                    
+            try:
+                itm['url'] = self.ws.resolve(itm['params']['play']['ident'])
+            except:
+                # reset ws reason: singleton
+                #sclog.logError("ws _resolve failed...\n%s"%traceback.format_exc());
+                self.ws = None
+                raise
+                    
+            if not itm['url']:
+                raise Exception("Resolve url is empty")
+
+            return itm
+        raise Exception("Not supported item to resolve!")
+        
+    def stats(self, item, action):
+        try:
+            # action:
+            #   - play
+            #   - watching /every 10minutes/
+            #   - end
+            scAction=''
+            if action.lower()=='play':
+                scAction = 'start'
+            if action.lower()=='watching':
+                scAction = 'ping'
+            if action.lower()=='end':
+                scAction = 'end'
+            
+            sclog.logDebug("Stats hit action='%s' scAction='%s' ..."%(action, scAction))
+
+            udata = self.ws.sendStats(item, scAction, self.getBaseUrl(), API_VERSION, self.deviceUid)
+        except:
+            sclog.logError("Send stats failed.\n%s"%traceback.format_exc())
+            pass
+
+
+
+    def _resolve_OLD(self, itm, isVipAccount):
+        if itm is None:
+            return None;
+        #sclog.logDebug("_resolve itm: %s %s"%(itm, itm['provider']))
+        if itm['provider'] == 'plugin.video.online-files' and itm['params']['cp'] == 'webshare.cz':
+            if self.ws is None:
+                #sclog.logDebug("_resolve ws is null...");
+                from webshare import Webshare as wx
+                self.ws = wx(self.wsuser, self.wspass, self.useHttps)
                     
             try:
                 itm['url'] = self.ws.resolve(itm['params']['play']['ident'])
@@ -739,24 +932,144 @@ class StreamCinemaContentProvider(ContentProvider):
 
             return itm
         raise Exception("Not supported item to resolve!")
-
-    def stats(self, item, action):
+    def resolve_OLD(self, item, captcha_cb=None, select_cb=None):
+        # tu to zbehne na zoznam streamov
         try:
-            # action:
-            #   - play
-            #   - watching /every 10minutes/
-            #   - end
-            scAction=''
-            if action.lower()=='play':
-                scAction = 'start'
-            if action.lower()=='watching':
-                scAction = 'ping'
-            if action.lower()=='end':
-                scAction = 'end'
-            
-            sclog.logDebug("Stats hit action='%s' scAction='%s' ..."%(action, scAction))
+            data = self._json(item['url'])
+            #sclog.logDebug("resolve data %s\n%s"%(item['url'],data))
 
-            udata = self.ws.sendStats(item, scAction, BASE_URL, API_VERSION, self.deviceUid)
+            if 'info' in data and self.getBaseUrl() in item['url']:
+                statsData = data['info']
+                if 'strms' in data:
+                    out = [self.merge_dicts(data['info'], i) for i in data['strms']]
+                    data = out
+
+                if len(data) < 1:
+                    raise ResolveException('Video is not available.')
+
+                if self.ws is None:
+                    #sclog.logDebug("Resolve ws is null (reinit)...");
+                    from webshare import Webshare as wx
+                    self.ws = wx(self.wsuser, self.wspass, self.useHttps)
+
+                #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@todo
+                # check login
+                if not self.ws.loginOk:
+                    #self.showMsg("$66666", 10)
+                    sclog.logInfo("Ws account login not ok.")
+                
+                isVipAccount = False
+                try:
+                    isVipAccount = int(StaticDataSC().vipDaysLeft) > 0
+                except:
+                    sclog.logError("get static vip status failed.\n%s"%s)
+
+                res = []
+                try:
+                    
+                    # filter stream size if > 0, size=2.51 GB
+                    filterSizeEnabled = self.streamSizeFilter != '0' and len(data) > 1
+                    filterApplied = False
+                    sizeLimit = 0
+                    if self.streamSizeFilter=='1':
+                        sizeLimit = 1
+                    if self.streamSizeFilter=='2':
+                        sizeLimit = 1.5
+                    if self.streamSizeFilter=='3':
+                        sizeLimit = 2
+                    if self.streamSizeFilter=='4':
+                        sizeLimit = 2.5
+                    if self.streamSizeFilter=='5':
+                        sizeLimit = 3
+                    if self.streamSizeFilter=='6':
+                        sizeLimit = 3.5
+                    if self.streamSizeFilter=='7':
+                        sizeLimit = 4
+
+
+                    #sclog.logDebug("_resolve start...")
+                    for m in data:
+                        # filter HEVC HDR (4K), 3D-SBS
+                        filterStreamType = False
+                        if self.streamHevc3dFilter:
+                            if 'quality' in m and '3D' in m['quality']:
+                                sclog.logDebug("Filtering 3D stream...")
+                                filterStreamType = True
+                            elif 'vinfo' in m and ('HEVC' in m['vinfo'] or 'HDR' in m['vinfo']):
+                                sclog.logDebug("Filtering HEVC,HDR stream...")
+                                filterStreamType = True
+
+                        sizeValid = True
+                        if filterSizeEnabled:
+                            try:
+                                sizeStr = "%s"%m['size']
+                                size = float(sizeStr.split(' ')[0])
+                                units = sizeStr.split(' ')[1]
+                                if units.lower()=='mb':
+                                    size = size / 1024
+                                sclog.logDebug("Filter stream size compare %sGB > %sGB ..."%(size, sizeLimit))
+                                if size > sizeLimit:
+                                    filterApplied = True
+                                    sizeValid = False
+                            except:
+                                sclog.logError("Check valid stream size failed.\n%s"%traceback.format_exc())
+                                pass
+
+                        if sizeValid and not filterStreamType:
+                            tmp = self._resolve(m, isVipAccount)
+
+                            #custom title
+                            series = ""
+                            if 'tvshowtitle' in m:
+                                tmp['customTitle'] = m['title']
+                            #custom file name
+                            tmp['customFname'] = m['fname']
+                            #custom data item usings for stats
+                            tmp['customDataItem'] = m
+
+                            # better info for render
+                            vinfo = ''
+                            if 'vinfo' in tmp:
+                                vinfo = tmp['vinfo']
+                            size = ""
+                            if 'size' in tmp:
+                                size = "[%s]"%tmp['size']
+                            ainfo = ""
+                            if 'ainfo' in tmp:
+                                tstr = "%s"%tmp['ainfo']
+                                ainfo = tstr.replace(", ","").replace("][",", ")
+                            subExist = ""
+                            if 'subExist' in tmp:
+                                subExist = " %s"%self._getName("$66670") #" +tit"
+                            tmp['resolveTitle'] = "[%s%s]%s[%s%s]%s"%(tmp['quality'], vinfo, size, tmp['lang'],subExist,ainfo)
+
+                            self._filter(res, tmp)
+                            # maybe sleep if not is VIP account to fix many request to webshare
+                            #if not isVipAccount:
+                            #    from time import sleep
+                            #    sleep(2)
+
+                    #sclog.logDebug("_resolve end...")
+                    if filterApplied and len(res) == 0:
+                        self.showMsg("$66671", 15)
+                    return res
+                except:
+                    sclog.logError("_resolve failed.\n%s"%traceback.format_exc())
+                    # soemthing happend with resolve webshare
+                    pass
+            else:
+                sclog.logError('resolve item failed (invalid data)!')
+
+        except urllib2.HTTPError as err:
+            sclog.logError("HTTP error (%s) resolve failed %s.\n%s" % (err.code, item['url'], traceback.format_exc()))
+            # too many request per minute
+            if err.code == 429:
+                self.showMsg("$66667",61)
+                from time import sleep
+                sleep(60)
+            else:
+                self.showMsg("$66673",30)
         except:
-            sclog.logError("Send stats failed.\n%s"%traceback.format_exc())
-            pass
+            sclog.logError("resolve failed %s.\n%s" % (item['url'], traceback.format_exc()))
+            # service failed
+            self.showMsg("$66673",20)
