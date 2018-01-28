@@ -1,3 +1,6 @@
+2018-01-28 verzia 1.2.5
+	- fix DM crash when too many requests
+  
 2018-01-20 verzia 1.2.4
 	- functionality improvements
 	- redo stream choice (+ not resolving each stream)

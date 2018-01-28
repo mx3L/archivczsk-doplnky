@@ -24,9 +24,52 @@ import re
 import cookielib
 import urllib2
 from urlparse import urlparse
+import datetime
+from time import strftime
+from Components.config import config
+import traceback
 
+import os
 import util
 from provider import ContentProvider
+
+class markizalog(object):
+    ERROR = 0
+    INFO = 1
+    DEBUG = 2
+    mode = INFO
+
+    logEnabled = True
+    logDebugEnabled = False
+    LOG_FILE = ""
+    
+
+    @staticmethod
+    def logDebug(msg):
+        if markizalog.logDebugEnabled:
+            markizalog.writeLog(msg, 'DEBUG')
+    @staticmethod
+    def logInfo(msg):
+        markizalog.writeLog(msg, 'INFO')
+    @staticmethod
+    def logError(msg):
+        markizalog.writeLog(msg, 'ERROR')
+    @staticmethod
+    def writeLog(msg, type):
+        try:
+            if not markizalog.logEnabled:
+                return
+            #if log.LOG_FILE=="":
+            markizalog.LOG_FILE = os.path.join(config.plugins.archivCZSK.logPath.getValue(),'markiza.log')
+            f = open(markizalog.LOG_FILE, 'a')
+            dtn = datetime.datetime.now()
+            f.write(dtn.strftime("%H:%M:%S.%f")[:-3] +" ["+type+"] %s\n" % msg)
+            f.close()
+        except:
+            print "####MARKIZA#### write log failed!!!"
+            pass
+        finally:
+            print "####MARKIZA#### ["+type+"] "+msg
 
 
 class MarkizaContentProvider(ContentProvider):
@@ -135,25 +178,29 @@ class MarkizaContentProvider(ContentProvider):
 
     def resolve(self, item, captcha_cb=None, select_cb=None):
         result = []
+        #markizalog.logInfo("ITEM:\n%s"%item)
         item = item.copy()
         video_id = urlparse(item['url']).path.split('/')[-1].split('_')[0]
         videodata = util.json.loads(util.request('http://videoarchiv.markiza.sk/json/video_jwplayer7.json?is_web=1&noads=1&nomidads=1&nopreads=1&nopostads=1&id=' + video_id))
         details = videodata['details']
         playlist = videodata['playlist']
         sources = [p['sources'][0]['file'] for p in playlist]
-        add_idx = [n for n,s in enumerate(sources) if s not in sources[n+1:]]
-        playlist = [v for n,v in enumerate(playlist) if n in add_idx]
         #print util.json.dumps(playlist, indent=True)
-        for v in playlist:
+
+        # use manifest files .m3u8
+        manifestUrl = "%s"%(sources[0])
+        #markizalog.logInfo("manifet url '%s'"%manifestUrl)
+        manifest = util.request(manifestUrl)
+        #markizalog.logInfo("manifet\n%s"%manifest)
+
+        for m in re.finditer('#EXT-X-STREAM-INF:BANDWIDTH=(?P<bandwidth>\d+),RESOLUTION=(?P<resolution>\d+x\d+)\s(?P<chunklist>[^\s]+)', manifest, re.DOTALL):
             item = self.video_item()
-            item['title'] = v['title'] or details['name']
-            item['date'] = details['date']
-            item['lenght'] = details['duration']
-            item['url'] = v['sources'][0]['file']
-            item['surl'] = v['title']
-            item['img'] = v['image']
-            item['plot'] = v['description']
+            item['quality'] = m.group('resolution')
+            #markizalog.logInfo("chunklist=%s"%m.group('chunklist'))
+            item['url'] = manifestUrl.replace("manifest.m3u8", m.group('chunklist'))
+            ##markizalog.logInfo("item url=%s"%item['url'])
             result.append(item)
+
         if len(result) > 0 and select_cb:
             return select_cb(result)
         return result

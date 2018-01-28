@@ -392,7 +392,7 @@ class StreamCinemaContentProvider(ContentProvider):
             return 'https://stream-cinema.online/kodi'
         return 'http://stream-cinema.online/kodi'
 
-    def showMsg(self, msgId, showSec):
+    def showMsg(self, msgId, showSec, sleepSec=0):
         try:
             # show info message dialog
             #from Screens.InfoBar import InfoBar
@@ -406,7 +406,9 @@ class StreamCinemaContentProvider(ContentProvider):
             #from Screens.MessageBox import MessageBox
             #from Plugins.Extensions.archivCZSK.engine.tools.util import toString
             #self.session.openWithCallback(self.mycb,MessageBox, text=toString(self._getName(msgId)), timeout=showSec, type=MessageBox.TYPE_ERROR)
-        
+            if sleepSec > 0:
+                from time import sleep
+                sleep(sleepSec)
             #sleep(showSec)
         except:
             sclog.logError("showMsg failed.\n%s"%traceback.format_exc())
@@ -834,9 +836,7 @@ class StreamCinemaContentProvider(ContentProvider):
             sclog.logError("HTTP error (%s) resolve failed %s.\n%s" % (err.code, item['url'], traceback.format_exc()))
             # too many request per minute
             if err.code == 429:
-                self.showMsg("$66667",61)
-                from time import sleep
-                sleep(60)
+                self.showMsg("$66667", 61, 60)
             else:
                 self.showMsg("$66673",30)
         except:
