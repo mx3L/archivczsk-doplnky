@@ -74,10 +74,11 @@ class markizalog(object):
 
 class MarkizaContentProvider(ContentProvider):
 
-    def __init__(self, username=None, password=None, filter=None, tmp_dir='/tmp'):
+    def __init__(self, username=None, password=None, filter=None, tmp_dir='/tmp', newLoad=True):
         ContentProvider.__init__(self, 'videoarchiv.markiza.sk', 'http://videoarchiv.markiza.sk', username, password, filter, tmp_dir)
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.LWPCookieJar()))
         urllib2.install_opener(opener)
+        self.newLoadMethod = newLoad
 
     def capabilities(self):
         return ['categories', 'resolve', '!download']
@@ -182,26 +183,46 @@ class MarkizaContentProvider(ContentProvider):
         item = item.copy()
         video_id = urlparse(item['url']).path.split('/')[-1].split('_')[0]
         videodata = util.json.loads(util.request('http://videoarchiv.markiza.sk/json/video_jwplayer7.json?is_web=1&noads=1&nomidads=1&nopreads=1&nopostads=1&id=' + video_id))
+        #markizalog.logInfo("videodata=\n%s"%videodata)
         details = videodata['details']
         playlist = videodata['playlist']
         sources = [p['sources'][0]['file'] for p in playlist]
         #print util.json.dumps(playlist, indent=True)
+        add_idx = [n for n,s in enumerate(sources) if s not in sources[n+1:]]
+        playlist = [v for n,v in enumerate(playlist) if n in add_idx]
+        #print util.json.dumps(playlist, indent=True)
 
-        # use manifest files .m3u8
-        manifestUrl = "%s"%(sources[0])
-        #markizalog.logInfo("manifet url '%s'"%manifestUrl)
-        manifest = util.request(manifestUrl)
-        #markizalog.logInfo("manifet\n%s"%manifest)
-
-        for m in re.finditer('#EXT-X-STREAM-INF:BANDWIDTH=(?P<bandwidth>\d+),RESOLUTION=(?P<resolution>\d+x\d+)\s(?P<chunklist>[^\s]+)', manifest, re.DOTALL):
-            item = self.video_item()
-            item['quality'] = m.group('resolution')
-            #markizalog.logInfo("chunklist=%s"%m.group('chunklist'))
-            item['url'] = manifestUrl.replace("manifest.m3u8", m.group('chunklist'))
-            ##markizalog.logInfo("item url=%s"%item['url'])
-            result.append(item)
+        if self.newLoadMethod:
+            for pl in playlist:
+                manifestUrl = "%s"%(pl['sources'][0]['file'])
+                #markizalog.logInfo("manifet url '%s'"%manifestUrl)
+                manifest = util.request(manifestUrl)
+                #markizalog.logInfo("manifet\n%s"%manifest)
+                itemTitle = "%s"%pl['title']
+                #markizalog.logInfo("item title=%s"%itemTitle)
+                for m in re.finditer('#EXT-X-STREAM-INF:BANDWIDTH=(?P<bandwidth>\d+),RESOLUTION=(?P<resolution>\d+x\d+)\s(?P<chunklist>[^\s]+)', manifest, re.DOTALL):
+                    item = self.video_item()
+                    item['title']= itemTitle
+                    item['bandwidth'] = int("%s"%m.group('bandwidth'))
+                    item['quality'] = m.group('resolution')
+                    item['resolveTitle'] = "%s - %s"%(item['quality'], itemTitle)
+                    item['url'] = manifestUrl.replace("manifest.m3u8", m.group('chunklist'))
+                    #markizalog.logInfo("item \nurl=%s \nbandwith=%s \nquality=%s"%(item['url'], item['bandwidth'], item['quality']))
+                    result.append(item)
+                result.sort(key=lambda x: x['bandwidth'], reverse=True)
+        else:
+            for v in playlist:
+                item = self.video_item()
+                item['title'] = v['title'] or details['name']
+                item['date'] = details['date']
+                item['lenght'] = details['duration']
+                item['url'] = v['sources'][0]['file']
+                item['surl'] = v['title']
+                item['img'] = v['image']
+                item['plot'] = v['description']
+                #markizalog.logInfo("itemurl=%s"%item['url'])
+                result.append(item)
 
         if len(result) > 0 and select_cb:
             return select_cb(result)
         return result
-

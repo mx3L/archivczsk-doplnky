@@ -101,4 +101,4 @@ class MarkizaXBMCContentProvider(xbmcprovider.XBMCMultiResolverContentProvider):
         except ResolveException, e:
             self._handle_exc(e)
 
-MarkizaXBMCContentProvider(markiza.MarkizaContentProvider(),settings, __addon__,session).run(params)
+MarkizaXBMCContentProvider(markiza.MarkizaContentProvider(newLoad=__addon__.getSetting('new_load_method') == 'true'),settings, __addon__,session).run(params)
