@@ -39,6 +39,7 @@ import datetime
 import util
 import xbmcprovider,xbmcutil
 #import resolver
+from trakttv import trakt_tv
 
 from Components.config import config
 from provider import ContentProvider, cached, ResolveException
@@ -46,9 +47,12 @@ from Components.Language import language
 from time import strftime
 from Plugins.Extensions.archivCZSK.engine import client
 
+from Plugins.Extensions.archivCZSK.compat import eConnectCallback
+from enigma import eTimer
 
 sys.path.append( os.path.join ( os.path.dirname(__file__),'myprovider') )
 #sys.setrecursionlimit(10000)
+
 
 API_VERSION="1.2"
 
@@ -176,8 +180,11 @@ class StreamCinemaContentProvider(ContentProvider):
             self.langFilter = '0'
             self.streamSizeFilter = '0'
             self.streamHevc3dFilter = False
+            self.trakt_enabled = False
             #self.automaticSubs = False
             self.session = None
+            #def __init__(self, client_id, client_secret, token='', refresh_token='', expire=0):
+            self.tapi = None
         except:
             sclog.logError("init stream-cinema failed.\n%s"%traceback.format_exc())
             pass
@@ -204,6 +211,8 @@ class StreamCinemaContentProvider(ContentProvider):
                       "en_EN":"Your account (IP address) was temporarily blocked.", 
                       "cs_CZ":"Váš účet (IP adresa) byl dočasně zablokován."},
             "66673": {"sk_SK":"Načítavanie zlyhalo.","en_EN":"Loadaing failed.", "cs_CZ":"Načítání selhalo."},
+            "66674": {"sk_SK":"Prosím vykonajte autorizáciu zariadenia na URL %s s týmto kódom %s","en_EN":"Please authorize your device to URL %s with this code %s", "cs_CZ":"Prosím proveďte autorizaci zařízení na URL %s s tímto kódem %s"},
+            "66675": {"sk_SK":"Zariadenie bolo úspešne autorizované.","en_EN":"The device has been successfully authorized.", "cs_CZ":"Zařízení bylo úspěšně autorizováno."},
             #<!-- texty v menu -->
             "30901": {"sk_SK":"Filmy","en_EN":"Movies", "cs_CZ":"Filmy"},
             "30902": {"sk_SK":"Seriály","en_EN":"Series", "cs_CZ":"Seriály"},
@@ -488,6 +497,35 @@ class StreamCinemaContentProvider(ContentProvider):
             pass
         return id
     
+    def _release_timer(self):
+        try:
+            self.cmdTimer.stop()
+            del self.cmdTimer
+            del self.cmdTimer_conn
+        except:
+            sclog.logDebug("Release trakt timer failed.\n%s" % traceback.format_exc())
+
+    def _startTraktTimer(self, periodSec, devCode):
+        def timerEvent():
+            self.tcount += 1
+            if self.tcount > 40:
+                self._release_timer()
+            else:
+                try:
+                    if self.tapi.get_token(self.code):
+                        self._release_timer()
+                        sclog.logError("Verify trakt device success.")
+                        self.showMsg("$66675", 20)
+                except:
+                    sclog.logError("Verify trakt code failed. %s"%traceback.format_exc())
+                    self._release_timer()
+        timerPeriod = periodSec*1000 #ms
+        self.code = devCode
+        self.tcount = 0
+        self.cmdTimer = eTimer()
+        self.cmdTimer_conn = eConnectCallback(self.cmdTimer.timeout, timerEvent)
+        self.cmdTimer.start(timerPeriod)
+
     def categories(self):
         result = []
 
@@ -508,7 +546,9 @@ class StreamCinemaContentProvider(ContentProvider):
                                 result.append(item)
                     except Exception:
                         sclog.logError("get category failed (%s, title=%s).\n%s"%(m['url'],m['title'],traceback.format_exc()))
-
+                # add trakt.tv
+                if len(result) > 0 and self.trakt_enabled:
+                    result.append(self.dir_item(title='Trakt.tv', url=self.tapi.API_LIST))
             else:
                 raise Exception("Get main menu category failed.")
                 #item = self.dir_item(title='Get category menu failed...', url='failed_url')
@@ -556,13 +596,75 @@ class StreamCinemaContentProvider(ContentProvider):
             if not ('?' in url) and self.itemOrderQuality == '1': 
                 url = url+'/1'
         try:
-            data = self._json(url)
+            ### TRAKT.TV
+            if self.tapi.API_LIST == url: # trakt lists
+                if not self.tapi.valid():
+                    #devCode, verUrl, userCode, interval
+                    devCode, verUrl, userCode, interval = self.tapi.get_device_code()
+                    msg = self._getName("$66674")%(verUrl, userCode)
+                    sclog.logInfo(msg)
+                    self.showMsg(msg, 120)
+                    # start timer @@@ TODO
+                    self._startTraktTimer(interval, devCode)
+                    return self.categories()
+                res = []
+                for tl in self.tapi.get_lists():
+                    spl = tl.split("##")
+                    res.append(self.dir_item(title=spl[0], url=spl[1]))
+                return res
+
             result = []
+            data = None
+            if self.tapi.API_LIST+'/' in url or self.tapi.API_WATCH_LIST == url: # concrete list items
+                ids = ''
+                traktItems = []
+                if self.tapi.API_WATCH_LIST == url:
+                    traktItems = self.tapi.get_watch_list_items()
+                else: # custom user list
+                    slug = url.replace(self.tapi.API_LIST+'/','').replace('/items','')
+                    traktItems = self.tapi.get_list_items(slug)
+                idsArr = []
+                for m in traktItems:
+                    idsArr.append('%s'%m['imdb'])
+                seurl = "%s/Search?lang=eng&ver=%s&uid=%s&l=SK"%(self.getBaseUrl(), API_VERSION, self.deviceUid)
+                data = json.loads(util.post(seurl, data={'ids': json.dumps(idsArr)}))
+                sclog.logDebug('Search returns=>\n%s'%data)
+                # synch not found
+                for m in traktItems:
+                    sclog.logDebug('trakt item=%s'%m)
+                    if 'menu' in data and data['menu']:
+                        found = False
+                        for x in data['menu']:
+                            if 'imdb' in x and int(x['imdb']) == int(m['imdb'].replace('tt','')):
+                                found = True
+                                break
+                        if not found:
+                            item = self.video_item(url='', img='', quality='')
+                            item['title']= '%s ***NOT FOUND***'%m['title']
+                            result.append(item)
+                    else:
+                        item = self.video_item(url='', img='', quality='')
+                        item['title']= '%s ***NOT FOUND***'%m['title']
+                        result.append(item)
+                # empty search
+                try:
+                    if 'menu' in data:
+                        kk = '%s'%data['menu'][0]['title']
+                        if kk=='none' or data['menu'][0]['url']=='/':
+                            data['menu'][0]['url'] = ''
+                except:
+                    sclog.logError('Clear empty trakt.tv search failed.'%traceback.format_exc())
+                    pass
+            else:
+                data = self._json(url)
+
+            
+            
 
             if 'menu' in data and data['menu']:
                 for m in data['menu']:
                     # skip not valid items
-                    if not 'url' in m:
+                    if not 'url' in m or m['url']=='':
                         continue
 
                     itemUrl = self.getBaseUrl()+str(m['url'])
@@ -616,7 +718,7 @@ class StreamCinemaContentProvider(ContentProvider):
                             except:
                                 pass;
                         
-                            item = self.video_item(url=itemUrl, img=image, quality='tvoj kvet')
+                            item = self.video_item(url=itemUrl, img=image, quality='')
 
                             item['title']= m['title']
                             if '/Tv' in url:

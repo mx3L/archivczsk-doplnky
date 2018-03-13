@@ -28,7 +28,7 @@ from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
 import re
 #import util,xbmcprovider,xbmcutil
 from scinema import StreamCinemaContentProvider, StreamCinemaProvider, StaticDataSC, sclog
-
+from trakttv import trakt_tv
 
 __scriptid__   = 'plugin.video.stream-cinema'
 __scriptname__ = 'stream-cinema.online'
@@ -87,19 +87,33 @@ settings = {'quality':__addon__.getSetting('quality')}
 
 reverse_eps = __gets('order-episodes') == '0'
 use_https = __gets('use_https') == 'true'
+trakt_enabled = __gets('trakt_enabled')=='true'
 
 # fix crazy entry by virtual keyboard
 fixXcursor()
 # set number of days left for VIP account
 checkSetVIP(__gets('wsuser'), __gets('wspass'), use_https)
 
-
+cl1='866e99f0dd041248dfc37c8c056b13ec97d8f930ee9cb608e611ad4e1db02cb1'
+cl2='99d5d9360d0ea5586871560dbe9c643346105d6aaed76ab29a6c2138a9f35d6b'
+token=__gets('trakt_token')
+ref_token=__gets('trakt_refresh_token')
+expireAt = 0
+tmp = __gets('trakt_token_expire')
+if tmp!='':
+    try:
+        expireAt = int(tmp)
+    except:
+        pass
 
 scinema = StreamCinemaContentProvider(username=__gets('wsuser'),password=__gets('wspass'), useHttps=use_https,reverse_eps=reverse_eps)
+
 # must set again (reason: singleton)
 scinema.wsuser = __gets('wsuser')
 scinema.wspass = __gets('wspass')
 scinema.useHttps = use_https
+scinema.trakt_enabled = trakt_enabled
+scinema.tapi = trakt_tv(cl1, cl2, token, ref_token, expireAt)
 
 # must set again (reason: singleton)
 scinema.deviceUid = getDeviceUid()
