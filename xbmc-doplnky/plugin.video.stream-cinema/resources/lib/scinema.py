@@ -54,7 +54,7 @@ sys.path.append( os.path.join ( os.path.dirname(__file__),'myprovider') )
 #sys.setrecursionlimit(10000)
 
 
-API_VERSION="1.2"
+API_VERSION="1.3"
 
 class sclog(object):
     ERROR = 0
@@ -693,7 +693,7 @@ class StreamCinemaContentProvider(ContentProvider):
                         elif m['type'] == 'dir' and not m['url'].startswith('/'):
                             continue
 
-                        if  m['type'] == 'dir' and '/series' in url.lower(): # set aditional info for series
+                        if  m['type'] == 'dir' and '/series' in url.lower() or self.tapi.API in url.lower(): # set aditional info for series
                             try:
                                 item['img'] = str(m['art']['poster'])
                             except:
@@ -802,7 +802,6 @@ class StreamCinemaContentProvider(ContentProvider):
                     from webshare import Webshare as wx
                     self.ws = wx(self.wsuser, self.wspass, self.useHttps)
 
-                #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@todo
                 # check login
                 if not self.ws.loginOk:
                     #self.showMsg("$66666", 10)
@@ -951,17 +950,21 @@ class StreamCinemaContentProvider(ContentProvider):
         if itm is None:
             return None;
         #sclog.logDebug("_resolve itm: %s %s"%(itm, itm['provider']))
-        if itm['provider'] == 'plugin.video.online-files' and itm['params']['cp'] == 'webshare.cz':
+        if itm['provider'] == 'plugin.video.online-files': #and itm['params']['cp'] == 'webshare.cz':
             if self.ws is None:
                 #sclog.logDebug("_resolve ws is null...");
                 from webshare import Webshare as wx
                 self.ws = wx(self.wsuser, self.wspass, self.useHttps)
                     
             try:
-                itm['url'] = self.ws.resolve(itm['params']['play']['ident'])
+                data = self._json(self.getBaseUrl() + itm['url'])
+                if data and 'ident' in data:
+                    itm['url'] = self.ws.resolve(data['ident'])
+                else:
+                    raise Exception("Resolve URL failed (IDT).")
             except:
                 # reset ws reason: singleton
-                #sclog.logError("ws _resolve failed...\n%s"%traceback.format_exc());
+                # sclog.logError("ws _resolve failed...\n%s"%traceback.format_exc());
                 self.ws = None
                 raise
                     
@@ -991,187 +994,4 @@ class StreamCinemaContentProvider(ContentProvider):
         except:
             sclog.logError("Send stats failed.\n%s"%traceback.format_exc())
             pass
-
-
-
-    def _resolve_OLD(self, itm, isVipAccount):
-        if itm is None:
-            return None;
-        #sclog.logDebug("_resolve itm: %s %s"%(itm, itm['provider']))
-        if itm['provider'] == 'plugin.video.online-files' and itm['params']['cp'] == 'webshare.cz':
-            if self.ws is None:
-                #sclog.logDebug("_resolve ws is null...");
-                from webshare import Webshare as wx
-                self.ws = wx(self.wsuser, self.wspass, self.useHttps)
-                    
-            try:
-                itm['url'] = self.ws.resolve(itm['params']['play']['ident'])
-                if isVipAccount and 'subs' in itm and not itm['subs'] is None and 'webshare.cz' in itm['subs']:
-                    try:
-                        sclog.logDebug("subs url=%s"%itm['subs'])
-                        tmp = itm['subs']
-                        if '/file/' in tmp:
-                            idx = tmp.index('/file/')
-                            tmp = tmp[idx+len('/file/'):]
-                            tmp = tmp.split('/')[0]
-                            itm['subs'] = self.ws.resolve(tmp)
-                            itm['subExist'] = True
-                            #sclog.logDebug("resolved subs url=%s"%itm['subs'])
-                        #else:
-                        #    sclog.logDebug("Substitles not supported...\n%s"%tmp)
-                    except:
-                        #sclog.logError("Resolve substitles failed.\n%s"%traceback.format_exc())
-                        pass
-
-            except:
-                # reset ws reason: singleton
-                #sclog.logError("ws _resolve failed...\n%s"%traceback.format_exc());
-                self.ws = None
-                raise
-                    
-            if not itm['url']:
-                raise Exception("Resolve url is empty")
-
-            return itm
-        raise Exception("Not supported item to resolve!")
-    def resolve_OLD(self, item, captcha_cb=None, select_cb=None):
-        # tu to zbehne na zoznam streamov
-        try:
-            data = self._json(item['url'])
-            #sclog.logDebug("resolve data %s\n%s"%(item['url'],data))
-
-            if 'info' in data and self.getBaseUrl() in item['url']:
-                statsData = data['info']
-                if 'strms' in data:
-                    out = [self.merge_dicts(data['info'], i) for i in data['strms']]
-                    data = out
-
-                if len(data) < 1:
-                    raise ResolveException('Video is not available.')
-
-                if self.ws is None:
-                    #sclog.logDebug("Resolve ws is null (reinit)...");
-                    from webshare import Webshare as wx
-                    self.ws = wx(self.wsuser, self.wspass, self.useHttps)
-
-                #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@todo
-                # check login
-                if not self.ws.loginOk:
-                    #self.showMsg("$66666", 10)
-                    sclog.logInfo("Ws account login not ok.")
-                
-                isVipAccount = False
-                try:
-                    isVipAccount = int(StaticDataSC().vipDaysLeft) > 0
-                except:
-                    sclog.logError("get static vip status failed.\n%s"%s)
-
-                res = []
-                try:
-                    
-                    # filter stream size if > 0, size=2.51 GB
-                    filterSizeEnabled = self.streamSizeFilter != '0' and len(data) > 1
-                    filterApplied = False
-                    sizeLimit = 0
-                    if self.streamSizeFilter=='1':
-                        sizeLimit = 1
-                    if self.streamSizeFilter=='2':
-                        sizeLimit = 1.5
-                    if self.streamSizeFilter=='3':
-                        sizeLimit = 2
-                    if self.streamSizeFilter=='4':
-                        sizeLimit = 2.5
-                    if self.streamSizeFilter=='5':
-                        sizeLimit = 3
-                    if self.streamSizeFilter=='6':
-                        sizeLimit = 3.5
-                    if self.streamSizeFilter=='7':
-                        sizeLimit = 4
-
-
-                    #sclog.logDebug("_resolve start...")
-                    for m in data:
-                        # filter HEVC HDR (4K), 3D-SBS
-                        filterStreamType = False
-                        if self.streamHevc3dFilter:
-                            if 'quality' in m and '3D' in m['quality']:
-                                sclog.logDebug("Filtering 3D stream...")
-                                filterStreamType = True
-                            elif 'vinfo' in m and ('HEVC' in m['vinfo'] or 'HDR' in m['vinfo']):
-                                sclog.logDebug("Filtering HEVC,HDR stream...")
-                                filterStreamType = True
-
-                        sizeValid = True
-                        if filterSizeEnabled:
-                            try:
-                                sizeStr = "%s"%m['size']
-                                size = float(sizeStr.split(' ')[0])
-                                units = sizeStr.split(' ')[1]
-                                if units.lower()=='mb':
-                                    size = size / 1024
-                                sclog.logDebug("Filter stream size compare %sGB > %sGB ..."%(size, sizeLimit))
-                                if size > sizeLimit:
-                                    filterApplied = True
-                                    sizeValid = False
-                            except:
-                                sclog.logError("Check valid stream size failed.\n%s"%traceback.format_exc())
-                                pass
-
-                        if sizeValid and not filterStreamType:
-                            tmp = self._resolve(m, isVipAccount)
-
-                            #custom title
-                            series = ""
-                            if 'tvshowtitle' in m:
-                                tmp['customTitle'] = m['title']
-                            #custom file name
-                            tmp['customFname'] = m['fname']
-                            #custom data item usings for stats
-                            tmp['customDataItem'] = m
-
-                            # better info for render
-                            vinfo = ''
-                            if 'vinfo' in tmp:
-                                vinfo = tmp['vinfo']
-                            size = ""
-                            if 'size' in tmp:
-                                size = "[%s]"%tmp['size']
-                            ainfo = ""
-                            if 'ainfo' in tmp:
-                                tstr = "%s"%tmp['ainfo']
-                                ainfo = tstr.replace(", ","").replace("][",", ")
-                            subExist = ""
-                            if 'subExist' in tmp:
-                                subExist = " %s"%self._getName("$66670") #" +tit"
-                            tmp['resolveTitle'] = "[%s%s]%s[%s%s]%s"%(tmp['quality'], vinfo, size, tmp['lang'],subExist,ainfo)
-
-                            self._filter(res, tmp)
-                            # maybe sleep if not is VIP account to fix many request to webshare
-                            #if not isVipAccount:
-                            #    from time import sleep
-                            #    sleep(2)
-
-                    #sclog.logDebug("_resolve end...")
-                    if filterApplied and len(res) == 0:
-                        self.showMsg("$66671", 15)
-                    return res
-                except:
-                    sclog.logError("_resolve failed.\n%s"%traceback.format_exc())
-                    # soemthing happend with resolve webshare
-                    pass
-            else:
-                sclog.logError('resolve item failed (invalid data)!')
-
-        except urllib2.HTTPError as err:
-            sclog.logError("HTTP error (%s) resolve failed %s.\n%s" % (err.code, item['url'], traceback.format_exc()))
-            # too many request per minute
-            if err.code == 429:
-                self.showMsg("$66667",61)
-                from time import sleep
-                sleep(60)
-            else:
-                self.showMsg("$66673",30)
-        except:
-            sclog.logError("resolve failed %s.\n%s" % (item['url'], traceback.format_exc()))
-            # service failed
-            self.showMsg("$66673",20)
+    
