@@ -1,3 +1,7 @@
+2018-04-17 verzia 1.1.7
+	- oprava epizod pri serialoch
+	- opravene a-z poradie
+
 2018-02-04 verzia 1.1.6
 	- vyber moznosti metody nacitavania videa streamov
 	- oprava nacitavania videa skladajuceho sa z viacerych streamov

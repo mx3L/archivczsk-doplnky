@@ -121,7 +121,9 @@ class MarkizaContentProvider(ContentProvider):
             if not az_json_data:
                 self.error('list_base - no az data found!')
             else:
-                for i in util.json.loads(az_json_data.group(1)):
+                ordered = util.json.loads(az_json_data.group(1))
+                ordered.sort(key=lambda x: x['title'], reverse=False)
+                for i in ordered:
                     item = self.dir_item(i['title'], i['url']+ "#categories")
                     item['img'] = i['image']
                     result.append(item)
@@ -145,12 +147,12 @@ class MarkizaContentProvider(ContentProvider):
             purl = urlparse(url)
             if not 'page=' in purl.query:
                 # latest episode
-                episodes_data = util.substr(data, '<section class="col-md-12 info_new row">', '</section>')
+                episodes_data = util.substr(data, '<section class="col-xs-12 detail_cont row">', '</section>')
                 row_match = row_pattern.search(episodes_data)
                 if row_match:
                     row_list.append(row_match.group(1))
             # other episodes
-            episodes_data = util.substr(data, '<section class="col-md-12 article-view homepage">','</section>')
+            episodes_data = util.substr(data, '<section class="col-md-12 article-view homepage ">','</section>')
             row_list += row_pattern.findall(episodes_data)
             for row in row_list:
                 title_and_url_match = re.search(r'<a href="(?P<url>[^"]+") title="(?P<title>[^"]+)', row)
