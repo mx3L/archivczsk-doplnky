@@ -1,3 +1,6 @@
+[B]1.0.7[/B]
+- pridana podpora pre dailymotion videa
+
 [B]1.0.6[/B]
 - oprava po re-dizajne stranky
 

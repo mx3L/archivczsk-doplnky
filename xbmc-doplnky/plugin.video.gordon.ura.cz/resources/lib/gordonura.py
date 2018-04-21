@@ -140,6 +140,10 @@ class GordonUraContentProvider(ContentProvider):
         result = []
         item = item.copy()
         page = util.request(self._url(item['url']))
+        for m in re.finditer(r'dailymotion.com/embed/video/.+?"', page, re.DOTALL):
+            resolved = resolver.findstreams([m.group(0)])
+            return select_cb(resolved)
+
         for m in re.finditer(r'jwplayer\("([^"]+)"\)\.setup\((.+?)\)', page, re.DOTALL):
             jw_title, jw_data = m.group(1), m.group(2)
             vurl_match = re.search(r'file:\s*"([^"]+)', jw_data, re.DOTALL)

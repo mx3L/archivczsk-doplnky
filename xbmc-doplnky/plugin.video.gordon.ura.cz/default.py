@@ -32,10 +32,49 @@ __scriptname__ = 'gordon.ura.cz'
 __addon__ = ArchivCZSK.get_xbmc_addon(__scriptid__)
 __language__ = __addon__.getLocalizedString
 
+def vp8_youtube_filter(stream):
+    # some embedded devices running xbmc doesnt have vp8 support, so we
+    # provide filtering ability for youtube videos
+    
+    #======================================================================
+    #       5: "240p h263 flv container",
+    #      18: "360p h264 mp4 container | 270 for rtmpe?",
+    #      22: "720p h264 mp4 container",
+    #      26: "???",
+    #      33: "???",
+    #      34: "360p h264 flv container",
+    #      35: "480p h264 flv container",
+    #      37: "1080p h264 mp4 container",
+    #      38: "720p vp8 webm container",
+    #      43: "360p h264 flv container",
+    #      44: "480p vp8 webm container",
+    #      45: "720p vp8 webm container",
+    #      46: "520p vp8 webm stereo",
+    #      59: "480 for rtmpe",
+    #      78: "seems to be around 400 for rtmpe",
+    #      82: "360p h264 stereo",
+    #      83: "240p h264 stereo",
+    #      84: "720p h264 stereo",
+    #      85: "520p h264 stereo",
+    #      100: "360p vp8 webm stereo",
+    #      101: "480p vp8 webm stereo",
+    #      102: "720p vp8 webm stereo",
+    #      120: "hd720",
+    #      121: "hd1080"
+    #======================================================================
+    try:
+        if stream['fmt'] in [38, 44, 43, 45, 46, 100, 101, 102]:
+            return True
+    except KeyError:
+        return False
+    return False
+
 class GordonUraXBMCContentProvider(xbmcprovider.XBMCMultiResolverContentProvider):
     
     def resolve(self, url):
         def select_cb(resolved):
+            if __addon__.getSetting('filter_vp8') == 'true':
+                resolved = [r for r in resolved if not vp8_youtube_filter(r)]
             quality = self.settings['quality'] or '0'
             resolved = resolver.filter_by_quality(resolved, quality)
             # if user requested something but 'ask me' or filtered result is exactly 1
