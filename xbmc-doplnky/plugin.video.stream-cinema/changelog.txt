@@ -1,4 +1,7 @@
-2018-03-13 verzia 1.3.0
+2018-04-23 verzia 1.3.1
+	- oprava vypisu pri pouzivani trakt.tv
+
+2018-04-12 verzia 1.3.0
 	- nove API
 
 2018-03-13 verzia 1.2.6

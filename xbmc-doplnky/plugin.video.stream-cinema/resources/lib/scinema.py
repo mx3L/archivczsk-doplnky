@@ -23,10 +23,7 @@
 
 #todo
 # - call back for some message with continue functionality
-# - util.request dont read next when get 302 (Redirect)
-# - debug moznost zapnut ale na inej karte
-# - kodi got some diffrent resolve method only to one call maybe redo
-
+# - thread show dialog from diffrent thread error
 
 import urllib
 import urllib2
@@ -693,7 +690,7 @@ class StreamCinemaContentProvider(ContentProvider):
                         elif m['type'] == 'dir' and not m['url'].startswith('/'):
                             continue
 
-                        if  m['type'] == 'dir' and '/series' in url.lower() or self.tapi.API in url.lower(): # set aditional info for series
+                        if  m['type'] == 'dir' and ('/series' in url.lower() or self.tapi.API in url.lower()): # set aditional info for series
                             try:
                                 item['img'] = str(m['art']['poster'])
                             except:
