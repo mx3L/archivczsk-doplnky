@@ -529,7 +529,7 @@ class StreamCinemaContentProvider(ContentProvider):
             pass
         return id
 
-    def _getCacheTimeByUrl(url):
+    def _getCacheTimeByUrl(self, url):
         try:
             urlStr = "%s"%url
             if (urlStr.endswith("/Movies") or urlStr.endswith("/Series") or
