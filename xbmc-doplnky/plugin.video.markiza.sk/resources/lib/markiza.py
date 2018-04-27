@@ -31,7 +31,35 @@ import traceback
 
 import os
 import util
+from cachestack import lru_cache
 from provider import ContentProvider
+
+class Singleton(type):
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+class MarkizaCache():
+    __metaclass__ = Singleton
+
+    def __init__(self):
+        self.initialized = True
+
+    def cache_request(self, url, timeout=30):
+        if timeout == 8:
+            return self.cache_request_8(url)
+
+        return self.cache_request_30(url)
+
+    # must be in Singleton or Static class/method because cachce store per instance but in plugin class create in each request
+    @lru_cache(maxsize = 1000, timeout = 8*60*60)
+    def cache_request_8(self, url):
+        return util.request(url)
+    @lru_cache(maxsize = 250, timeout = 30*60)
+    def cache_request_30(self, url):
+        return util.request(url)
 
 class markizalog(object):
     ERROR = 0
@@ -63,7 +91,7 @@ class markizalog(object):
             markizalog.LOG_FILE = os.path.join(config.plugins.archivCZSK.logPath.getValue(),'markiza.log')
             f = open(markizalog.LOG_FILE, 'a')
             dtn = datetime.datetime.now()
-            f.write(dtn.strftime("%H:%M:%S.%f")[:-3] +" ["+type+"] %s\n" % msg)
+            f.write(dtn.strftime("%d.%m.%Y %H:%M:%S.%f")[:-3] +" ["+type+"] %s\n" % msg)
             f.close()
         except:
             print "####MARKIZA#### write log failed!!!"
@@ -113,7 +141,8 @@ class MarkizaContentProvider(ContentProvider):
 
     def list_base(self, url, az=True, top=True):
         result = []
-        data = util.request(url)
+        #data = util.request(url)
+        data = MarkizaCache().cache_request(url, 8)
         if az:
             az_data = util.substr(data, '<li class="dropdown mega-dropdown main-kategoria">',
                     '<li class="dropdown mega-dropdown main-kategoria open_top_formats">')
@@ -132,8 +161,8 @@ class MarkizaContentProvider(ContentProvider):
     def list_show(self, url, categories=True, episodes=True):
         try:
             result = []
-            data = util.request(url)
             if categories:
+                data = MarkizaCache().cache_request(url, 8)
                 categories_data = util.substr(data, '<section class="col-md-12 videoarchiv_navi">','</section>')
                 categories_data = util.substr(categories_data, '<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-2">', '</div>')
                 for i in re.findall(r'<li>(.+?)</li>', categories_data, re.DOTALL):
@@ -143,6 +172,7 @@ class MarkizaContentProvider(ContentProvider):
                     result.append(item)
 
             if episodes:
+                data = MarkizaCache().cache_request(url, 30)
                 row_list = []
                 row_pattern = re.compile(r'<div class="item row ">(.+?)</div>\s+</div>', re.DOTALL)
                 purl = urlparse(url)
@@ -200,7 +230,8 @@ class MarkizaContentProvider(ContentProvider):
             markizalog.logDebug("ITEM:\n%s"%item)
             item = item.copy()
             video_id = urlparse(item['url']).path.split('/')[-1].split('_')[0]
-            videodata = util.json.loads(util.request('http://videoarchiv.markiza.sk/json/video_jwplayer7.json?is_web=1&noads=1&nomidads=1&nopreads=1&nopostads=1&id=' + video_id))
+            #videodata = util.json.loads(util.request('http://videoarchiv.markiza.sk/json/video_jwplayer7.json?is_web=1&noads=1&nomidads=1&nopreads=1&nopostads=1&id=' + video_id))
+            videodata = util.json.loads(MarkizaCache().cache_request('http://videoarchiv.markiza.sk/json/video_jwplayer7.json?is_web=1&noads=1&nomidads=1&nopreads=1&nopostads=1&id=' + video_id, 8))
             markizalog.logDebug("videodata=\n%s"%videodata)
             details = videodata['details']
             playlist = videodata['playlist']
@@ -214,7 +245,8 @@ class MarkizaContentProvider(ContentProvider):
                 for pl in playlist:
                     manifestUrl = "%s"%(pl['sources'][0]['file'])
                     markizalog.logDebug("manifet url '%s'"%manifestUrl)
-                    manifest = util.request(manifestUrl)
+                    #manifest = util.request(manifestUrl)
+                    manifest = MarkizaCache().cache_request(manifestUrl, 8)
                     markizalog.logDebug("manifet\n%s"%manifest)
                     itemTitle = "%s"%pl['title']
                     markizalog.logDebug("item title=%s"%itemTitle)

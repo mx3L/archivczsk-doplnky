@@ -1,19 +1,21 @@
+1.8.0 (2018-04-27)
+    - add cache support
 1.7.9 (2018-01-20)
     - fix util request method throw exception 
 1.7.8 (2018-01-14)
     - support search without save to history for plugin
 1.7.7 (2017-12-29)
-	- read data on DDoS attack
+    - read data on DDoS attack
 1.7.6 (2017-12-15)
-	- add logging
-	- add new functionality
+    - add logging
+    - add new functionality
 1.7.5 (2017-12-11)
-	- fix add to play
+    - fix add to play
 1.7.4 (2017-12-08)
-	- custom title
+    - custom title
 1.7.0 (2017-11-22)
-	- SVK language support
-	- support custom format in stream choice
+    - SVK language support
+    - support custom format in stream choice
 
 [B]1.6.16:[/B]
 - support for disabled subtitles by plugin setting

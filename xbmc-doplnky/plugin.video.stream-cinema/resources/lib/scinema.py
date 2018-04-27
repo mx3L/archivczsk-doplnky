@@ -49,7 +49,7 @@ from enigma import eTimer
 
 sys.path.append( os.path.join ( os.path.dirname(__file__),'myprovider') )
 #sys.setrecursionlimit(10000)
-
+from cachestack import lru_cache
 
 API_VERSION="1.3"
 
@@ -83,7 +83,7 @@ class sclog(object):
             sclog.LOG_FILE = os.path.join(config.plugins.archivCZSK.logPath.getValue(),'stream-cinema.log')
             f = open(sclog.LOG_FILE, 'a')
             dtn = datetime.datetime.now()
-            f.write(dtn.strftime("%H:%M:%S.%f")[:-3] +" ["+type+"] %s\n" % msg)
+            f.write(dtn.strftime("%d.%m.%Y %H:%M:%S.%f")[:-3] +" ["+type+"] %s\n" % msg)
             f.close()
         except:
             print "####STREAM-CINEMA#### write log failed!!!"
@@ -442,20 +442,55 @@ class StreamCinemaContentProvider(ContentProvider):
             result.update(dictionary)
         return result
 
-    @cached(ttl=24)
-    def get_data_cached(self, url):
-        #sclog.logDebug("Cache URL: %s" % url)
+    # must be in Singleton or Static class/method because cachce store per instance but in plugin class create in each request
+    @lru_cache(maxsize = 500, timeout = 30*60) #30min
+    def cache_request_30(self, url):
+        sclog.logDebug("NOT CACHED REQUEST")
+        return util.request(url)
+    @lru_cache(maxsize = 500, timeout = 60*60) #1h
+    def cache_request_1(self, url):
+        sclog.logDebug("NOT CACHED REQUEST")
+        return util.request(url)
+    @lru_cache(maxsize = 500, timeout = 180*60) #3h
+    def cache_request_3(self, url):
+        sclog.logDebug("NOT CACHED REQUEST")
+        return util.request(url)
+    @lru_cache(maxsize = 250, timeout = 360*60) #6h
+    def cache_request_6(self, url):
+        sclog.logDebug("NOT CACHED REQUEST")
+        return util.request(url)
+    @lru_cache(maxsize = 100, timeout = 12*60*60) #12h
+    def cache_request_12(self, url):
+        sclog.logDebug("NOT CACHED REQUEST")
         return util.request(url)
 
-    def _json(self, url):
+    def get_data_cached(self, url, useCache, timeout):
+        if useCache:
+            if timeout==1:
+                return self.cache_request_1(url);
+            if timeout==3:
+                return self.cache_request_3(url);
+            if timeout==6:
+                return self.cache_request_6(url);
+            if timeout==12:
+                return self.cache_request_12(url);
+
+            return self.cache_request_30(url);
+        else:
+            return util.request(url)
+
+    def _json(self, url, useCache=False, cacheTimeout=30):
         try:
             qs = '?'
             if '?' in url:
                 qs='&'
-            sclog.logDebug("json url: %s" % url)
+            #sclog.logDebug("json url: %s" % url)
             urlapi = url+qs+'ver='+API_VERSION+'&uid='+self.deviceUid
             #sclog.logDebug("json url: %s" % urlapi)
-            data = json.loads(self.get_data_cached(urlapi))
+            start = datetime.datetime.now()
+            jsonData = self.get_data_cached(urlapi, useCache, cacheTimeout)
+            sclog.logDebug("Get web response takes: %.3f sec (UseCache=%s)"%((datetime.datetime.now()-start).total_seconds(), useCache))
+            data = json.loads(jsonData)
             #sclog.logDebug("_json '%s' data:\n%s"%(urlapi, data))
             return data
         except urllib2.HTTPError as err:
@@ -493,6 +528,24 @@ class StreamCinemaContentProvider(ContentProvider):
             #sclog.logError(traceback.format_exc())
             pass
         return id
+
+    def _getCacheTimeByUrl(url):
+        try:
+            urlStr = "%s"%url
+            if (urlStr.endswith("/Movies") or urlStr.endswith("/Series") or
+                urlStr.endswith("/Movies/country") or urlStr.endswith("/Movies/quality") or
+                urlStr.endswith("/Movies/genre") or urlStr.endswith("/Movies/year") or
+                urlStr.endswith("/Series/country") or urlStr.endswith("/Series/genre") or
+                urlStr.endswith("/Anime")):
+                return 12;
+
+            if (urlStr.endswith("/Movies/collection") or urlStr.endswith("/Tv") or 
+                "/Tv/archiv" in url or "/Search/getList" in url):
+                return 6;
+        except:
+            sclog.logError("Get cache time by url failed (return 1).\n%s"%traceback.format_exc())
+            pass
+        return 1
     
     def _release_timer(self):
         try:
@@ -527,7 +580,7 @@ class StreamCinemaContentProvider(ContentProvider):
         result = []
 
         try:
-            data = self._json(self.getBaseUrl())
+            data = self._json(self.getBaseUrl(), True, 12)
             if type(data) is dict and data["menu"]:
                 for m in data["menu"]:
                     try:
@@ -625,7 +678,7 @@ class StreamCinemaContentProvider(ContentProvider):
                     idsArr.append('%s'%m['imdb'])
                 seurl = "%s/Search?lang=eng&ver=%s&uid=%s&l=SK"%(self.getBaseUrl(), API_VERSION, self.deviceUid)
                 data = json.loads(util.post(seurl, data={'ids': json.dumps(idsArr)}))
-                sclog.logDebug('Search returns=>\n%s'%data)
+                #sclog.logDebug('Search returns=>\n%s'%data)
                 # synch not found
                 for m in traktItems:
                     sclog.logDebug('trakt item=%s'%m)
@@ -653,7 +706,7 @@ class StreamCinemaContentProvider(ContentProvider):
                     sclog.logError('Clear empty trakt.tv search failed.'%traceback.format_exc())
                     pass
             else:
-                data = self._json(url)
+                data = self._json(url, True, self._getCacheTimeByUrl(url))
 
             
             
@@ -782,7 +835,7 @@ class StreamCinemaContentProvider(ContentProvider):
     def resolve(self, item, captcha_cb=None, select_cb=None):
         # shows list of streams
         try:
-            data = self._json(item['url'])
+            data = self._json(item['url'], True, 1)
             #sclog.logDebug("resolve data %s\n%s"%(item['url'],data))
 
             if 'info' in data and self.getBaseUrl() in item['url']:
@@ -954,7 +1007,7 @@ class StreamCinemaContentProvider(ContentProvider):
                 self.ws = wx(self.wsuser, self.wspass, self.useHttps)
                     
             try:
-                data = self._json(self.getBaseUrl() + itm['url'])
+                data = self._json(self.getBaseUrl() + itm['url'], True, 1)
                 if data and 'ident' in data:
                     itm['url'] = self.ws.resolve(data['ident'])
                 else:
