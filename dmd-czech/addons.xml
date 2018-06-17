@@ -1,5 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addons>
+<addon id="script.module.dmd-czech.common" name="dmd-czech common python modules" version="1.5.2" provider-name="Jiri Vyhnalek">
+  <requires>
+    <import addon="xbmc.python" version="2.1.0" />
+  </requires>
+  <extension point="xbmc.python.module" library="lib" />
+  <extension point="xbmc.addon.metadata">
+    <summary>dmd-czech plugins common python modules</summary>
+    <description>Common python modules pack that is used by dmd-czech plugins</description>
+    <license>GNU GPL</license>
+    <platform>all</platform>
+  </extension>
+</addon>
+
+<addon id="plugin.video.dmd-czech.novaplus"
+       name="Nova Plus TV Archiv"
+       version="2.1.0"
+       provider-name="Jiri Vyhnalek">
+  <requires>
+    <import addon="xbmc.python" version="2.1.0"/>
+    <import addon="script.module.dmd-czech.common" version="1.5.0"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <summary>Nova Plus TV video-archive plugin</summary>
+    <summary lang="cs">Nova Plus TV - archiv</summary>
+    <description>
+        Plugin to play TV video archive Novaplus.nova.cz
+    </description>
+    <description lang="cs">
+        Plugin pro přehrávání videí z archivu Novaplus.nova.cz
+    </description>
+  </extension>
+</addon>
+
 <addon id="plugin.video.dmd-czech.voyo"
        name="Voyo TV Archiv"
        version="2.3"
@@ -45,43 +82,6 @@
     <description lang="cs">
         Plugin pro přehrávání videí z archivu stream.cz
     </description>
-  </extension>
-</addon>
-
-<addon id="plugin.video.dmd-czech.novaplus"
-       name="Nova Plus TV Archiv"
-       version="2.1.0"
-       provider-name="Jiri Vyhnalek">
-  <requires>
-    <import addon="xbmc.python" version="2.1.0"/>
-    <import addon="script.module.dmd-czech.common" version="1.5.0"/>
-  </requires>
-  <extension point="xbmc.python.pluginsource" library="default.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <platform>all</platform>
-    <summary>Nova Plus TV video-archive plugin</summary>
-    <summary lang="cs">Nova Plus TV - archiv</summary>
-    <description>
-        Plugin to play TV video archive Novaplus.nova.cz
-    </description>
-    <description lang="cs">
-        Plugin pro přehrávání videí z archivu Novaplus.nova.cz
-    </description>
-  </extension>
-</addon>
-
-<addon id="script.module.dmd-czech.common" name="dmd-czech common python modules" version="1.5.2" provider-name="Jiri Vyhnalek">
-  <requires>
-    <import addon="xbmc.python" version="2.1.0" />
-  </requires>
-  <extension point="xbmc.python.module" library="lib" />
-  <extension point="xbmc.addon.metadata">
-    <summary>dmd-czech plugins common python modules</summary>
-    <description>Common python modules pack that is used by dmd-czech plugins</description>
-    <license>GNU GPL</license>
-    <platform>all</platform>
   </extension>
 </addon>
 </addons>
