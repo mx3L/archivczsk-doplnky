@@ -1,5 +1,7 @@
-1.3.5
-- fix live stream
+[B]1.3.5[/B]
+- fix listing, thanks to @petzah
+[B]1.3.4[/B]
+- fix live links
 [B]1.3.3[/B]
 - fix video resolving
 [B]1.3.2[/B]

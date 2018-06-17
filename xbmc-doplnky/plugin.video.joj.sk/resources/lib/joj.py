@@ -81,7 +81,7 @@ class JojContentProvider(ContentProvider):
             if article_dict is not None:
                 item = self.dir_item()
                 item.update(article_dict)
-                item['url'] = item['url'] + "#s"
+                item['url'] = '/'.join(item['url'].split('/')[:-2]) + "/epizody#s"
                 result.append(item)
         return result
 
@@ -90,15 +90,18 @@ class JojContentProvider(ContentProvider):
         self.info("list_show %s"%(url))
         data = util.request(url)
         if list_series:
-            series_data = util.substr(data, r'<select name="season" data-ajax data-ajax-result-elements="headerPart,episodeListing">', '</select>')
-            for serie_match in re.finditer(r'option\s(?:selected\s)?value="(?P<url>[^"]+)">(?P<title>[^<]+)<', series_data):
+            series_data = util.substr(data, r'<select onchange="return selectSeason(this.value);">', '</select>')
+            for serie_match in re.finditer(r'<option value="(?P<season_id>\d+)?"\s(selected="selected")?>\s+(?P<title>[^<]+)\n', series_data):
                 item = self.dir_item()
+                season_id = serie_match.group('season_id')
+                if not season_id:
+                    season_id=""
                 item['title'] = serie_match.group('title')
-                item['url'] = self._fix_url(serie_match.group('url'))
+                item['url'] = "%s?seasonId=%s" % (url.split('#')[0], season_id)
                 result.append(item)
         if list_episodes:
-            episodes_data = util.substr(data, r'<section class="s s-container s-archive-serials">', "</section>")
-            for article_match in re.finditer(r'<article class=".+?media-on">(.+?)</article>', episodes_data, re.DOTALL):
+            episodes_data = util.substr(data, r'<section>', '</section>')
+            for article_match in re.finditer(r'<article class="b-article title-xs article-lp">(.+?)</article>', episodes_data, re.DOTALL):
                 article_dict = self._list_article(article_match.group(1))
                 if article_dict is not None:
                     item = self.video_item()
@@ -204,8 +207,7 @@ class JojContentProvider(ContentProvider):
                 result.append(item)
         else:
             data = util.request(url)
-            data = util.substr(data, '<div class="s-archive">',
-                                     '<div class="s s-container s-archive">')
+            data = util.substr(data, '<section class="s-section py-0 s-video-detail">', '</section>')
             iframe_url = re.search('<iframe src="([^"]+)"', data).group(1)
             #print 'iframe_url = ', iframe_url
             player_str = urllib2.urlopen(iframe_url).read()
