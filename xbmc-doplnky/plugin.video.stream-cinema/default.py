@@ -27,7 +27,7 @@ from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
 
 import re
 #import util,xbmcprovider,xbmcutil
-from scinema import StreamCinemaContentProvider, StreamCinemaProvider, StaticDataSC, sclog
+from scinema import StreamCinemaContentProvider, StreamCinemaProvider, StaticDataSC, sclog, StaticTraktWatched
 from trakttv import trakt_tv
 
 __scriptid__   = 'plugin.video.stream-cinema'
@@ -89,7 +89,7 @@ reverse_eps = __gets('order-episodes') == '0'
 use_https = __gets('use_https') == 'true'
 trakt_enabled = __gets('trakt_enabled')=='true'
 
-# fix crazy entry by virtual keyboard
+# fix entry by virtual keyboard
 fixXcursor()
 # set number of days left for VIP account
 checkSetVIP(__gets('wsuser'), __gets('wspass'), use_https)
@@ -113,7 +113,9 @@ scinema.wsuser = __gets('wsuser')
 scinema.wspass = __gets('wspass')
 scinema.useHttps = use_https
 scinema.trakt_enabled = trakt_enabled
+scinema.trakt_filter = __gets('trakt_filter')
 scinema.tapi = trakt_tv(cl1, cl2, token, ref_token, expireAt)
+StaticTraktWatched().tapi = scinema.tapi
 
 # must set again (reason: singleton)
 scinema.deviceUid = getDeviceUid()
@@ -128,6 +130,6 @@ scinema.streamHevc3dFilter = __gets('filter_hevc_3d') == 'true'
 scinema.session = session
 
 
-sclog.logDebug("PARAMS=%s"%params)
+#sclog.logDebug("PARAMS=%s"%params)
 StreamCinemaProvider(scinema,settings,__addon__, session).run(params)
 

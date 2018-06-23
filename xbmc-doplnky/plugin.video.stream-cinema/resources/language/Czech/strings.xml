@@ -30,5 +30,9 @@
     <string id="302027">3.5GB</string>
     <string id="302028">4GB</string>
     <string id="30203">Nezobrazovat HEVC a 3D streamy</string>
-    <string id="30204">Zapnout trakt.tv</string>
+    <string id="30204">Trakt zapnout</string>
+    <string id="30205">Trakt videné položky</string>
+    <string id="302051">Označit</string>
+    <string id="302052">Schovat</string>
+    <string id="302053">Nic</string>
 </strings>

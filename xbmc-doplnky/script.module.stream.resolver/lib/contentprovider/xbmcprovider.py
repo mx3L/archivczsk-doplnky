@@ -78,6 +78,17 @@ class XBMContentProvider(object):
                 self.provider.stats(itm, params['stats'])
             else:
                 rslog.logDebug("'%s' dont have capability 'stats'"%self.provider)
+        elif 'trakt' in params.keys():
+            if 'trakt' in self.provider.capabilities():
+                itm = None
+                if 'item' in params.keys():
+                    itm = params['item']
+                rslog.logDebug("XBMC run trakt '%s'"%params['trakt'])
+                # @TODO how to return data to plugin ??? i dont know how for now
+                return self.provider.trakt(itm, params['trakt'])
+            else:
+                rslog.logDebug("'%s' dont have capability 'trakt'"%self.provider)
+                return None
         elif self.run_custom:
             return self.run_custom(params)
 
@@ -262,7 +273,12 @@ class XBMContentProvider(object):
             for ctxtitle, value in item['menu'].iteritems():
                 ctxtitle = self._localize(ctxtitle)
                 menuItems[ctxtitle] = value
-        xbmcutil.add_dir(title, params, img, infoLabels=self._extract_infolabels(item), menuItems=menuItems)
+        xbmcutil.add_dir(title, 
+                         params, 
+                         img, 
+                         infoLabels=self._extract_infolabels(item), 
+                         menuItems=menuItems,
+                         addonDataItem = item.get('customDataItem',''))
 
     def _extract_infolabels(self, item):
         infoLabels = {}
@@ -295,7 +311,8 @@ class XBMContentProvider(object):
             params,
             item['img'],
             infoLabels=self._extract_infolabels(item),
-            menuItems=menuItems
+            menuItems=menuItems,
+            addonDataItem = item.get('customDataItem','')
         )
 
     def categories(self):

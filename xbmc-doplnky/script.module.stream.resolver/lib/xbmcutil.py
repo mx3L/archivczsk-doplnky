@@ -216,7 +216,7 @@ def add_search_folder(name, params, logo=None, infoLabels={}, menuItems={}):
         infoLabels['title'] = name
     client.add_dir(name, params, image=logo, infoLabels=infoLabels, menuItems=menuItems, search_folder=True)
 
-def add_dir(name, params, logo=None, infoLabels={}, menuItems={}):
+def add_dir(name, params, logo=None, infoLabels={}, menuItems={}, addonDataItem=None):
     name = decode_html(name)
     for key in params.keys():
         value = decode_html(params[key])
@@ -224,18 +224,30 @@ def add_dir(name, params, logo=None, infoLabels={}, menuItems={}):
         params[key] = value
     if not 'title' in infoLabels:
         infoLabels['title'] = name
-    client.add_dir(name, params, image=logo, infoLabels=infoLabels, menuItems=menuItems)
+    #client.add_dir(name, params, image=logo, infoLabels=infoLabels, menuItems=menuItems)
+    try:
+        client.add_dir(name, params, logo, infoLabels=infoLabels, menuItems=menuItems, dataItem=addonDataItem)
+    except Exception:
+        # back compatibility
+        try:
+            client.add_dir(name, params, logo, infoLabels=infoLabels, menuItems=menuItems)
+        except:
+            add_dir(name, params, logo=logo, infoLabels=infoLabels, menuItems=menuItems)
 
-def add_video(name, params={}, logo=None, infoLabels={}, menuItems={}):
+def add_video(name, params={}, logo=None, infoLabels={}, menuItems={}, addonDataItem=None):
     name = decode_html(name)
     for key in params.keys():
         value = decode_html(params[key])
         value = value.encode('utf-8')
         params[key] = value
     try:
-        client.add_dir(name, params, logo, infoLabels=infoLabels, menuItems=menuItems, video_item=True)
+        client.add_dir(name, params, logo, infoLabels=infoLabels, menuItems=menuItems, video_item=True, dataItem=addonDataItem)
     except Exception:
-        add_dir(name, params, logo=logo, infoLabels=infoLabels, menuItems=menuItems)
+        # back compatibility
+        try:
+            client.add_dir(name, params, logo, infoLabels=infoLabels, menuItems=menuItems, video_item=True)
+        except:
+            add_dir(name, params, logo=logo, infoLabels=infoLabels, menuItems=menuItems)
 
 def add_play(title, provider_name, quality, url, subs=None, filename=None, image=None, infoLabels={}, menuItems={},headers={}, lang=None, resolveTitle=None, customTitle=None, customFname=None, addonDataItem=None):
 

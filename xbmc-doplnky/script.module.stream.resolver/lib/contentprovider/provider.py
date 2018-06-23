@@ -208,6 +208,17 @@ class ContentProvider(object):
 
         """
         pass
+    def trakt(self, item, action):
+        """
+        make some action with trakt.tv
+        Args:
+                    item
+
+        Returns:
+            nothing
+
+        """
+        return None
 
 
 class cached(object):

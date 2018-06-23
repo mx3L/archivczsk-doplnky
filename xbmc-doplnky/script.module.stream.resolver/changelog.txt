@@ -1,3 +1,5 @@
+1.8.1 (2018-06-16)
+    - add trakt.tv support
 1.8.0 (2018-04-27)
     - add cache support
 1.7.9 (2018-01-20)
