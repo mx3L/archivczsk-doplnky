@@ -123,6 +123,7 @@ class StaticTraktWatched():
         self.showsTrakt = {}
         self.showsTvdb = {}
         self.reload = True
+        self.loadUserWatchedError = False
 
     def reloadData(self):
         self.moviesTrakt = set()
@@ -177,11 +178,18 @@ class StaticTraktWatched():
         return False
 
     def isWatched(self, item, itype):
-        try:
-            if self.reload and self.tapi.valid():
-                self.reload = False
-                sclog.logDebug("StaticTraktWatched reloading watched items...")
+        if self.reload and self.tapi.valid():
+            self.reload = False
+            sclog.logDebug("StaticTraktWatched reloading watched items...")
+            try:
                 self.reloadData()
+                self.loadUserWatchedError = False
+            except:
+                sclog.logError("StaticTraktWatched load TRAKT user watched items failed.")
+                # realod data after next whole movies page load on UI not for each item when loading (time consuming)
+                self.loadUserWatchedError = True
+                return False
+        try:
             matched, foundShow = self.isMatch(item, itype)
             if itype==1:
                 return matched
@@ -682,6 +690,9 @@ class StreamCinemaContentProvider(ContentProvider):
         
         result = []
         try:
+            # reload trakt user watched data
+            if StaticTraktWatched().loadUserWatchedError:
+                StaticTraktWatched().reload = True
             ### TRAKT.TV
             if self.tapi.API_LIST == url: # trakt lists
                 if not self.tapi.valid():
@@ -956,85 +967,91 @@ class StreamCinemaContentProvider(ContentProvider):
 
                     #sclog.logDebug("_resolve start...")
                     for m in data:
-                        # filter HEVC HDR (4K), 3D-SBS
-                        filterStreamType = False
-                        if self.streamHevc3dFilter:
-                            if 'quality' in m and '3D' in m['quality']:
-                                sclog.logDebug("Filtering 3D stream...")
-                                filterStreamType = True
-                            elif 'vinfo' in m and ('HEVC' in m['vinfo'] or 'HDR' in m['vinfo']):
-                                sclog.logDebug("Filtering HEVC,HDR stream...")
-                                filterStreamType = True
+                        try:
+                            # filter HEVC HDR (4K), 3D-SBS
+                            filterStreamType = False
+                            if self.streamHevc3dFilter:
+                                if 'quality' in m and '3D' in m['quality']:
+                                    sclog.logDebug("Filtering 3D stream...")
+                                    filterStreamType = True
+                                elif 'vinfo' in m and ('HEVC' in m['vinfo'] or 'HDR' in m['vinfo']):
+                                    sclog.logDebug("Filtering HEVC,HDR stream...")
+                                    filterStreamType = True
 
-                        sizeValid = True
-                        if filterSizeEnabled:
-                            try:
-                                sizeStr = "%s"%m['size']
-                                size = float(sizeStr.split(' ')[0])
-                                units = sizeStr.split(' ')[1]
-                                if units.lower()=='mb':
-                                    size = size / 1024
-                                sclog.logDebug("Filter stream size compare %sGB > %sGB ..."%(size, sizeLimit))
-                                if size > sizeLimit:
-                                    filterApplied = True
-                                    sizeValid = False
-                            except:
-                                sclog.logError("Check valid stream size failed.\n%s"%traceback.format_exc())
-                                pass
-
-                        if sizeValid and not filterStreamType:
-                            if isVipAccount and 'subs' in m and not m['subs'] is None and 'webshare.cz' in m['subs']:
+                            sizeValid = True
+                            if filterSizeEnabled:
                                 try:
-                                    sclog.logDebug("subs url=%s"%m['subs'])
-                                    tmp2 = m['subs']
-                                    if '/file/' in tmp2:
-                                        idx = tmp2.index('/file/')
-                                        tmp2 = tmp2[idx+len('/file/'):]
-                                        tmp2 = tmp2.split('/')[0]
-                                        if self.ws is None:
-                                            #sclog.logDebug("_resolve ws is null...");
-                                            from webshare import Webshare as wx
-                                            self.ws = wx(self.wsuser, self.wspass, self.useHttps)
-                                        m['subs'] = self.ws.resolve(tmp2)
-                                        m['subExist'] = True
-                                        #sclog.logDebug("resolved subs url=%s"%itm['subs'])
-                                    #else:
-                                    #    sclog.logDebug("Substitles not supported...\n%s"%tmp)
+                                    sizeStr = "%s"%m['size']
+                                    size = float(sizeStr.split(' ')[0])
+                                    units = sizeStr.split(' ')[1]
+                                    if units.lower()=='mb':
+                                        size = size / 1024
+                                    sclog.logDebug("Filter stream size compare %sGB > %sGB ..."%(size, sizeLimit))
+                                    if size > sizeLimit:
+                                        filterApplied = True
+                                        sizeValid = False
                                 except:
-                                    sclog.logError("Resolve substitles failed.\n%s"%traceback.format_exc())
+                                    sclog.logError("Check valid stream size failed.\n%s"%traceback.format_exc())
                                     pass
-                            tmp = m
 
-                            #custom title
-                            series = ""
-                            if 'tvshowtitle' in m:
-                                tmp['customTitle'] = m['title']
-                            #custom file name
-                            tmp['customFname'] = m['fname']
-                            #custom data item usings for stats
-                            tmp['customDataItem'] = m
+                            if sizeValid and not filterStreamType:
+                                if isVipAccount and 'subs' in m and not m['subs'] is None and 'webshare.cz' in m['subs']:
+                                    try:
+                                        sclog.logDebug("subs url=%s"%m['subs'])
+                                        tmp2 = m['subs']
+                                        if '/file/' in tmp2:
+                                            idx = tmp2.index('/file/')
+                                            tmp2 = tmp2[idx+len('/file/'):]
+                                            tmp2 = tmp2.split('/')[0]
+                                            if self.ws is None:
+                                                #sclog.logDebug("_resolve ws is null...");
+                                                from webshare import Webshare as wx
+                                                self.ws = wx(self.wsuser, self.wspass, self.useHttps)
+                                            m['subs'] = self.ws.resolve(tmp2)
+                                            m['subExist'] = True
+                                            #sclog.logDebug("resolved subs url=%s"%itm['subs'])
+                                        #else:
+                                        #    sclog.logDebug("Substitles not supported...\n%s"%tmp)
+                                    except:
+                                        sclog.logError("Resolve substitles failed.\n%s"%traceback.format_exc())
+                                        pass
+                                tmp = m
 
-                            # better info for render
-                            vinfo = ''
-                            if 'vinfo' in tmp:
-                                vinfo = tmp['vinfo']
-                            size = ""
-                            if 'size' in tmp:
-                                size = "[%s]"%tmp['size']
-                            ainfo = ""
-                            if 'ainfo' in tmp:
-                                tstr = "%s"%tmp['ainfo']
-                                ainfo = tstr.replace(", ","").replace("][",", ")
-                            subExist = ""
-                            if 'subExist' in tmp:
-                                subExist = " %s"%self._getName("$66670") #" +tit"
-                            tmp['resolveTitle'] = "[%s%s]%s[%s%s]%s"%(tmp['quality'], vinfo, size, tmp['lang'],subExist,ainfo)
+                                #custom title
+                                series = ""
+                                if 'tvshowtitle' in m:
+                                    tmp['customTitle'] = m['title']
+                                #custom file name
+                                if 'fname' in m:
+                                    tmp['customFname'] = m['fname']
+                                
+                                #custom data item usings for stats
+                                tmp['customDataItem'] = m
 
-                            self._filter(res, tmp)
-                            # maybe sleep if not is VIP account to fix many request to webshare
-                            #if not isVipAccount:
-                            #    from time import sleep
-                            #    sleep(2)
+                                # better info for render
+                                vinfo = ''
+                                if 'vinfo' in tmp:
+                                    vinfo = tmp['vinfo']
+                                size = ""
+                                if 'size' in tmp:
+                                    size = "[%s]"%tmp['size']
+                                ainfo = ""
+                                if 'ainfo' in tmp:
+                                    tstr = "%s"%tmp['ainfo']
+                                    ainfo = tstr.replace(", ","").replace("][",", ")
+                                subExist = ""
+                                if 'subExist' in tmp:
+                                    subExist = " %s"%self._getName("$66670") #" +tit"
+                                tmp['resolveTitle'] = "[%s%s]%s[%s%s]%s"%(tmp['quality'], vinfo, size, tmp['lang'],subExist,ainfo)
+
+                                self._filter(res, tmp)
+                                # maybe sleep if not is VIP account to fix many request to webshare
+                                #if not isVipAccount:
+                                #    from time import sleep
+                                #    sleep(2)
+                        except:
+                            sclog.logError("_resolve load specific stream failed (continue...)%s"%traceback.format_exc())
+                            pass
 
                     #sclog.logDebug("_resolve end...")
                     if filterApplied and len(res) == 0:
