@@ -1,4 +1,6 @@
-﻿2017-10-25
+﻿2018-08-26
+ * Fix prehravania thx Elring (E2 rewrite thx boddie)
+2017-10-25
  * Fix prehravania podla ab-forum uzivatela 'shiraz'
 2016-05-20
  * Oprava prehravani
