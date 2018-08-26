@@ -324,19 +324,21 @@ class iVysilaniContentProvider(ContentProvider):
             item = self.video_item()
             item['title'] = _toString(playable.title)
             bandwidth = int(m.group('bandwidth'))
-            if bandwidth < 500000:
+            if bandwidth < 628000:
                 item['quality'] = "144p"
-            if bandwidth >= 500000 and bandwidth <1032000:
+            if bandwidth >= 628000 and bandwidth < 1160000:
                 item['quality'] = "288p"
-            elif bandwidth >= 1032000 and bandwidth <2048000:
+            elif bandwidth >= 1160000 and bandwidth < 2176000:
                 item['quality'] = "404p"
-            elif bandwidth >= 2048000 and bandwidth <3584000:
+            elif bandwidth >= 2176000 and bandwidth < 3712000:
                 item['quality'] = "576p"
+            elif bandwidth >= 3712000 and bandwidth < 6272000:
+                item['quality'] = "720p"    
             else:
-                item['quality'] = "720p"
+                item['quality'] = "1080p"
             item['url'] = m.group('chunklist')
             result.append(item)
-        result = sorted(result,key=lambda i:i['quality'], reverse = True)
+        result = sorted(result,key=lambda i:(len(i['quality']),i['quality']), reverse = True)
         if len(result) > 0 and select_cb:
             return select_cb(result)
         
