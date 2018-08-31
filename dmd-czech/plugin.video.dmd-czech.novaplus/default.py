@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import urllib2,urllib,re,os,string,time,base64,datetime
-from urlparse import urlparse
+from urlparse import urlparse, urlunparse, parse_qs
 import aes
 try:
     import hashlib
@@ -23,6 +23,7 @@ nexticon = os.path.join( home, 'nextpage.png' )
 fanart = os.path.join( home, 'fanart.jpg' )
 nova_service_url = 'http://cdn-lb.cdn.cra.cz/'
 nova_app_id = 'nova-vod'
+fullEpisodesCount = '20'
 
 def OBSAH():
     addDir('Televizní noviny','http://novaplus.nova.cz/porad/televizni-noviny',2,icon,1)
@@ -108,12 +109,27 @@ def CATEGORIES(url,page):
 def EPISODES(url,page):
     #print 'EPISODES *********************************' + str(url)
     doc = read_page(url)
+    fullEpisodesButton = doc.find('a', 'btn btn-tertiary js-load-next') 
 
-    for article in doc.findAll('article', 'b-article b-article-text b-article-inline'):
-        url = article.a['href'].encode('utf-8')
-        title = article.a['title'].encode('utf-8')
-        thumb = article.a.div.img['data-original'].encode('utf-8')
-        addDir(title,url,3,thumb,1)
+    if (fullEpisodesButton != None):
+      urlParts = urlparse(fullEpisodesButton['href'])
+      parameters = parse_qs(urlParts.query)      
+      new_parameters = {'channel': parameters['channel'][0],'show': parameters['show'][0], 
+                        'count': fullEpisodesCount,'page': 1}
+      newUrlParts = list(urlParts)
+      newUrlParts[4] = urllib.urlencode(new_parameters)
+      doc = read_page(urlunparse(newUrlParts))
+      for article in doc.findAll('article', 'b-article b-article-no-labels'):
+          url = article.a['href'].encode('utf-8')
+          title = article.a['title'].encode('utf-8')
+          thumb = article.a.div.img['data-original'].encode('utf-8')
+          addDir(title,url,3,thumb,1)
+    else:     
+      for article in doc.findAll('article', 'b-article b-article-text b-article-inline'):
+          url = article.a['href'].encode('utf-8')
+          title = article.a['title'].encode('utf-8')
+          thumb = article.a.div.img['data-original'].encode('utf-8')
+          addDir(title,url,3,thumb,1)         
 
 def VIDEOLINK(url,name):
     #print 'VIDEOLINK *********************************' + str(url)
