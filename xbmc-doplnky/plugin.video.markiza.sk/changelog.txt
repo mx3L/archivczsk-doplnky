@@ -1,3 +1,6 @@
+2018-09-07 verzia 1.2.0
+	- oprava nacitavania zoznamu videi, thx boddie
+
 2018-04-25 verzia 1.1.9
 	- pouzivanie cache
 

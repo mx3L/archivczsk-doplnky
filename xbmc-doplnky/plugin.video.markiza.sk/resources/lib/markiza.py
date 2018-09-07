@@ -68,7 +68,7 @@ class markizalog(object):
     mode = INFO
 
     logEnabled = True
-    logDebugEnabled = False
+    logDebugEnabled = True
     LOG_FILE = ""
     
 
@@ -103,7 +103,7 @@ class markizalog(object):
 class MarkizaContentProvider(ContentProvider):
 
     def __init__(self, username=None, password=None, filter=None, tmp_dir='/tmp', newLoad=True):
-        ContentProvider.__init__(self, 'videoarchiv.markiza.sk', 'http://videoarchiv.markiza.sk', username, password, filter, tmp_dir)
+        ContentProvider.__init__(self, 'videoarchiv.markiza.sk', 'http://oldvideoarchiv.markiza.sk', username, password, filter, tmp_dir)
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.LWPCookieJar()))
         urllib2.install_opener(opener)
         self.newLoadMethod = newLoad
@@ -140,23 +140,30 @@ class MarkizaContentProvider(ContentProvider):
         return result
 
     def list_base(self, url, az=True, top=True):
-        result = []
-        #data = util.request(url)
-        data = MarkizaCache().cache_request(url, 8)
-        if az:
-            az_data = util.substr(data, '<li class="dropdown mega-dropdown main-kategoria">',
-                    '<li class="dropdown mega-dropdown main-kategoria open_top_formats">')
-            az_json_data = re.search(r'var VIDEO_ITEMS = (\[.+?\]);', az_data, re.DOTALL)
-            if not az_json_data:
-                self.error('list_base - no az data found!')
-            else:
-                ordered = util.json.loads(az_json_data.group(1))
-                ordered.sort(key=lambda x: x['title'], reverse=False)
-                for i in ordered:
-                    item = self.dir_item(i['title'], i['url']+ "#categories")
-                    item['img'] = i['image']
-                    result.append(item)
-        return result
+        try:
+            result = []
+            data = MarkizaCache().cache_request(url, 8)
+            if az:
+                az_data = util.substr(data, '<li class="dropdown mega-dropdown main-kategoria">',
+                        '<li class="dropdown mega-dropdown main-kategoria open_top_formats">')
+
+                az_json_data = re.search(r'var VIDEO_ITEMS = (\[.+?\]);', az_data, re.DOTALL)
+                markizalog.logDebug("list_base azdata: %s\n\naz_json_data: %s"%(az_data, az_json_data))
+                if not az_json_data:
+                    self.error('list_base - no az data found!')
+                else:
+
+                    ordered = util.json.loads(az_json_data.group(1))
+                    ordered.sort(key=lambda x: x['title'], reverse=False)
+                    for i in ordered:
+                        item = self.dir_item(i['title'], i['url']+ "#categories")
+                        item['img'] = i['image']
+                        result.append(item)
+
+            return result
+        except:
+            markizalog.logError("Method list_base failed '%s'\n%s"%(url,traceback.format_exc()))
+            raise
 
     def list_show(self, url, categories=True, episodes=True):
         try:
@@ -231,7 +238,7 @@ class MarkizaContentProvider(ContentProvider):
             item = item.copy()
             video_id = urlparse(item['url']).path.split('/')[-1].split('_')[0]
             #videodata = util.json.loads(util.request('http://videoarchiv.markiza.sk/json/video_jwplayer7.json?is_web=1&noads=1&nomidads=1&nopreads=1&nopostads=1&id=' + video_id))
-            videodata = util.json.loads(MarkizaCache().cache_request('http://videoarchiv.markiza.sk/json/video_jwplayer7.json?is_web=1&noads=1&nomidads=1&nopreads=1&nopostads=1&id=' + video_id, 8))
+            videodata = util.json.loads(MarkizaCache().cache_request('http://oldvideoarchiv.markiza.sk/json/video_jwplayer7.json?is_web=1&noads=1&nomidads=1&nopreads=1&nopostads=1&id=' + video_id, 8))
             markizalog.logDebug("videodata=\n%s"%videodata)
             details = videodata['details']
             playlist = videodata['playlist']
@@ -278,4 +285,4 @@ class MarkizaContentProvider(ContentProvider):
             return result
         except:
             markizalog.logError("Method resolve failed '%s'\n%s"%(item, traceback.format_exc()))
-            raise
+            raise            
