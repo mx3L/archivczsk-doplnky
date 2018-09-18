@@ -63,9 +63,11 @@ class JojContentProvider(ContentProvider):
         #print 'title = ', item['title']
         item['url'] = self._fix_url(url_and_title_match.group('url'))
         #print 'url = ', item['url']
-        subtitle_match = re.search(r'<h4 class="subtitle">[^>]+>([^<]+)', data)
+        #subtitle_match = re.search(r'<h4 class="subtitle">[^>]+>([^<]+)', data)
+        subtitle_match = re.search(r'<span class="date">(?P<date>[^<]+)', data)
         if subtitle_match:
-            item['subtitle'] = subtitle_match.group(1)
+            #item['subtitle'] = subtitle_match.group(1)
+            item['title'] = '%s - %s'%(item['title'], subtitle_match.group('date'))
         img_match = re.search(r'<img src="([^"]+)"', data)
         if img_match:
             item['img'] = self._fix_url(img_match.group(1))
