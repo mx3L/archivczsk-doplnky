@@ -36,6 +36,7 @@ class trakt_tv(object):
         # 1- movie
         id = int(item['id'])
         url = item['url'].lower()
+        #self.log.logDebug("TRAKT: getItemType url=%s"%url)
         if url[0]=='/': # item from menu
             if url == '/play/%s'%id:
                 return 1
@@ -145,6 +146,8 @@ class trakt_tv(object):
             postdata = {'shows':[{'seasons':[{'number':int('%s'%item['season'])}], 'ids':self.getTraktIds(item)}]}
         if mediatype==4:
             postdata = {'shows':[{'seasons':[{'episodes':[{'number':int('%s'%item['episode'])}], 'number':int('%s'%item['season'])}], 'ids':self.getTraktIds(item)}]}
+
+        self.log.logDebug("mark_as_watched postdata=%s"%postdata)
             
         data = json.loads(util.post_json(self.API+'/sync/history', data=postdata, headers={'Content-Type':'application/json', 'Authorization':'Bearer %s'%self.TOKEN, 'trakt-api-version':self.API_VERSION, 'trakt-api-key':self.CLIENT_ID}))
         self.log.logDebug("mark_as_watched response:\n%s"%data)

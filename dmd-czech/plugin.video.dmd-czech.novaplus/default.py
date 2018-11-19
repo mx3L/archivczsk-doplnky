@@ -167,7 +167,7 @@ def VIDEOLINK(url,name):
     if (len(renditions) > 0):
       renditions = re.compile('\'(.+?)\'').findall(renditions[0])
 
-    bitrates = re.compile('bitrates = {(.+?)\[(.+?)\]').findall(httpdata);
+    bitrates = re.compile('src = {(.+?)\[(.+?)\]').findall(httpdata);
     if (len(bitrates) > 0):
       urls = re.compile('\'(.+?)\'').findall(bitrates[0][1])
 

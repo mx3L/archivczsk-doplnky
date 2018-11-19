@@ -43,7 +43,7 @@ class wsUserData(object):
 
 class Webshare():
 
-    def __init__(self,username=None,password=None,useHttps=False,cache=None):
+    def __init__(self,username=None,password=None,useHttps=False,cache=None,saveVipDays=False):
         self.username = username
         self.password = password
         self.base_url = 'http://webshare.cz/'
@@ -55,6 +55,8 @@ class Webshare():
         self.loginOk = False
         if self.token:
             self.loginOk = True
+        if saveVipDays:
+            self.saveVipDaysToSettings()
         
     def _url(self, url):
         """
@@ -89,6 +91,8 @@ class Webshare():
                 #util.error('Server returned error status, response: %s' % data)
                 return False
             salt = xml.find('salt').text
+            if salt is None:
+                salt = ''
             # create hashes
             password = hashlib.sha1(md5crypt(self.password.encode('utf-8'), salt.encode('utf-8'))).hexdigest()
             digest = hashlib.md5(self.username + ':Webshare:' + self.password).hexdigest()
@@ -120,6 +124,25 @@ class Webshare():
                 isVip = '0'
             return wsUserData(isVip, vipDays, ident)
         return wsUserData('-1', '0', '')
+
+    def saveVipDaysToSettings(self):
+        vipDaysLeft = "-99"
+        try:
+            if self.token and self.loginOk:
+                udata = userData()
+                vipDaysLeft = udata.vipDaysLeft
+            else:
+                vipDaysLeft = "-2"            
+        except:
+            pass
+
+        # save to settings
+        try:
+            from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
+            addon = ArchivCZSK.get_xbmc_addon('plugin.video.stream-cinema')
+            addon.setSetting('wsvipdays', vipDaysLeft)
+        except:
+            pass
 
     def sendStats(self, item, action, baseUrl, apiVer, deviceId):
         #send data to server about watching movie

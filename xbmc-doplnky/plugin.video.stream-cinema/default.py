@@ -77,7 +77,9 @@ def fixXcursor():
         pass
 def checkSetVIP(u, p, https):
     try:
+        sclog.logDebug("StaticDataSC hit...")
         tmp = StaticDataSC(username=u, password=p, useHttps=https)
+        sclog.logDebug("StaticDataSC DONE vipDays=%s"%tmp.vipDaysLeft)
         __sets('wsvipdays', tmp.vipDaysLeft)
     except:
         pass

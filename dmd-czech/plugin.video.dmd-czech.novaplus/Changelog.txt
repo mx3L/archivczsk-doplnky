@@ -1,3 +1,5 @@
+2018-11-16
+ * fix Han Solo (Enigma2) / thx Elring
 ﻿2018-09-18
  * opytaj sa boddieho :-)
 2018-08-31

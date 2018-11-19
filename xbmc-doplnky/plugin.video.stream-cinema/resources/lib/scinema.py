@@ -108,8 +108,9 @@ class StaticDataSC():
                     udata = ws.userData()
                     self.vipDaysLeft = udata.vipDaysLeft
                 else:
-                    self.vipDaysLeft = "0"
+                    self.vipDaysLeft = "-2"
             except:
+                self.vipDaysLeft = "-99"
                 sclog.logError("get vip days left failed.\n%s"%traceback.format_exc())
                 pass
 class StaticTraktWatched():
@@ -133,20 +134,26 @@ class StaticTraktWatched():
         m, s = self.tapi.get_watched()
         for x in m:
             self.moviesTrakt.add(int(x['movie']['ids']['trakt']))
-            if 'imdb' in x['movie']['ids']:
-                self.moviesImdb.add(x['movie']['ids']['imdb'].replace('tt',''))
-            if 'tvdb' in x['movie']['ids']:
+            #try:
+            if 'tvdb' in x['movie']['ids'] and x['movie']['ids']['tvdb'] is not None:
                 self.moviesTvdb.add(int(x['movie']['ids']['tvdb']))
+            if 'imdb' in x['movie']['ids'] and x['movie']['ids']['imdb'] is not None:
+                self.moviesImdb.add(x['movie']['ids']['imdb'].replace('tt',''))
+            #except:
+            #    sclog.logDebug("TRAKT: reload data add movie failed.\n%s\n%s"%(x, traceback.format_exc()))
         for x in s:
             seasons = x['seasons']
             self.showsTrakt[int(x['show']['ids']['trakt'])] = seasons
-            if 'tvdb' in x['show']['ids']:
+            if 'tvdb' in x['show']['ids'] and x['show']['ids']['tvdb'] is not None:
                 self.showsTvdb[int(x['show']['ids']['tvdb'])] = seasons
     
     def getItemType(self, item):
         try:
-            return self.tapi.getItemType(item)
+            tp = self.tapi.getItemType(item)
+            #sclog.logDebug("TRAKT: returning item type=%s"%tp)
+            return tp
         except:
+            #sclog.logDebug("TRAKT: returning item type=-2")
             return -2
 
     def isMatch(self, item, itemType):
@@ -185,7 +192,7 @@ class StaticTraktWatched():
                 self.reloadData()
                 self.loadUserWatchedError = False
             except:
-                sclog.logError("StaticTraktWatched load TRAKT user watched items failed.")
+                sclog.logError("StaticTraktWatched load TRAKT user watched items failed.\n%s"%traceback.format_exc())
                 # realod data after next whole movies page load on UI not for each item when loading (time consuming)
                 self.loadUserWatchedError = True
                 return False
@@ -239,9 +246,6 @@ class StreamCinemaContentProvider(ContentProvider):
             self.useHttps = useHttps
 
             ContentProvider.__init__(self, name='czsklib', base_url=self.getBaseUrl(), username=username, password=password, filter=filter)
-            #opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.LWPCookieJar()))
-            #urllib2.install_opener(opener)
-            # init openner
             util.init_urllib()
             self.reverse_eps = reverse_eps
             self.ws = None
@@ -483,35 +487,22 @@ class StreamCinemaContentProvider(ContentProvider):
             return 'https://stream-cinema.online/kodi'
         return 'http://stream-cinema.online/kodi'
 
-    def showMsg(self, msgId, showSec, sleepSec=0, isError=True, cbClose=None):
-        def sleepCB(result):
-            # rest time to sleep
-            sleepFor = sleepSec-int((datetime.datetime.now()-dialogStart).total_seconds())
-            # fail in OE2.5 ... error: call from another thread
-            if sleepFor > 0:
-                from time import sleep
-                sleep(sleepFor)
-            if cbClose is not None:
-                return cbClose()
+    def showMsg(self, msgId, showSec, canClose=True, isError=True):
         try:
-            dialogStart = datetime.datetime.now()
-            if isError:
-                from Plugins.Extensions.archivCZSK.gui.common import showErrorMessage
-                showErrorMessage(self.session, self._getName(msgId), showSec, sleepCB)
-            else:
-                from Plugins.Extensions.archivCZSK.gui.common import showInfoMessage
-                showInfoMessage(self.session, self._getName(msgId), showSec, sleepCB)
+            # must be like this because show message on DM failed when not show up from main thread
+            msgType = "error"
+            if not isError:
+                msgType = "info"
+            client.add_operation("SHOW_MSG", {
+                                                'msg': self._getName(msgId),
+                                                'msgType': msgType,
+                                                'msgTimeout': showSec,
+                                                'canClose': canClose
+                                             })
         except:
-            sclog.logError("showMsg failed.\n%s"%traceback.format_exc())
-            pass
-
-    def pairTrakt(self):
-        try:
-            if self.tapi.get_token(self.code):
-                return self.showMsg("$66675", 20, 0, False)
-        except:
-            sclog.logError("Verify trakt code failed. %s"%traceback.format_exc())
-        return self.showMsg("$66676", 20, 0, True)
+            sclog.logError("showMsg failed (minimalna verzia archivCZSK 1.1.2).\n%s"%traceback.format_exc())
+            from Plugins.Extensions.archivCZSK.gui.common import showErrorMessage
+            showErrorMessage(self.session, self._getName(msgId), showSec)
 
     def on_init(self):
         kodilang = self.lang or 'cs'
@@ -631,7 +622,6 @@ class StreamCinemaContentProvider(ContentProvider):
     
     def categories(self):
         result = []
-
         try:
             data = self._json(self.getBaseUrl(), True, 12)
             if type(data) is dict and data["menu"]:
@@ -672,6 +662,7 @@ class StreamCinemaContentProvider(ContentProvider):
         return self._renderItem(url)
 
     def _renderItem(self, url):
+        #startRender = datetime.datetime.now()
         # sort 1-desc order by releasedate (year)
         # sort 2- desc order by rating (not yet implemented)
         # not implemented on Series yet
@@ -702,19 +693,17 @@ class StreamCinemaContentProvider(ContentProvider):
                     succ = self._getName("$66675")
                     fail = self._getName("$66676")
                     sclog.logInfo(msg)
-                    try:
-                        # execute this operation after load content in main thread
-                        # supported cmd: TRAKT_PAIR
-                        client.add_operation("TRAKT_PAIR", {'trakt':    {'url':self.tapi.API_AUTH+'/token', 
-                                                                         'code':self.code, 
-                                                                         'client_id':self.tapi.CLIENT_ID, 
-                                                                         'client_secret': self.tapi.CLIENT_SECRET},
-                                                            'msg':      {'pair': msg, 'success':succ, 'fail':fail}, 
-                                                            'settings': {'token': 'trakt_token',
-                                                                         'refreshToken':'trakt_refresh_token', 
-                                                                         'expire':'trakt_token_expire'}})
-                    except:
-                        self.showMsg(msg, -1, 0, False, self.pairTrakt)
+                    # execute this operation after load content in main thread
+                    # supported cmd: TRAKT_PAIR
+                    client.add_operation("TRAKT_PAIR", {'trakt':    {'url':self.tapi.API_AUTH+'/token', 
+                                                                        'code':self.code, 
+                                                                        'client_id':self.tapi.CLIENT_ID, 
+                                                                        'client_secret': self.tapi.CLIENT_SECRET},
+                                                        'msg':      {'pair': msg, 'success':succ, 'fail':fail}, 
+                                                        'settings': {'token': 'trakt_token',
+                                                                     'refreshToken':'trakt_refresh_token', 
+                                                                     'expire':'trakt_token_expire'}})
+                    
                     return []
                 res = []
                 for tl in self.tapi.get_lists():
@@ -771,7 +760,7 @@ class StreamCinemaContentProvider(ContentProvider):
             else:
                 data = self._json(url, True, self._getCacheTimeByUrl(url))
 
-            #startRender = datetime.datetime.now()
+            
             if data is not None and 'menu' in data and data['menu']:
                 itype = -1
                 for m in data['menu']:
@@ -883,7 +872,7 @@ class StreamCinemaContentProvider(ContentProvider):
                 videoItem['year'] = scItem['year']
             if 'rating' in scItem:
                 try:
-                    videoItem['rating'] = scItem['rating']
+                    videoItem['rating'] = scItem['rating'] #float(scItem['rating'])*10
                 except:
                     pass
             if 'id' in scItem:
@@ -914,6 +903,14 @@ class StreamCinemaContentProvider(ContentProvider):
     def resolve(self, item, captcha_cb=None, select_cb=None):
         # shows list of streams
         try:
+            # hack huste.tv
+            if 'joj.sk/huste' in item['url']:
+                sclog.logDebug("item url=%s"%item['url'])
+                item['url'] = item['url'].replace(self.getBaseUrl(),'')
+                huste = []
+                huste.append(item)
+                return huste;
+
             data = self._json(item['url'], True, 1)
             #sclog.logDebug("resolve data %s\n%s"%(item['url'],data))
 
@@ -929,7 +926,7 @@ class StreamCinemaContentProvider(ContentProvider):
                 if self.ws is None:
                     #sclog.logDebug("Resolve ws is null (reinit)...");
                     from webshare import Webshare as wx
-                    self.ws = wx(self.wsuser, self.wspass, self.useHttps)
+                    self.ws = wx(self.wsuser, self.wspass, self.useHttps, saveVipDays=True) # save vip days if startup sigleton failed or user change login/password
 
                 # check login
                 if not self.ws.loginOk:
@@ -1045,10 +1042,6 @@ class StreamCinemaContentProvider(ContentProvider):
                                 tmp['resolveTitle'] = "[%s%s]%s[%s%s]%s"%(tmp['quality'], vinfo, size, tmp['lang'],subExist,ainfo)
 
                                 self._filter(res, tmp)
-                                # maybe sleep if not is VIP account to fix many request to webshare
-                                #if not isVipAccount:
-                                #    from time import sleep
-                                #    sleep(2)
                         except:
                             sclog.logError("_resolve load specific stream failed (continue...)%s"%traceback.format_exc())
                             pass
@@ -1071,7 +1064,7 @@ class StreamCinemaContentProvider(ContentProvider):
         except urllib2.HTTPError as err:
             sclog.logError("HTTP error (%s) resolve failed %s.\n%s" % (err.code, item['url'], traceback.format_exc()))
             if err.code == 429:
-                self.showMsg("$66667", 61, 60)
+                self.showMsg("$66667", 60, False)
             else:
                 self.showMsg("$66673",30)
         except:
@@ -1133,7 +1126,7 @@ class StreamCinemaContentProvider(ContentProvider):
         # addon must have setting (bool) trakt_enabled ... and must be enabled to show trakt menu 
         # and must set 'customDataItem' with imdb, tvdb, trakt property (identify video item in trakt.tv)
         # addon must add capability 'trakt'
-        
+
         try:
             # action:
             #   - add       add item to watchlist
@@ -1168,4 +1161,3 @@ class StreamCinemaContentProvider(ContentProvider):
         except:
             sclog.logError("Trakt action (%s) failed.\n%s"%(action, traceback.format_exc()))
             client.add_operation_result(self._getName("$66678"), True)
-    
