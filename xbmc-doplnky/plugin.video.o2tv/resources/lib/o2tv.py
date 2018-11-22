@@ -101,6 +101,7 @@ class O2TvContentProvider(ContentProvider):
             self.devId = ''
             self.o2language = 'ces'
             self.showEpg = False
+            self.useNewLoginMethod = True
             self.devName = "Nexus 7"
             self.token = None
             self.language = language.getLanguage()
@@ -165,6 +166,10 @@ class O2TvContentProvider(ContentProvider):
         return []
 
     def getAt(self):
+        if self.useNewLoginMethod:
+            return getAtNew()
+        return getAtOld()
+    def getAtNew(self):
         try:
             o2log.logDebug("getting AT...")
             headers =  {
@@ -202,10 +207,35 @@ class O2TvContentProvider(ContentProvider):
 
             self.checkResponse(j)
             self.token = j['access_token']
-            o2log.logInfo("get AT success")
+            o2log.logInfo("get AT (new) success")
             return self.token
         except:
-            o2log.logError("Get AT failed.\n%s"%traceback.format_exc())
+            o2log.logError("Get AT (new) failed.\n%s"%traceback.format_exc())
+            raise Exception('1')
+    def getAtOld(self):
+        try:
+            o2log.logDebug("getting AT...")
+
+            headers = {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Connection': 'Keep-Alive'}
+            data = {  
+                  'grant_type' : 'password',
+                  'client_id' : 'tef-web-portal-etnetera',
+                  'client_secret' : '2b16ac9984cd60dd0154f779ef200679',
+                  'username' : self.usr,
+                  'password' : self.pwd,
+                  'platform_id' : '231a7d6678d00c65f6f3b2aaa699a0d0',
+                  'language' : 'cs'}
+            req = requests.post('https://oauth.o2tv.cz/oauth/token', data=data, headers=headers, verify=False)
+            j = req.json()
+
+            self.checkResponse(j)
+            self.token = j['access_token']
+            o2log.logInfo("get AT (old) success")
+            return self.token
+        except:
+            o2log.logError("Get AT (old) failed.\n%s"%traceback.format_exc())
             raise Exception('1')
 
     def checkResponse(self, jsonResp):

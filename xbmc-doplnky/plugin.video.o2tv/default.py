@@ -66,6 +66,7 @@ prov.usr = __gets('o2tvuser')
 prov.pwd = __gets('o2tvpwd')
 prov.devId = getDeviceUid()
 prov.showEpg = __gets('show_epg')=='true'
+prov.useNewLoginMethod = __gets('login_method')=='0'
 prov.session = session
 settings = {'quality': __gets('quality')}
 if __gets('stream_quality') == '1':
