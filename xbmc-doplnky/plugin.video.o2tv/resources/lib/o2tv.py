@@ -167,8 +167,8 @@ class O2TvContentProvider(ContentProvider):
 
     def getAt(self):
         if self.useNewLoginMethod:
-            return getAtNew()
-        return getAtOld()
+            return self.getAtNew()
+        return self.getAtOld()
     def getAtNew(self):
         try:
             o2log.logDebug("getting AT...")
@@ -276,10 +276,16 @@ class O2TvContentProvider(ContentProvider):
         self.checkResponse(c)
 
         data = []
+        distinct = []
         for key, value in c['channels'].iteritems():
             if value['channelType'] != 'TV':
                 continue
             try:
+                # contains some channels with same name but not by channel key (bit strange)
+                cn = toString(value['channelName']).lower()
+                if  cn in distinct:
+                    continue
+                distinct.append(cn)
                 params = {"serviceType": "LIVE_TV",
                           "subscriptionCode": subscription_code,
                           "channelKey": value['channelKey'],

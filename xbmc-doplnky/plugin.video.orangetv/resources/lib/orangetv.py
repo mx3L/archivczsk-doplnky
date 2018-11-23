@@ -216,8 +216,9 @@ class OrangeTvContentProvider(ContentProvider):
 
     def categories(self):
         result = []
+        self.showMsg("Doplnok sa dokončí, pokiaľ sa vyzbiera dostatocný počet záujemcov (príspevkov) o orangeTV. http://goo.gl/h7LXyc", 30, False, False)
         item = self.video_item(url='xxx', img=None, quality='')
-        item['title']= 'Not implemented (donate)'
+        item['title']= 'Not working (donate http://goo.gl/h7LXyc)'
         result.append(item)
         #result.append(self.dir_item(title='Not implemented yet', url='xxx'))
         return result
