@@ -225,7 +225,7 @@ class JojContentProvider(ContentProvider):
             poster_url = re.search(r'poster: \"(.+?)\"', settings_str).group(1)
             #print 'poster_url:', poster_url
 
-            bitrates_str = re.search(r'var bitrates = {(.+?)};', player_str, re.DOTALL).group(1)
+            bitrates_str = re.search(r'var src = {(.+?)};', player_str, re.DOTALL).group(1)
             #print 'bitrates:', bitrates_str
             bitrates_url = re.search(r'"mp4": \[(.+?)\]', bitrates_str, re.DOTALL).group(1)
             bitrates_url = bitrates_url.replace("'","").replace('\n','').replace(' ','').split(',')
