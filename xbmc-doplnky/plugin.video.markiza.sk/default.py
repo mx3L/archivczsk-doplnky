@@ -32,7 +32,7 @@ __language__ = __addon__.getLocalizedString
 __settings__ = __addon__.getSetting
 
 sys.path.append(os.path.join (__addon__.getAddonInfo('path'), 'resources', 'lib'))
-import markiza
+from markiza import markizalog, MarkizaContentProvider
 settings = {'quality':__addon__.getSetting('quality')}
 
 
@@ -101,4 +101,5 @@ class MarkizaXBMCContentProvider(xbmcprovider.XBMCMultiResolverContentProvider):
         except ResolveException, e:
             self._handle_exc(e)
 
-MarkizaXBMCContentProvider(markiza.MarkizaContentProvider(newLoad=__addon__.getSetting('new_load_method') == 'true'),settings, __addon__,session).run(params)
+markizalog.logDebug("PARAMS=%s"%params)
+MarkizaXBMCContentProvider(MarkizaContentProvider(), settings, __addon__, session).run(params)

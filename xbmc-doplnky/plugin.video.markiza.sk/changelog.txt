@@ -1,3 +1,5 @@
+2018-11-28 verzia 1.3.0
+	- parsovanie podla webu, thx Lukas Jagelka
 2018-09-07 verzia 1.2.0
 	- oprava nacitavania zoznamu videi, thx boddie
 
