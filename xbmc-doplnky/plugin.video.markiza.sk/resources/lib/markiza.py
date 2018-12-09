@@ -2,8 +2,6 @@
 ################################################################################################################
 ################################################################################################################
 ## @TODO for boddie
-#   - dokoncit ostatne kategorie podla https://raw.githubusercontent.com/kodi-czsk/plugin.video.markiza.sk/master/default.py
-#   - pre televizne noviny parsovat aj datum pretoze vo vypise podla nazvu nevies z ktoreho su dna, vid stary kod tam to bolo
 #   - (feature) cachovanie requestov ako optimalizacia vykonu vid. lru_cache u stream-cinema
 ################################################################################################################
 ################################################################################################################
@@ -128,8 +126,12 @@ class MarkizaContentProvider(ContentProvider):
     def capabilities(self):
         return ['categories', 'resolve']
 
-    def addDir(self, name, url, mode):
-        return self.dir_item(name, '%s##%s'%(url, mode))
+    def addDir(self, name, url, mode, thumb = None):
+        img = None;
+        if thumb != None:
+            img = thumb
+        return {'type': 'dir', 'title': name, 'size': '0', 'url': '%s##%s##%s'%(name, url, mode), 'img': img}
+
     def addLink(self, title, url):
         item = self.video_item()
         item['url'] = url
@@ -138,40 +140,86 @@ class MarkizaContentProvider(ContentProvider):
 
     def getMode(self, url):
         tmp = url.split('##')
-        return tmp[0], int(tmp[1])
+        return tmp[0], tmp[1], int(tmp[2])
+
+    def top(self, url):
+        result = []
+        doc = read_page(url)
+
+        for section in doc.findAll('section', 'b-main-section my-sm-5'):
+            if section.div.h3.getText(" ").encode('utf-8') == 'TOP relácie':
+                for article in section.findAll('article'):
+                    url = article.a['href'].encode('utf-8')
+                    title = article.a['title'].encode('utf-8')
+                    thumb = article.a.div.img['data-original'].encode('utf-8')
+                    result.append(self.addDir(title, url, 3,thumb))
+
+        return result
+
+    def newEpisodes(self, url):
+        result = []
+        doc = read_page(url)
+
+        for section in doc.findAll('section', 'b-main-section b-section-articles my-5'):
+            if section.div.h3.getText(" ").encode('utf-8') == 'Najnovšie epizódy':
+                for article in section.findAll('article'):
+                    url = article.a['href'].encode('utf-8')
+                    title1 = article.h3.getText(" ").encode('utf-8')
+                    title2 = article.find('span', 'e-text').getText(" ").encode('utf-8')
+                    title = str(title1) + ' - ' + str(title2)
+                    thumb = article.a.div.img['data-original'].encode('utf-8')
+                    result.append(self.addDir(title, url, 3, thumb))
+
+        return result
+
+    def mostViewed(self, url):
+        result = []
+        doc = read_page(url)
+
+        for section in doc.findAll('section', 'b-main-section b-section-articles b-section-articles-primary my-5'):
+            if section.div.h3.getText(" ").encode('utf-8') == 'Najsledovanejšie':
+                for article in section.findAll('article'):
+                    url = article.a['href'].encode('utf-8')
+                    title1 = article.h3.getText(" ").encode('utf-8')
+                    title2 = article.find('span', 'e-text').getText(" ").encode('utf-8')
+                    title = str(title1) + ' - ' + str(title2)
+                    thumb = article.a.div.img['data-original'].encode('utf-8')
+                    result.append(self.addDir(title, url, 3, thumb))
+
+        return result
+
+    def recommended(self, url):
+        result = []
+        doc = read_page(url)
+
+        for section in doc.findAll('section', 'b-main-section b-section-articles b-section-articles-primary my-5'):
+            if section.div.h3.getText(" ").encode('utf-8') == 'Odporúčame':
+                for article in section.findAll('article'):
+                    url = article.a['href'].encode('utf-8')
+                    title1 = article.h3.getText(" ").encode('utf-8')
+                    title2 = article.find('span', 'e-text').getText(" ").encode('utf-8')
+                    title = str(title1) + ' - ' + str(title2)
+                    thumb = article.a.div.img['data-original'].encode('utf-8')
+                    result.append(self.addDir(title, url, 3, thumb))
+        return result
 
     def episodes(self, url):
         result = []
-        
         doc = read_page(url)
 
         for article in doc.findAll('article', 'b-article b-article-text b-article-inline'):
             url = article.a['href'].encode('utf-8')
-            title = article.a['title'].encode('utf-8')
             thumb = article.a.div.img['data-original'].encode('utf-8')
-            result.append(self.addDir(title,url,3))
+            title1 = article.a['title'].encode('utf-8')
+            title2 = article.find('div', 'e-date').span.getText(" ").encode('utf-8')
+            title = str(title1) + ' - ' + str(title2)
+            result.append(self.addDir(title,url,3, thumb))
 
-        for section in doc.findAll('section', 'b-main-section b-section-articles my-5'):
-            if section.div.h3.getText(" ").encode('utf-8') == 'Celé epizódy':
-                for article in section.findAll('article'):
-                    url = article.a['href'].encode('utf-8')
-                    title = 'Celé epizódy - ' + article.a['title'].encode('utf-8')
-                    thumb = article.a.div.img['data-original'].encode('utf-8')
-                    result.append(self.addDir(title,url,3,thumb,1))
+        main = doc.find('main')
+        for section in main.findAll('section'):
+            titleSection = section.find('h3','e-articles-title').getText(" ").encode('utf-8')
+            result.append(self.addDir(titleSection, url, 4))
 
-            if section.div.h3.getText(" ").encode('utf-8') == 'Mohlo by sa vám páčiť':
-                for article in section.findAll('article'):
-                    url = article.a['href'].encode('utf-8')
-                    title = 'Mohlo by sa vám páčiť - ' + article.a['title'].encode('utf-8')
-                    thumb = article.a.div.img['data-original'].encode('utf-8')
-                    result.append(self.addDir(title,url,3))
-
-            if section.div.h3.getText(" ").encode('utf-8') == 'Zo zákulisia':
-                for article in section.findAll('article'):
-                    url = article.a['href'].encode('utf-8')
-                    title = 'Zo zákulisia - ' + article.a['title'].encode('utf-8')
-                    thumb = article.a.div.img['data-original'].encode('utf-8')
-                    result.append(self.addDir(title,url,3))
         return result
 
     def videoLink(self, url):
@@ -218,8 +266,8 @@ class MarkizaContentProvider(ContentProvider):
 
     def list(self, url):
         result = []
-        url, mode = self.getMode(url)
-        markizalog.logDebug('list hit mode=%s, url=%s'%(mode, url))
+        name, url, mode = self.getMode(url)
+        markizalog.logDebug('list hit name=%s, mode=%s, url=%s'%(name, mode, url))
         if mode==5:
             # az
             doc = read_page(url)
@@ -227,29 +275,40 @@ class MarkizaContentProvider(ContentProvider):
                 url = article.a['href'].encode('utf-8')
                 title = article.a['title'].encode('utf-8')
                 thumb = article.a.div.img['data-original'].encode('utf-8')
-                result.append(self.addDir(title,url,2))
+                result.append(self.addDir(title,url,2, thumb))
+        elif mode==4:
+            # podsekce na strance
+            doc = read_page(url)
+            sectionName = doc.find('h3', 'e-articles-title', text=name)
+            section = sectionName.findParent('section')
+            for article in section.findAll('article'):
+                url = article.a['href'].encode('utf-8')
+                title1 = article.a['title'].encode('utf-8')
+                title2 = article.find('div', 'e-date').span.getText(" ").encode('utf-8')
+                title = str(title1) + ' - ' + str(title2)
+                thumb = article.a.div.img['data-original'].encode('utf-8')
+                result.append(self.addDir(title, url, 3, thumb))
         elif mode==2:
             # episodes
             result = self.episodes(url)
             pass
         elif mode==9:
-            # @TODO
-            # top
+            # top relacie
+            result = self.top(url)
             pass
         elif mode==8:
-            # @TODO
             # new epizody
+            result = self.newEpisodes(url)
             pass
         elif mode==6:
-            # @TODO
             # najsledovanejsie
+            result = self.mostViewed(url)
             pass
         elif mode==7:
-            # @TODO
             # odporucane
+            result = self.recommended(url)
             pass
         elif mode==3:
-            # @TODO
             # video link
             result = self.videoLink(url)
         return result
