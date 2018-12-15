@@ -62,10 +62,11 @@ class MarkizaXBMCContentProvider(xbmcprovider.XBMCMultiResolverContentProvider):
             i = 0
             for video in stream:
                 i += 1
+                videoTitle = video['title'] if video['title'] else i
                 if 'headers' in video.keys():
-                    playlist.append(xbmcutil.create_play_it(params['title'] + " [" + str(i) + "]", "", video['quality'], video['url'], subs=video['subs'], filename=params['title'], headers=video['headers']))
+                    playlist.append(xbmcutil.create_play_it(params['title'] + " [" + videoTitle + "]", "", video['quality'], video['url'], subs=video['subs'], filename=params['title'], headers=video['headers'],infoLabels={'title':videoTitle}))
                 else:
-                    playlist.append(xbmcutil.create_play_it(params['title'] + " [" + str(i) + "]", "", video['quality'], video['url'], subs=video['subs'], filename=params['title']))
+                    playlist.append(xbmcutil.create_play_it(params['title'] + " [" + videoTitle + "]", "", video['quality'], video['url'], subs=video['subs'], filename=params['title'],infoLabels={'title':videoTitle}))
             xbmcutil.add_playlist(params['title'], playlist)
         elif stream:
             if 'headers' in stream.keys():
