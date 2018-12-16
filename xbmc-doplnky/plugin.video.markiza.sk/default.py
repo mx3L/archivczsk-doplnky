@@ -35,72 +35,15 @@ sys.path.append(os.path.join (__addon__.getAddonInfo('path'), 'resources', 'lib'
 from markiza import markizalog, MarkizaContentProvider
 settings = {'quality':__addon__.getSetting('quality')}
 
-
 class MarkizaXBMCContentProvider(xbmcprovider.XBMCMultiResolverContentProvider):
-
     def render_video(self, item):
         date = item.get('date')
         if date:
             item['title'] = '%s - %s' %(item['title'], date)
         super(MarkizaXBMCContentProvider, self).render_video(item)
-
-    def play(self, params):
-        stream = self.resolve(params['play'])
-        print type(stream)
-        if type(stream) == type([]):
-            sdict={}
-            for s in stream:
-                if s['surl'] not in sdict:
-                    sdict[s['surl']] = s
-                if len(sdict) > 1:
-                    break
-            else:
-                return xbmcprovider.XBMCMultiResolverContentProvider.play(self,params)
-
-            # resolved to mutliple files, we'll feed playlist and play the first one
-            playlist = []
-            i = 0
-            for video in stream:
-                i += 1
-                videoTitle = video['title'] if video['title'] else i
-                if 'headers' in video.keys():
-                    playlist.append(xbmcutil.create_play_it(params['title'] + " [" + videoTitle + "]", "", video['quality'], video['url'], subs=video['subs'], filename=params['title'], headers=video['headers'],infoLabels={'title':videoTitle}))
-                else:
-                    playlist.append(xbmcutil.create_play_it(params['title'] + " [" + videoTitle + "]", "", video['quality'], video['url'], subs=video['subs'], filename=params['title'],infoLabels={'title':videoTitle}))
-            xbmcutil.add_playlist(params['title'], playlist)
-        elif stream:
-            if 'headers' in stream.keys():
-                xbmcutil.add_play(params['title'], "", stream['quality'], stream['url'], subs=stream['subs'], filename=params['title'], headers=stream['headers'])
-            else:
-                xbmcutil.add_play(params['title'], "", stream['quality'], stream['url'], subs=stream['subs'], filename=params['title'])
-
-    def resolve(self, url):
-        def select_cb(resolved):
-            stream_parts = []
-            stream_parts_dict = {}
-
-            for stream in resolved:
-                if stream['surl'] not in stream_parts_dict:
-                    stream_parts_dict[stream['surl']] = []
-                    stream_parts.append(stream['surl'])
-                stream_parts_dict[stream['surl']].append(stream)
-
-            if len(stream_parts) == 1:
-                quality = self.settings['quality'] or '0'
-                resolved = resolver.filter_by_quality(stream_parts_dict[stream_parts[0]], quality)
-                # if user requested something but 'ask me' or filtered result is exactly 1
-                if len(resolved) == 1 or int(quality) > 0:
-                    return resolved[0]
-                return resolved
-            # requested to play all streams in given order - so return them all
-            return [stream_parts_dict[p][0] for p in stream_parts]
-
-        item = self.provider.video_item()
-        item.update({'url':url})
-        try:
-            return self.provider.resolve(item, select_cb=select_cb)
-        except ResolveException, e:
-            self._handle_exc(e)
+    #def play(self, params):
+        # @TODO tu by trebalo pretazit a pridat tam playlist aby to hralo v jednej kvalite samozrejme
+        # a tak ci tak neviem ci to na VTi 11 nepadne
 
 markizalog.logDebug("PARAMS=%s"%params)
-MarkizaXBMCContentProvider(MarkizaContentProvider(), settings, __addon__, session).run(params)
+MarkizaXBMCContentProvider(MarkizaContentProvider(quality=settings['quality']), settings, __addon__, session).run(params)

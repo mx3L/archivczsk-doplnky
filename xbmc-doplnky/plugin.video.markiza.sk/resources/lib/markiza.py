@@ -24,10 +24,12 @@
 import urllib2,urllib,re,os,string,time,base64,datetime,util
 from urlparse import urlparse, urlunparse, parse_qs
 from cachestack import lru_cache
-import datetime
+import datetime, traceback, resolver
 import simplejson as json
 from time import strftime
 import cookielib
+from Plugins.Extensions.archivCZSK.engine import client
+from Plugins.Extensions.archivCZSK.engine.tools.util import toString
 try:
     import hashlib
 except ImportError:
@@ -56,8 +58,10 @@ class MarkizaCache():
         if useCache:
             if timeout == 1:
                 return self.cache_request_1(url, page);
+            if timeout == 3:
+                return self.cache_request_3(url, page);
             if timeout == 8:
-                return self.cache_request_1(url, page);
+                return self.cache_request_8(url, page);
 
             return self.cache_request_30(url, page);
         else:
@@ -66,6 +70,10 @@ class MarkizaCache():
     # must be in Singleton or Static class/method because cachce store per instance but in plugin class create in each request
     @lru_cache(maxsize = 1000, timeout = 8*60*60) #8h
     def cache_request_8(self, url, page):
+        markizalog.logDebug("NOT CACHED REQUEST")
+        return read_page(url) if page else util.request(url)
+    @lru_cache(maxsize = 500, timeout = 3*60*60) #3h
+    def cache_request_3(self, url, page):
         markizalog.logDebug("NOT CACHED REQUEST")
         return read_page(url) if page else util.request(url)
     @lru_cache(maxsize = 500, timeout = 60*60) #1h
@@ -118,9 +126,10 @@ class markizalog(object):
 
 class MarkizaContentProvider(ContentProvider):
 
-    def __init__(self, username=None, password=None, filter=None, tmp_dir='/tmp'):
+    def __init__(self, username=None, password=None, filter=None, tmp_dir='/tmp', quality='0'):
         ContentProvider.__init__(self, 'videoarchiv.markiza.sk', 'http://videoarchiv.markiza.sk', username, password, filter, tmp_dir)
         util.init_urllib()
+        self.quality = quality
 
     def capabilities(self):
         return ['categories', 'resolve']
@@ -158,7 +167,7 @@ class MarkizaContentProvider(ContentProvider):
 
     def newEpisodes(self, url):
         result = []
-        doc = MarkizaCache().get_data_cached(url, True, 8)
+        doc = MarkizaCache().get_data_cached(url, True, 3)
 
         for section in doc.findAll('section', 'b-main-section b-section-articles my-5'):
             if section.div.h3.getText(" ").encode('utf-8') == 'Najnovšie epizódy':
@@ -174,7 +183,7 @@ class MarkizaContentProvider(ContentProvider):
 
     def mostViewed(self, url):
         result = []
-        doc = MarkizaCache().get_data_cached(url, True, 8)
+        doc = MarkizaCache().get_data_cached(url, True, 3)
 
         for section in doc.findAll('section', 'b-main-section b-section-articles b-section-articles-primary my-5'):
             if section.div.h3.getText(" ").encode('utf-8') == 'Najsledovanejšie':
@@ -227,7 +236,7 @@ class MarkizaContentProvider(ContentProvider):
         doc = MarkizaCache().get_data_cached(url, True, 1)
         main = doc.find('main')
         url = main.find('iframe')['src']
-        httpdata = MarkizaCache().get_data_cached(url, True, 30, False)
+        httpdata = MarkizaCache().get_data_cached(url, True, 1, False)
 
         httpdata = httpdata.replace("\r","").replace("\n","").replace("\t","")
 
@@ -246,65 +255,74 @@ class MarkizaContentProvider(ContentProvider):
             playlist['playlist'] = item;
         else:
             url = re.search('relatedLoc: "(.+?)",',httpdata,re.DOTALL).group(1).replace('\/','/')
-            jsonData = MarkizaCache().get_data_cached(url, True, 30, False)
+            jsonData = MarkizaCache().get_data_cached(url, True, 1, False)
             playlist = json.loads(jsonData)
-            result.append(self.addLink('PREHRAŤ VŠETKO',url))
+            # not working correctly on VTi 11
+            # maybe @TODO
+            # result.append(self.addLink('PREHRAŤ VŠETKO',url))
 
         if playlist and len(playlist['playlist']) > 0:
-            for url in playlist['playlist']:
+            # sort by title
+            data = sorted(playlist['playlist'], key=lambda i: i['contentTitle'])
+            for url in data:
                 result.append(self.addLink(url['contentTitle'],url['bitrates']['hls'],url['thumbnail']))
         else:
-            markizalog.logError('Chyba - Video nejde prehrat')
-
+            raise Exception('Chyba - Video nejde prehrat')
         return result
 
     def list(self, url):
         result = []
         name, url, mode = self.getMode(url)
-        markizalog.logDebug('list hit name=%s, mode=%s, url=%s'%(name, mode, url))
-        if mode==5:
-            # az
-            doc = MarkizaCache().get_data_cached(url, True, 8)
-            for article in doc.findAll('article'):
-                url = article.a['href'].encode('utf-8')
-                title = article.a['title'].encode('utf-8')
-                thumb = article.a.div.img['data-original'].encode('utf-8')
-                result.append(self.addDir(title,url,2, thumb))
-        elif mode==4:
-            # podsekce na strance
-            doc = MarkizaCache().get_data_cached(url, True, 8)
-            sectionName = doc.find('h3', 'e-articles-title', text=name)
-            section = sectionName.findParent('section')
-            for article in section.findAll('article'):
-                url = article.a['href'].encode('utf-8')
-                title1 = article.a['title'].encode('utf-8')
-                title2 = article.find('div', 'e-date').span.getText(" ").encode('utf-8')
-                title = str(title1) + ' - ' + str(title2)
-                thumb = article.a.div.img['data-original'].encode('utf-8')
-                result.append(self.addDir(title, url, 3, thumb))
-        elif mode==2:
-            # episodes
-            result = self.episodes(url)
-            pass
-        elif mode==9:
-            # top relacie
-            result = self.top(url)
-            pass
-        elif mode==8:
-            # new epizody
-            result = self.newEpisodes(url)
-            pass
-        elif mode==6:
-            # najsledovanejsie
-            result = self.mostViewed(url)
-            pass
-        elif mode==7:
-            # odporucane
-            result = self.recommended(url)
-            pass
-        elif mode==3:
-            # video link
-            result = self.videoLink(url)
+        try:
+            markizalog.logDebug('list hit name=%s, mode=%s, url=%s'%(name, mode, url))
+            if mode==5:
+                # az
+                doc = MarkizaCache().get_data_cached(url, True, 8)
+                for article in doc.findAll('article'):
+                    url = article.a['href'].encode('utf-8')
+                    title = article.a['title'].encode('utf-8')
+                    thumb = article.a.div.img['data-original'].encode('utf-8')
+                    result.append(self.addDir(title,url,2, thumb))
+            elif mode==4:
+                # podsekce na strance
+                doc = MarkizaCache().get_data_cached(url, True, 8)
+                sectionName = doc.find('h3', 'e-articles-title', text=name)
+                section = sectionName.findParent('section')
+                for article in section.findAll('article'):
+                    url = article.a['href'].encode('utf-8')
+                    title1 = article.a['title'].encode('utf-8')
+                    title2 = article.find('div', 'e-date').span.getText(" ").encode('utf-8')
+                    title = str(title1) + ' - ' + str(title2)
+                    thumb = article.a.div.img['data-original'].encode('utf-8')
+                    result.append(self.addDir(title, url, 3, thumb))
+            elif mode==2:
+                # episodes
+                result = self.episodes(url)
+                pass
+            elif mode==9:
+                # top relacie
+                result = self.top(url)
+                pass
+            elif mode==8:
+                # new epizody
+                result = self.newEpisodes(url)
+                pass
+            elif mode==6:
+                # najsledovanejsie
+                result = self.mostViewed(url)
+                pass
+            elif mode==7:
+                # odporucane
+                result = self.recommended(url)
+                pass
+            elif mode==3:
+                # video link
+                result = self.videoLink(url)
+        except:
+            markizalog.logError("Nacitanie zoznamu mode=%s zlyhalo.\n%s"%(mode, traceback.format_exc()))
+            result.append(self.addDir('FAILED','xxxx',0, ''))
+            self.showMsg('Nacitanie zoznamu zlyhalo.\n%s'%traceback.format_exc(), 30, True, True)
+            
         return result
 
     def categories(self):
@@ -321,24 +339,57 @@ class MarkizaContentProvider(ContentProvider):
         markizalog.logDebug('resolve hit ...')
         result = []
         if 'chapters' in item['url']:
+            ## @@TODO
+            ## tu by trebalo vytiahnut len resolvnute URLky v jednej kvalite a tak to poskladat do playlistu vid. default.py
+            markizalog.logDebug('resolve hit (chapters)...%s'%item['url'])
             jsonData = MarkizaCache().get_data_cached(item['url'], True, 30, False)
             playlist = json.loads(jsonData)
 
             if playlist and len(playlist['playlist']) > 0:
                 for index,url in enumerate(playlist['playlist']):
+                    markizalog.logDebug('chunklist=%s'%url)
                     itm = self.video_item()
                     itm['url'] = url['bitrates']['hls']
                     itm['surl'] =  url['contentTitle']
                     itm['title'] = url['contentTitle']
                     result.append(itm)
         else:
-            itm = self.video_item()
-            itm['url'] = item['url']
-            itm['surl'] = item['title']
-            itm['title'] = item['title']
-            result.append(itm)
-
+            # '/master.m3u8'
+            baseUrl = item['url'][:item['url'].index('master.m3u8')]
+            manifest = toString(MarkizaCache().get_data_cached(item['url'], True, 3, True) )
+            markizalog.logDebug("item manifest= %s"%manifest)
+            for m in re.finditer('#EXT-X-STREAM-INF:PROGRAM-ID=\d+,BANDWIDTH=(?P<bandwidth>\d+),RESOLUTION=.+,FRAME-RATE=.+,CODECS=".+"\s(?P<chunklist>.+$\s)', manifest, re.MULTILINE):
+                itm = self.video_item()
+                itm['title'] = item['title']
+                bandwidth = int(m.group('bandwidth'))
+                if bandwidth < 1500000:
+                    itm['quality'] = "360p"
+                elif bandwidth >= 1500000 and bandwidth < 2000000:
+                    itm['quality'] = "480p"
+                else:
+                    itm['quality'] = "720p"
+                itm['url'] = baseUrl+m.group('chunklist').replace('\n','')
+                itm['surl'] = itm['title']
+                markizalog.logDebug("item=%s"%itm)
+                result.append(itm)
+            result = sorted(result,key=lambda i:(len(i['quality']),i['quality']), reverse = True)
+            
+        result = resolver.filter_by_quality(result, self.quality)
         if len(result) > 0 and select_cb:
             return select_cb(result)
         return result
+
+    def showMsg(self, msg, showSec, canClose=True, isError=True):
+        try:
+            msgType = "error"
+            if not isError:
+                msgType = "info"
+            client.add_operation("SHOW_MSG", {
+                                                'msg': msg,
+                                                'msgType': msgType,
+                                                'msgTimeout': showSec,
+                                                'canClose': canClose
+                                             })
+        except:
+            markizalog.logError("showMsg failed (minimalna verzia archivCZSK 1.1.2).\n%s"%traceback.format_exc())
     
