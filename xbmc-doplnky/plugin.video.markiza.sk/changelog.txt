@@ -1,6 +1,6 @@
-2018-12-09 verzia 1.3.1
-	- opravene TV noviny - thx @boddie
-	- pridana moznost automatickeho vyberu streamu v danej kvalite
+2018-12-17 verzia 1.3.2
+	- opravene TV noviny a pridane caching - thx @boddie
+	- pridana moznost automatickeho vyberu streamu podla kvality
 2018-12-09 verzia 1.3.1
 	- opravene hlavne kategorie (TV noviny stale nefunkcne) thx @boddie
 2018-11-28 verzia 1.3.0

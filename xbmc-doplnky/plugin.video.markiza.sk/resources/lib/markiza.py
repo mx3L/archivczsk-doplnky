@@ -156,11 +156,11 @@ class MarkizaContentProvider(ContentProvider):
         doc = MarkizaCache().get_data_cached(url, True, 8)
 
         for section in doc.findAll('section', 'b-main-section my-sm-5'):
-            if section.div.h3.getText(" ").encode('utf-8') == 'TOP relácie':
+            if toString(section.div.h3.getText(" ")) == 'TOP relácie':
                 for article in section.findAll('article'):
-                    url = article.a['href'].encode('utf-8')
-                    title = article.a['title'].encode('utf-8')
-                    thumb = article.a.div.img['data-original'].encode('utf-8')
+                    url = toString(article.a['href'])
+                    title = toString(article.a['title'])
+                    thumb = toString(article.a.div.img['data-original'])
                     result.append(self.addDir(title, url, 3,thumb))
 
         return result
@@ -170,13 +170,13 @@ class MarkizaContentProvider(ContentProvider):
         doc = MarkizaCache().get_data_cached(url, True, 3)
 
         for section in doc.findAll('section', 'b-main-section b-section-articles my-5'):
-            if section.div.h3.getText(" ").encode('utf-8') == 'Najnovšie epizódy':
+            if toString(section.div.h3.getText(" ")) == 'Najnovšie epizódy':
                 for article in section.findAll('article'):
-                    url = article.a['href'].encode('utf-8')
-                    title1 = article.h3.getText(" ").encode('utf-8')
-                    title2 = article.find('span', 'e-text').getText(" ").encode('utf-8')
+                    url = toString(article.a['href'])
+                    title1 = toString(article.h3.getText(" "))
+                    title2 = toString(article.find('span', 'e-text').getText(" "))
                     title = str(title1) + ' - ' + str(title2)
-                    thumb = article.a.div.img['data-original'].encode('utf-8')
+                    thumb = toString(article.a.div.img['data-original'])
                     result.append(self.addDir(title, url, 3, thumb))
 
         return result
@@ -186,13 +186,13 @@ class MarkizaContentProvider(ContentProvider):
         doc = MarkizaCache().get_data_cached(url, True, 3)
 
         for section in doc.findAll('section', 'b-main-section b-section-articles b-section-articles-primary my-5'):
-            if section.div.h3.getText(" ").encode('utf-8') == 'Najsledovanejšie':
+            if toString(section.div.h3.getText(" ")) == 'Najsledovanejšie':
                 for article in section.findAll('article'):
-                    url = article.a['href'].encode('utf-8')
-                    title1 = article.h3.getText(" ").encode('utf-8')
-                    title2 = article.find('span', 'e-text').getText(" ").encode('utf-8')
+                    url = toString(article.a['href'])
+                    title1 = toString(article.h3.getText(" "))
+                    title2 = toString(article.find('span', 'e-text').getText(" "))
                     title = str(title1) + ' - ' + str(title2)
-                    thumb = article.a.div.img['data-original'].encode('utf-8')
+                    thumb = toString(article.a.div.img['data-original'])
                     result.append(self.addDir(title, url, 3, thumb))
 
         return result
@@ -202,13 +202,13 @@ class MarkizaContentProvider(ContentProvider):
         doc = MarkizaCache().get_data_cached(url, True, 8)
 
         for section in doc.findAll('section', 'b-main-section b-section-articles b-section-articles-primary my-5'):
-            if section.div.h3.getText(" ").encode('utf-8') == 'Odporúčame':
+            if toString(section.div.h3.getText(" ")) == 'Odporúčame':
                 for article in section.findAll('article'):
-                    url = article.a['href'].encode('utf-8')
-                    title1 = article.h3.getText(" ").encode('utf-8')
-                    title2 = article.find('span', 'e-text').getText(" ").encode('utf-8')
+                    url = toString(article.a['href'])
+                    title1 = toString(article.h3.getText(" "))
+                    title2 = toString(article.find('span', 'e-text').getText(" "))
                     title = str(title1) + ' - ' + str(title2)
-                    thumb = article.a.div.img['data-original'].encode('utf-8')
+                    thumb = toString(article.a.div.img['data-original'])
                     result.append(self.addDir(title, url, 3, thumb))
         return result
 
@@ -217,16 +217,16 @@ class MarkizaContentProvider(ContentProvider):
         doc = MarkizaCache().get_data_cached(url, True, 1)
 
         for article in doc.findAll('article', 'b-article b-article-text b-article-inline'):
-            url = article.a['href'].encode('utf-8')
-            thumb = article.a.div.img['data-original'].encode('utf-8')
-            title1 = article.a['title'].encode('utf-8')
-            title2 = article.find('div', 'e-date').span.getText(" ").encode('utf-8')
+            url = toString(article.a['href'])
+            thumb = toString(article.a.div.img['data-original'])
+            title1 = toString(article.a['title'])
+            title2 = toString(article.find('div', 'e-date').span.getText(" "))
             title = str(title1) + ' - ' + str(title2)
             result.append(self.addDir(title,url,3, thumb))
 
         main = doc.find('main')
         for section in main.findAll('section'):
-            titleSection = section.find('h3','e-articles-title').getText(" ").encode('utf-8')
+            titleSection = toString(section.find('h3','e-articles-title').getText(" "))
             result.append(self.addDir(titleSection, url, 4))
 
         return result
@@ -251,7 +251,7 @@ class MarkizaContentProvider(ContentProvider):
             name = re.compile('<meta property="og:title" content="(.+?)">').findall(httpdata)
             name = name[0] if len(name) > 0 else '?'
             item = []
-            item.append({'bitrates': videoUrl, 'contentTitle': name.encode('utf-8'), 'contentDescription': desc.encode('utf-8'), 'thumbnail': thumb})
+            item.append({'bitrates': videoUrl, 'contentTitle': toString(name), 'contentDescription': toString(desc), 'thumbnail': thumb})
             playlist['playlist'] = item;
         else:
             url = re.search('relatedLoc: "(.+?)",',httpdata,re.DOTALL).group(1).replace('\/','/')
@@ -279,9 +279,9 @@ class MarkizaContentProvider(ContentProvider):
                 # az
                 doc = MarkizaCache().get_data_cached(url, True, 8)
                 for article in doc.findAll('article'):
-                    url = article.a['href'].encode('utf-8')
-                    title = article.a['title'].encode('utf-8')
-                    thumb = article.a.div.img['data-original'].encode('utf-8')
+                    url = toString(article.a['href'])
+                    title = toString(article.a['title'])
+                    thumb = toString(article.a.div.img['data-original'])
                     result.append(self.addDir(title,url,2, thumb))
             elif mode==4:
                 # podsekce na strance
@@ -289,11 +289,11 @@ class MarkizaContentProvider(ContentProvider):
                 sectionName = doc.find('h3', 'e-articles-title', text=name)
                 section = sectionName.findParent('section')
                 for article in section.findAll('article'):
-                    url = article.a['href'].encode('utf-8')
-                    title1 = article.a['title'].encode('utf-8')
-                    title2 = article.find('div', 'e-date').span.getText(" ").encode('utf-8')
+                    url = toString(article.a['href'])
+                    title1 = toString(article.a['title'])
+                    title2 = toString(article.find('div', 'e-date').span.getText(" "))
                     title = str(title1) + ' - ' + str(title2)
-                    thumb = article.a.div.img['data-original'].encode('utf-8')
+                    thumb = toString(article.a.div.img['data-original'])
                     result.append(self.addDir(title, url, 3, thumb))
             elif mode==2:
                 # episodes
