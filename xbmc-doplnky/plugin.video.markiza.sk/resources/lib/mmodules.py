@@ -2570,12 +2570,13 @@ if __name__ == '__main__':
 
 HTML="html"
 XML="xml"
-AGENT='Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'
+AGENT='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36'
 
 def read_page(url, type=HTML, data=None):
     if isinstance(url, types.StringTypes):
         req = urllib2.Request(url)
         req.add_header('User-Agent', AGENT)
+        req.add_header('Cache-Control', 'no-cache')
         if data:
             encoded_data=urllib.urlencode(data) 
         else:

@@ -34,6 +34,8 @@ __settings__ = __addon__.getSetting
 sys.path.append(os.path.join (__addon__.getAddonInfo('path'), 'resources', 'lib'))
 from markiza import markizalog, MarkizaContentProvider
 settings = {'quality':__addon__.getSetting('quality')}
+markizalog.logDebugEnabled = __addon__.getSetting('debug')=='true'
+
 
 class MarkizaXBMCContentProvider(xbmcprovider.XBMCMultiResolverContentProvider):
     def render_video(self, item):
@@ -46,4 +48,6 @@ class MarkizaXBMCContentProvider(xbmcprovider.XBMCMultiResolverContentProvider):
         # a tak ci tak neviem ci to na VTi 11 nepadne
 
 markizalog.logDebug("PARAMS=%s"%params)
-MarkizaXBMCContentProvider(MarkizaContentProvider(quality=settings['quality']), settings, __addon__, session).run(params)
+cp = MarkizaContentProvider(quality=settings['quality'])
+cp.useCache = __addon__.getSetting('use_cache')=='true'
+MarkizaXBMCContentProvider(cp, settings, __addon__, session).run(params)

@@ -1,3 +1,7 @@
+2018-12-17 verzia 1.3.3
+	- moznost vypnut cache (tak ci tak nepomoze tomu jeblemu web servru markizy)
+	- upravene radenie casti TV novin
+	- kozmetika
 2018-12-17 verzia 1.3.2
 	- opravene TV noviny a pridane caching - thx @boddie
 	- pridana moznost automatickeho vyberu streamu podla kvality

@@ -30,6 +30,7 @@ from time import strftime
 import cookielib
 from Plugins.Extensions.archivCZSK.engine import client
 from Plugins.Extensions.archivCZSK.engine.tools.util import toString
+from Plugins.Extensions.archivCZSK import removeDiac
 try:
     import hashlib
 except ImportError:
@@ -39,7 +40,7 @@ from Components.config import config
 from provider import ContentProvider
 from mmodules import read_page
 
-_UserAgent_ = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:60.0) Gecko/20100101 Firefox/60.0'
+_UserAgent_ = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36'
 
 class Singleton(type):
     _instances = {}
@@ -55,7 +56,10 @@ class MarkizaCache():
         self.initialized = True
 
     def get_data_cached(self, url, useCache, timeout, page = True):
+        markizalog.logDebug("getdata(%s,%s,%s,%s)..."%(url, useCache, timeout, page))
         if useCache:
+            if timeout == -1:
+                return self.cache_request_special(url)
             if timeout == 1:
                 return self.cache_request_1(url, page);
             if timeout == 3:
@@ -66,8 +70,16 @@ class MarkizaCache():
             return self.cache_request_30(url, page);
         else:
             return read_page(url) if page else util.request(url)
+    def clear_cache(self, useCache):
+        if useCache:
+            self.cache_request_special.cache_clear()
 
     # must be in Singleton or Static class/method because cachce store per instance but in plugin class create in each request
+    @lru_cache(maxsize = 500, timeout = 3*60*60)
+    def cache_request_special(self, url):
+        markizalog.logDebug("NOT CACHED REQUEST")
+        return read_page(url)
+
     @lru_cache(maxsize = 1000, timeout = 8*60*60) #8h
     def cache_request_8(self, url, page):
         markizalog.logDebug("NOT CACHED REQUEST")
@@ -130,6 +142,7 @@ class MarkizaContentProvider(ContentProvider):
         ContentProvider.__init__(self, 'videoarchiv.markiza.sk', 'http://videoarchiv.markiza.sk', username, password, filter, tmp_dir)
         util.init_urllib()
         self.quality = quality
+        self.useCache = True
 
     def capabilities(self):
         return ['categories', 'resolve']
@@ -153,7 +166,7 @@ class MarkizaContentProvider(ContentProvider):
 
     def top(self, url):
         result = []
-        doc = MarkizaCache().get_data_cached(url, True, 8)
+        doc = MarkizaCache().get_data_cached(url, self.useCache, 8)
 
         for section in doc.findAll('section', 'b-main-section my-sm-5'):
             if toString(section.div.h3.getText(" ")) == 'TOP relácie':
@@ -167,7 +180,7 @@ class MarkizaContentProvider(ContentProvider):
 
     def newEpisodes(self, url):
         result = []
-        doc = MarkizaCache().get_data_cached(url, True, 3)
+        doc = MarkizaCache().get_data_cached(url, self.useCache, 3)
 
         for section in doc.findAll('section', 'b-main-section b-section-articles my-5'):
             if toString(section.div.h3.getText(" ")) == 'Najnovšie epizódy':
@@ -183,7 +196,7 @@ class MarkizaContentProvider(ContentProvider):
 
     def mostViewed(self, url):
         result = []
-        doc = MarkizaCache().get_data_cached(url, True, 3)
+        doc = MarkizaCache().get_data_cached(url, self.useCache, 3)
 
         for section in doc.findAll('section', 'b-main-section b-section-articles b-section-articles-primary my-5'):
             if toString(section.div.h3.getText(" ")) == 'Najsledovanejšie':
@@ -199,7 +212,7 @@ class MarkizaContentProvider(ContentProvider):
 
     def recommended(self, url):
         result = []
-        doc = MarkizaCache().get_data_cached(url, True, 8)
+        doc = MarkizaCache().get_data_cached(url, self.useCache, 8)
 
         for section in doc.findAll('section', 'b-main-section b-section-articles b-section-articles-primary my-5'):
             if toString(section.div.h3.getText(" ")) == 'Odporúčame':
@@ -214,7 +227,7 @@ class MarkizaContentProvider(ContentProvider):
 
     def episodes(self, url):
         result = []
-        doc = MarkizaCache().get_data_cached(url, True, 1)
+        doc = MarkizaCache().get_data_cached(url, self.useCache, 1)
 
         for article in doc.findAll('article', 'b-article b-article-text b-article-inline'):
             url = toString(article.a['href'])
@@ -233,41 +246,49 @@ class MarkizaContentProvider(ContentProvider):
 
     def videoLink(self, url):
         result = []
-        doc = MarkizaCache().get_data_cached(url, True, 1)
-        main = doc.find('main')
-        url = main.find('iframe')['src']
-        httpdata = MarkizaCache().get_data_cached(url, True, 1, False)
+        doc = ''
+        try:
+            cacheTime = 1
+            # this shit can failed <main> not contain <iframe> ... clear cache workaround not help, no-cache also .. fucking markiza server
+            doc = MarkizaCache().get_data_cached(url, self.useCache, -1) # special
+            main = doc.find('main')
+            url = main.find('iframe')['src']
+            httpdata = MarkizaCache().get_data_cached(url, self.useCache, 1, False)
 
-        httpdata = httpdata.replace("\r","").replace("\n","").replace("\t","")
+            httpdata = httpdata.replace("\r","").replace("\n","").replace("\t","")
 
-        playlist = {}
-        src = re.search('src = ({.+?});',httpdata,re.DOTALL).group(1)
-        videoUrl = json.loads(src)
-        if videoUrl:
-            thumb = re.compile('<meta property="og:image" content="(.+?)">').findall(httpdata)
-            thumb = thumb[0] if len(thumb) > 0 else ''
-            desc = re.compile('<meta name="description" content="(.+?)">').findall(httpdata)
-            desc = desc[0] if len(desc) > 0 else ''
-            name = re.compile('<meta property="og:title" content="(.+?)">').findall(httpdata)
-            name = name[0] if len(name) > 0 else '?'
-            item = []
-            item.append({'bitrates': videoUrl, 'contentTitle': toString(name), 'contentDescription': toString(desc), 'thumbnail': thumb})
-            playlist['playlist'] = item;
-        else:
-            url = re.search('relatedLoc: "(.+?)",',httpdata,re.DOTALL).group(1).replace('\/','/')
-            jsonData = MarkizaCache().get_data_cached(url, True, 1, False)
-            playlist = json.loads(jsonData)
-            # not working correctly on VTi 11
-            # maybe @TODO
-            # result.append(self.addLink('PREHRAŤ VŠETKO',url))
+            playlist = {}
+            src = re.search('src = ({.+?});',httpdata,re.DOTALL).group(1)
+            videoUrl = json.loads(src)
+            if videoUrl:
+                thumb = re.compile('<meta property="og:image" content="(.+?)">').findall(httpdata)
+                thumb = thumb[0] if len(thumb) > 0 else ''
+                desc = re.compile('<meta name="description" content="(.+?)">').findall(httpdata)
+                desc = desc[0] if len(desc) > 0 else ''
+                name = re.compile('<meta property="og:title" content="(.+?)">').findall(httpdata)
+                name = name[0] if len(name) > 0 else '?'
+                item = []
+                item.append({'bitrates': videoUrl, 'contentTitle': toString(name), 'contentDescription': toString(desc), 'thumbnail': thumb})
+                playlist['playlist'] = item;
+            else:
+                url = re.search('relatedLoc: "(.+?)",',httpdata,re.DOTALL).group(1).replace('\/','/')
+                jsonData = MarkizaCache().get_data_cached(url, self.useCache, 1, False)
+                playlist = json.loads(jsonData)
+                # not working correctly on VTi 11
+                # maybe @TODO
+                # result.append(self.addLink('PREHRAŤ VŠETKO',url))
 
-        if playlist and len(playlist['playlist']) > 0:
-            # sort by title
-            data = sorted(playlist['playlist'], key=lambda i: i['contentTitle'])
-            for url in data:
-                result.append(self.addLink(url['contentTitle'],url['bitrates']['hls'],url['thumbnail']))
-        else:
-            raise Exception('Chyba - Video nejde prehrat')
+            if playlist and len(playlist['playlist']) > 0:
+                # sort by title
+                data = sorted(playlist['playlist'], key=lambda i: removeDiac(i['contentTitle']))
+                for url in data:
+                    result.append(self.addLink(url['contentTitle'],url['bitrates']['hls'],url['thumbnail']))
+            else:
+                raise Exception('Chyba - Video nejde prehrat')
+        except:
+            MarkizaCache().clear_cache(self.useCache) # special
+            #markizalog.logDebug('########## POJEBANY REPSPONSE (<iframe>):\n%s'%doc)
+            raise Exception("Ziskanie videolinku zlyhalo (clear cache).\n%s"%traceback.format_exc())
         return result
 
     def list(self, url):
@@ -277,7 +298,7 @@ class MarkizaContentProvider(ContentProvider):
             markizalog.logDebug('list hit name=%s, mode=%s, url=%s'%(name, mode, url))
             if mode==5:
                 # az
-                doc = MarkizaCache().get_data_cached(url, True, 8)
+                doc = MarkizaCache().get_data_cached(url, self.useCache, 8)
                 for article in doc.findAll('article'):
                     url = toString(article.a['href'])
                     title = toString(article.a['title'])
@@ -285,7 +306,7 @@ class MarkizaContentProvider(ContentProvider):
                     result.append(self.addDir(title,url,2, thumb))
             elif mode==4:
                 # podsekce na strance
-                doc = MarkizaCache().get_data_cached(url, True, 8)
+                doc = MarkizaCache().get_data_cached(url, self.useCache, 8)
                 sectionName = doc.find('h3', 'e-articles-title', text=name)
                 section = sectionName.findParent('section')
                 for article in section.findAll('article'):
@@ -319,9 +340,10 @@ class MarkizaContentProvider(ContentProvider):
                 # video link
                 result = self.videoLink(url)
         except:
-            markizalog.logError("Nacitanie zoznamu mode=%s zlyhalo.\n%s"%(mode, traceback.format_exc()))
+            markizalog.logError("Nacitanie zoznamu mode=%s zlyhalo. (Pojebany server ala markiza)\n%s"%(mode, traceback.format_exc()))
             result.append(self.addDir('FAILED','xxxx',0, ''))
-            self.showMsg('Nacitanie zoznamu zlyhalo.\n%s'%traceback.format_exc(), 30, True, True)
+            #self.showMsg('Nacitanie zoznamu zlyhalo.\n%s'%toString(traceback.format_exc())[:100], 30, True, True)
+            self.showMsg('Nacitanie zoznamu zlyhalo.\nSkuste znova neskor (vypadok na strane markiza.sk).', 15, True, True)
             
         return result
 
@@ -342,7 +364,7 @@ class MarkizaContentProvider(ContentProvider):
             ## @@TODO
             ## tu by trebalo vytiahnut len resolvnute URLky v jednej kvalite a tak to poskladat do playlistu vid. default.py
             markizalog.logDebug('resolve hit (chapters)...%s'%item['url'])
-            jsonData = MarkizaCache().get_data_cached(item['url'], True, 30, False)
+            jsonData = MarkizaCache().get_data_cached(item['url'], self.useCache, 30, False)
             playlist = json.loads(jsonData)
 
             if playlist and len(playlist['playlist']) > 0:
@@ -356,12 +378,13 @@ class MarkizaContentProvider(ContentProvider):
         else:
             # '/master.m3u8'
             baseUrl = item['url'][:item['url'].index('master.m3u8')]
-            manifest = toString(MarkizaCache().get_data_cached(item['url'], True, 3, True) )
+            manifest = toString(MarkizaCache().get_data_cached(item['url'], self.useCache, 3, False) )
             markizalog.logDebug("item manifest= %s"%manifest)
             for m in re.finditer('#EXT-X-STREAM-INF:PROGRAM-ID=\d+,BANDWIDTH=(?P<bandwidth>\d+),RESOLUTION=.+,FRAME-RATE=.+,CODECS=".+"\s(?P<chunklist>.+$\s)', manifest, re.MULTILINE):
                 itm = self.video_item()
                 itm['title'] = item['title']
                 bandwidth = int(m.group('bandwidth'))
+                itm['bandwidth'] = bandwidth
                 if bandwidth < 1500000:
                     itm['quality'] = "360p"
                 elif bandwidth >= 1500000 and bandwidth < 2000000:
@@ -372,7 +395,7 @@ class MarkizaContentProvider(ContentProvider):
                 itm['surl'] = itm['title']
                 markizalog.logDebug("item=%s"%itm)
                 result.append(itm)
-            result = sorted(result,key=lambda i:(len(i['quality']),i['quality']), reverse = True)
+            result = sorted(result,key=lambda i:i['bandwidth'], reverse = True)
             
         result = resolver.filter_by_quality(result, self.quality)
         if len(result) > 0 and select_cb:
