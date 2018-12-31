@@ -10,12 +10,55 @@ import HTMLParser
 import xml.etree.ElementTree as ET
 import email.utils as eut
 import time
-
+import os,datetime
+import simplejson as json
 import util
+from Components.config import config
 from provider import ContentProvider
 
 _htmlParser_ = HTMLParser.HTMLParser()
 _rssUrl_ = 'http://video.aktualne.cz/rss/dvtv/'
+
+
+class dvtvlog(object):
+    ERROR = 0
+    INFO = 1
+    DEBUG = 2
+    mode = INFO
+
+    logEnabled = True
+    logDebugEnabled = False
+    LOG_FILE = ""
+
+    @staticmethod
+    def logDebug(msg):
+        if dvtvlog.logDebugEnabled:
+            dvtvlog.writeLog(msg, 'DEBUG')
+
+    @staticmethod
+    def logInfo(msg):
+        dvtvlog.writeLog(msg, 'INFO')
+
+    @staticmethod
+    def logError(msg):
+        dvtvlog.writeLog(msg, 'ERROR')
+
+    @staticmethod
+    def writeLog(msg, type):
+        try:
+            if not dvtvlog.logEnabled:
+                return
+            # if log.LOG_FILE=="":
+            dvtvlog.LOG_FILE = os.path.join(config.plugins.archivCZSK.logPath.getValue(), 'dvtv.log')
+            f = open(dvtvlog.LOG_FILE, 'a')
+            dtn = datetime.datetime.now()
+            f.write(dtn.strftime("%d.%m.%Y %H:%M:%S.%f")[:-3] + " [" + type + "] %s\n" % msg + '')
+            f.close()
+        except:
+            print "####DVTV#### write log failed!!!"
+            pass
+        finally:
+            print "####DVTV#### [" + type + "] " + msg
 
 class DVTVContentProvider(ContentProvider):
 
@@ -69,34 +112,37 @@ class DVTVContentProvider(ContentProvider):
 
     def resolve(self, item, captcha_cb=None, select_cb=None):
         result = []
+        twice = False
         item = item.copy()
         httpdata = util.request(item['url'])
-        videos = re.compile('{[^i]*?image.*?sources:[^]]*?][^}]*?}', re.S).findall(httpdata)
+        videos = re.compile('tracks:(?:.(?!\}\]\}))*.\}\]\}', re.S).findall(httpdata)
+        if len(videos) > 1:  # last item in playlist is doubled on page
+            del videos[-1]
         if videos:
+            title = re.compile('<meta property="og:title" content=".*">').search(httpdata).group(0)
+            title = re.sub('<meta property="og:title" content="', '', title).replace('">', '')
+            image = re.compile('<meta property="og:image" content=".*">').search(httpdata).group(0)
+            image = re.sub('<meta property="og:image" content="', '', image).replace('">', '')
+            description = re.compile('<meta property="og:description" content=".*">').search(httpdata).group(0)
+            description = re.sub('<meta property="og:description" content="', '', description).replace('">', '')
             for video in videos:
-                image = 'http:' + re.compile('image: ?\'([^\']*?)\'').search(video).group(1).strip()
-                title = _htmlParser_.unescape(re.compile('title: ?\'([^\']*?)\'').search(video).group(1).strip())
-                description = re.compile('description: ?\'([^\']*?)\'').search(video);
-                if description:
-                    description = _htmlParser_.unescape(description.group(1).strip())
-                sources = re.compile('sources: ?(\[[^\]]*?])', re.S).search(video).group(1)
-                if sources:
-                    versions = re.compile('{[^}]*?}', re.S).findall(sources)
-                    if versions:
-                        for version in versions:
-                            url = re.compile('"file":"([^"]*)"').search(version).group(1).replace('\/','/').strip()
-                            mime = re.compile('"type":"([^"]*)"').search(version).group(1).replace('\/','/').strip()
-                            quality = re.compile('"label":"([^"]*)"').search(version).group(1).strip()
-                            if mime =='video/webm':
-                                continue
-                            vitem = self.video_item()
-                            vitem['title'] = title
-                            vitem['surl'] = str(len(title))
-                            vitem['img'] = image
-                            vitem['url'] = url
-                            vitem['quality'] = quality
-                            result.append(vitem)
-        result.sort(key=lambda x:x['quality'], reverse=True)
+                video = re.sub(re.compile('\sadverttime:.*', re.S), '', video)  # live streams workaround
+                video = video.replace('tracks: ', '')
+                video = re.sub(r'[,\w]*$', '', video)
+                detail = json.loads(video)
+                if detail.has_key('MP4'):
+                    sources = detail['MP4']
+                    for version in sources:
+                        url = version['src']
+                        quality = version['label']
+                        vitem = self.video_item()
+                        vitem['title'] = title
+                        vitem['surl'] = str(len(title))
+                        vitem['img'] = image
+                        vitem['url'] = url
+                        vitem['quality'] = quality
+                        result.append(vitem)
+        result.sort(key=lambda x:(len(x['quality']), x['quality']), reverse=True)
         if len(result) > 0 and select_cb:
             return select_cb(result)
         return result
