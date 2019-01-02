@@ -96,7 +96,12 @@ class XBMContentProvider(object):
         params = self.params()
         params.update({'search':''})
         xbmcutil.add_search_item(xbmcutil.__lang__(30004), params, xbmcutil.icon('search.png'))
-        for what in xbmcutil.get_searches(self.addon, self.provider.name):
+        maximum = 10
+        try:
+            maximum = int(self.settings['keep-searches'])
+        except:
+            pass
+        for what in xbmcutil.get_searches(self.addon, self.provider.name, maximum):
             params = self.params()
             menuItems = self.params()
             menuItems2 = self.params()
@@ -122,7 +127,7 @@ class XBMContentProvider(object):
         if what == '':
             what = client.getTextInput(self.session, xbmcutil.__lang__(30003))
         if not what == '':
-            maximum = 20
+            maximum = 10
             try:
                 maximum = int(self.settings['keep-searches'])
             except:

@@ -1,3 +1,5 @@
+1.8.2 (2019-01-02)
+    - fix search history maximum items
 1.8.1 (2018-06-16)
     - add trakt.tv support
 1.8.0 (2018-04-27)

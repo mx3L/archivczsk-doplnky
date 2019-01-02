@@ -130,7 +130,7 @@ def error(text):
         client.log.error(text)
 
 
-def get_searches(addon, server):
+def get_searches(addon, server, maximum=10):
         local = addon.get_info('profile')
         if not os.path.exists(local):
                 os.makedirs(local)
@@ -140,6 +140,14 @@ def get_searches(addon, server):
         f = open(local, 'r')
         data = f.read()
         searches = json.loads(data.decode('utf-8', 'ignore'))
+        f.close()
+
+        remove = len(searches) - maximum
+        if remove > 0:
+            for i in range(remove):
+                searches.pop()
+        f = open(local, 'w')
+        f.write(json.dumps(searches, ensure_ascii=True))
         f.close()
         return searches
 

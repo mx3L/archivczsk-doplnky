@@ -6,6 +6,7 @@
     <setting label="30204" id="trakt_enabled" type="bool" default="false" />
     <setting label="30205" id="trakt_filter" type="enum" lvalues="302051|302052|302053" default="0"/>
     <setting label="30107" id="item_filter_lang" type="enum" lvalues="301071|301072|301073|301074|301075" default="0" />
+    <setting label="30108" id="keep-searches" type="text" default="10"/>
   
     <!--<setting label="30106" id="auto_subs" type="bool" default="true" />-->
 

@@ -30,7 +30,7 @@ import traceback
 import datetime
 import util
 import xbmcprovider,xbmcutil
-from trakttv import trakt_tv
+from trakttv import trakt_tv, TraktRefreshException
 
 from provider import ContentProvider, cached, ResolveException
 from time import strftime
@@ -298,6 +298,7 @@ class StreamCinemaContentProvider(ContentProvider):
             "66678": {"sk_SK":"(Trakt) Operácia zlyhala.","en_EN":"(Trakt) Operation failed.", "cs_CZ":"(Trakt) Operace selhala."},
             "66679": {"sk_SK":"Trakt nie je zapnutý v nastaveniach doplnku.","en_EN":"Trakt is not enabled in addon settings.", "cs_CZ":"Trakt není zapnutý v nastaveních doplňku."},
             "66680": {"sk_SK":"Trakt nie je spárovaný s týmto zariadením.","en_EN":"Trakt is not pair with this device.", "cs_CZ":"Trakt není spárován s tímto zařízením."},
+            "66681": {"sk_SK":"Obnovenie prístupu trakt.tv zlyhalo. Prosím, opätovne spárujte zariadenie.","en_EN":"Restoring trakt.tv access failed. Please pair device again.", "cs_CZ":"Obnovení přístupu trakt.tv selhalo. Prosím, znovu spárujte zařízení."},
             
             #<!-- texty v menu -->
             "30901": {"sk_SK":"Filmy","en_EN":"Movies", "cs_CZ":"Filmy"},
@@ -835,7 +836,7 @@ class StreamCinemaContentProvider(ContentProvider):
                             item['customDataItem'] = m
                         # mark trakt items
                         # trakt_filter=> 0-mark, 1-hide, 2-nothing
-                        if self.trakt_enabled and self.tapi.valid() and self.trakt_filter!='2' and 'id' in m:
+                        if self.trakt_enabled and self.trakt_filter!='2' and 'id' in m and self.tapi.valid():
                             if itype==-1:
                                 itype=StaticTraktWatched().getItemType(m)
                             if StaticTraktWatched().isWatched(m, itype):
@@ -844,11 +845,27 @@ class StreamCinemaContentProvider(ContentProvider):
                                 elif self.trakt_filter=='1':
                                     continue
                         self._filter(result, item)
+                    except TraktRefreshException as err:
+                        raise err
                     except:
                         sclog.logError("item render failed %s.\n%s"%(itemUrl, traceback.format_exc()))
                         pass
             else:
                 result.append(self.dir_item(title='none', url='failed_url'))
+        except TraktRefreshException as err:
+            # reset and save setting
+            try:
+                self.tapi.TOKEN = ''
+                from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
+                addon = ArchivCZSK.get_xbmc_addon('plugin.video.stream-cinema')
+                addon.setSetting('trakt_token', '')
+                addon.setSetting('trakt_token_expire', '')
+                addon.setSetting('trakt_refresh_token', '')
+            except:
+                pass
+            sclog.logError('Refresh trakt access token failed.\n%s'%traceback.format_exc())
+            self.showMsg("$66681", 30, isError=True)
+            result.append(self.dir_item(title='Render item failed...', url='failed_url'))
         except:
             sclog.logError("Render item failed.\n%s"%traceback.format_exc())
             result.append(self.dir_item(title='Render item failed (CONNECTION ERROR)...', url='failed_url'))
@@ -1004,7 +1021,7 @@ class StreamCinemaContentProvider(ContentProvider):
                                                 #sclog.logDebug("_resolve ws is null...");
                                                 from webshare import Webshare as wx
                                                 self.ws = wx(self.wsuser, self.wspass, self.useHttps)
-                                            m['subs'] = self.ws.resolve(tmp2)
+                                            m['subs'] = self.ws.resolve(tmp2, self.deviceUid)
                                             m['subExist'] = True
                                             #sclog.logDebug("resolved subs url=%s"%itm['subs'])
                                         #else:
@@ -1086,7 +1103,7 @@ class StreamCinemaContentProvider(ContentProvider):
             try:
                 data = self._json(self.getBaseUrl() + itm['url'], True, 1)
                 if data and 'ident' in data:
-                    itm['url'] = self.ws.resolve(data['ident'])
+                    itm['url'] = self.ws.resolve(data['ident'], self.deviceUid)
                 else:
                     raise Exception("Resolve URL failed (IDT).")
             except:

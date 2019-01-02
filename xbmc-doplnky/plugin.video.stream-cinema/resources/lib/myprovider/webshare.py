@@ -175,9 +175,11 @@ class Webshare():
 
         return udata
 
-    def resolve(self,ident):
+    def resolve(self, ident, devid, dwnType='video_stream'):
         try:
-            headers,req = self._create_request('/',{'ident':ident,'wst':self.token})
+            headers,req = self._create_request('/',{'ident':ident,'wst':self.token, 'download_type': dwnType, 'device_uuid': devid })
+            # @TODO add params, maybe later 'device_res_x': infoLabel('System.ScreenWidth'), 'device_res_y': infoLabel('System.ScreenHeight'),
+            
             #util.info(headers)
             #util.info(req)
             data = util.post(self._url('api/file_link/'), req, headers=headers)

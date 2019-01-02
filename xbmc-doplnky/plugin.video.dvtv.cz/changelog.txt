@@ -1,3 +1,5 @@
+2019-01-02
+	- fix playback for new web player (thx boddie, stefanides, me2d09)
 2014-09-02 [1.2.0]
  * Localization English and Czech
  * Loading dialogs

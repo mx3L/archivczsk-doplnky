@@ -85,7 +85,7 @@ def checkSetVIP(u, p, https):
         pass
 
 
-settings = {'quality':__addon__.getSetting('quality')}
+settings = {'quality':__addon__.getSetting('quality'), 'keep-searches': __addon__.getSetting('keep-searches')}
 
 reverse_eps = __gets('order-episodes') == '0'
 use_https = __gets('use_https') == 'true'

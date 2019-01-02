@@ -7,6 +7,8 @@ import traceback
 import datetime
 import util
 
+class TraktRefreshException(Exception):
+    pass
 
 class trakt_tv(object):
     def __init__(self, client_id, client_secret, token='', refresh_token='', expire=0):
@@ -197,9 +199,10 @@ class trakt_tv(object):
     def valid(self):
         if self.TOKEN == '':
             return False
+        
         # check refresh
         now = (datetime.datetime.now() - datetime.datetime(1970,1,1)).total_seconds()
-        if self.EXPIRE-3600 < now: #-1hour
+        if self.EXPIRE-432000 < now: #-5dni (5*24*60*60)
             self.refresh_token()
         return True
 
@@ -221,8 +224,6 @@ class trakt_tv(object):
             self.TOKEN = data['access_token']
             self.REFRESH_TOKEN = data['refresh_token']
 
-            
-
             expire = data['expires_in'] #seconds
             created = data['created_at']
 
@@ -240,19 +241,26 @@ class trakt_tv(object):
         return self.TOKEN
 
     def refresh_token(self, redirect_uri='urn:ietf:wg:oauth:2.0:oob', grant_type='refresh_token'):
-        data = json.loads(util.post_json(self.API+'/oauth/token', data={'refresh_token':self.REFRESH_TOKEN, 'client_id':self.CLIENT_ID, 'client_secret':self.CLIENT_SECRET, 'redirect_uri':redirect_uri, 'grant_type':grant_type}, headers={'Content-Type':'application/json'}))
-        self.TOKEN = data['access_token']
-        self.REFRESH_TOKEN = data['refresh_token']
+        try:
+            data = json.loads(util.post_json(self.API+'/oauth/token', data={'refresh_token':self.REFRESH_TOKEN, 'client_id':self.CLIENT_ID, 'client_secret':self.CLIENT_SECRET, 'redirect_uri':redirect_uri, 'grant_type':grant_type}, headers={'Content-Type':'application/json'}))
+            self.TOKEN = data['access_token']
+            self.REFRESH_TOKEN = data['refresh_token']
 
-        expire = data['expires_in'] #seconds
-        created = data['created_at']
+            expire = data['expires_in'] #seconds
+            created = data['created_at']
 
-        self.EXPIRE = expire+created
+            self.EXPIRE = expire+created
 
-        #update settings
-        self.writeSetting('trakt_token', '%s'%self.TOKEN)
-        self.writeSetting('trakt_refresh_token', '%s'%self.TOKEN)
-        self.writeSetting('trakt_token_expire', '%s'%self.EXPIRE)
+            #update settings
+            self.writeSetting('trakt_token', '%s'%self.TOKEN)
+            self.writeSetting('trakt_refresh_token', '%s'%self.REFRESH_TOKEN)
+            self.writeSetting('trakt_token_expire', '%s'%self.EXPIRE)
+        except urllib2.HTTPError as err:
+            if err.code == 401:
+                raise TraktRefreshException('Refresh trakt access token failed (reset settings).')
+            raise err
+        except:
+            raise
 
     def writeSetting(self, id, val):
         from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
