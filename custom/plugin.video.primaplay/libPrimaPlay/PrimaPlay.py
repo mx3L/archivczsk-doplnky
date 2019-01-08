@@ -302,15 +302,17 @@ class Parser:
         if seasons_result is None: return None
 
         seasons_items = re.findall(
-            '<a class="season.*?href="//(.*?)">[\s\n]*?<div class="title">(.*?)</div>[\s\n]*?<div class="description">(.*?)</div>',
+            '<a class="season(.*?)" href="//(.*?)">[\s\n]*?<div class="title">(.*?)</div>[\s\n]*?<div class="description">(.*?)</div>',
             seasons_result.group(0), re.S)
 
         for item in seasons_items:
-            link = 'https://' + item[0]
-            title = item[1]
-            description = item[2]
+            if 'active' in item[0]: return None
 
-            list.append(Item('[B]' + title + '[/B]', link, None, description, isFolder=True))
+            link = 'https://' + item[1]
+            title = item[2]
+            description = item[3]
+
+            list.append(Item(title, link, None, description, isFolder=True))
 
         return list
 

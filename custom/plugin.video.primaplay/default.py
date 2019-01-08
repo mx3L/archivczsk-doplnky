@@ -137,14 +137,14 @@ def add_account_menu():
     add_dir(title, url)
 
 def add_show(video_list):
-    title = '[B]' + video_list.title + '[/B]'
+    title = video_list.title
     url = None
     if video_list.link:
         url = get_menu_link(action='SHOW-NAV', linkurl=video_list.link)
     add_dir(title, url, video_list.thumbnail)
 
 def add_title(video_list):
-    title = '[B]'+video_list.title+'[/B]'
+    title = video_list.title
     url = None
     if video_list.link:
         url = get_menu_link( action = 'PAGE', linkurl = video_list.link )
