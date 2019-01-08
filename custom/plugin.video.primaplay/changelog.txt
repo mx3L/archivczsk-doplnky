@@ -3,7 +3,7 @@
  * Fixed bug when episode list wouldn't load when containing unavailable episodes
 
 2019-02-01 [0.4.0]
- * Changes to allow scraping new iPrima site
+ * Changes to allow scraping new iPrima site / thx RomanSmolka
  * New icon
 
 2016-01-31 [0.3.7]
