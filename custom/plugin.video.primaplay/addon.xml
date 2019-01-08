@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.primaplay" name="Prima Play" version="0.3.9" provider-name="Ladislav Dokulil">
+<addon id="plugin.video.primaplay" name="iPrima" version="0.4.1" provider-name="Ladislav Dokulil">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
   </requires>
@@ -7,9 +7,9 @@
     <provides>video</provides>
   </extension>
   <extension point="xbmc.addon.metadata">
-    <summary>Prima Play</summary>
-	<description>Plugin to play videos from Prima Play archive</description>
-    <description lang="cs">Plugin nabízí přístup do archivu Prima Play.</description>
+    <summary>iPrima</summary>
+	<description>Plugin to play videos from iPrima archive</description>
+    <description lang="cs">Plugin nabízí přístup do archivu iPrima.</description>
     <platform>all</platform>
     <source>https://github.com/alladdin/plugin.video.primaplay</source>
   </extension>
