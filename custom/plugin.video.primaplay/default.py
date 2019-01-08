@@ -2,6 +2,7 @@
 import os
 import sys
 import traceback
+import time
 import m3u8
 
 from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
@@ -54,7 +55,7 @@ if (_addon_.getSetting('account_enabled') == 'true'):
     _play_account = PrimaPlay.Account( _addon_.getSetting('account_email'), _addon_.getSetting('account_password'), _play_parser )
 
 def main_menu(pageurl, list_only = False):
-    page = _play_parser.get_page(pageurl)
+    page = _play_parser.get_page(pageurl + '?strana=1')
     if not list_only:
         if page.player:
             add_player(page.player)
@@ -62,11 +63,22 @@ def main_menu(pageurl, list_only = False):
             add_search_menu()
             add_account_menu()
         add_filters(page, pageurl)
-
     for video_list in page.video_lists:
         if video_list.title: add_title(video_list)
         add_item_list(video_list.item_list)
         if video_list.next_link: add_next_link(video_list.next_link)
+
+def shows_menu(pageurl, list_only=False):
+    page = _play_parser.get_shows(pageurl)
+    for video_list in page.video_lists:
+        if video_list.title: add_show(video_list)
+        add_item_list(video_list.item_list)
+        if video_list.next_link: add_next_link(video_list.next_link)
+
+def show_navigation(pageurl, list_only=False):
+    page = _play_parser.get_show_navigation(pageurl)
+    for video_list in page.video_lists:
+        if video_list.title: add_title(video_list)
 
 def next_menu(nexturl):
     next_list = _play_parser.get_next_list(nexturl)
@@ -124,6 +136,13 @@ def add_account_menu():
     url = get_menu_link( action = 'ACCOUNT' )
     add_dir(title, url)
 
+def add_show(video_list):
+    title = '[B]' + video_list.title + '[/B]'
+    url = None
+    if video_list.link:
+        url = get_menu_link(action='SHOW-NAV', linkurl=video_list.link)
+    add_dir(title, url, video_list.thumbnail)
+
 def add_title(video_list):
     title = '[B]'+video_list.title+'[/B]'
     url = None
@@ -133,8 +152,11 @@ def add_title(video_list):
 
 def add_item_list(item_list):
     for item in item_list:
-        url = get_menu_link( action = 'PAGE', linkurl = item.link )
-        add_dir(item.title, url, item.image_url, {'label':item.title, 'plot':item.description})
+        if item.isFolder:
+            url = get_menu_link( action = 'PAGE', linkurl = item.link )
+            add_dir(item.title, url)
+        else:
+            add_dir(item.title, item.link, item.image_url, video_item=True)
 
 def add_next_link(next_link):
     title = u'Další stránka'
@@ -146,26 +168,28 @@ def add_player(player):
     add_dir(u"[B]Přehraj:[/B] " + player.title, url, player.image_url, video_item=True)
 
 def resolve_videos(link):
-    m3u8_obj = m3u8.load(link)
+    product_id = _play_parser.get_productID(link)
+    video = _play_parser.get_video(product_id)
+    m3u8_obj = m3u8.load(video.link)
+
     if m3u8_obj.is_variant:
         streams = []
         for i in m3u8_obj.playlists:
             streams.append((i.base_uri + "/" + i.uri, i.stream_info.resolution, i.stream_info.bandwidth))
-        streams.sort(key=lambda x:x[2], reverse=True)
-        streams.sort(key=lambda x:x[1], reverse=True)
+        streams.sort(key=lambda x: x[2], reverse=True)
+        streams.sort(key=lambda x: x[1], reverse=True)
         for idx, (url, resolution, bandwidth) in enumerate(streams):
             if resolution and bandwidth:
-                title = "%sx%s - %dKB/s" % (resolution[0], resolution[1], bandwidth/1024/8)
+                title = "%sx%s - %dKB/s" % (resolution[0], resolution[1], bandwidth / 1024 / 8)
             elif resolution:
                 title = "%sx%s" % (resolution[0], resolution[1])
             elif bandwidth:
-                title = "%dKB/s" % (bandwidth/1024/8)
+                title = "%dKB/s" % (bandwidth / 1024 / 8)
             else:
                 title = str(idx)
             add_video(title, url)
     else:
-        add_video("video", link)
-
+        add_video("video", video.link)
 
 def get_menu_link(**kwargs):
     return kwargs
@@ -192,12 +216,16 @@ try:
         search()
     elif action == "ACCOUNT":
         account()
+    elif action == "SHOW-NAV":
+        show_navigation(linkurl)
     elif action == "PAGE":
         main_menu(linkurl)
-    elif action == "RESOLVE":
+    elif action == "PLAY":
         resolve_videos(linkurl)
     else:
-        main_menu("http://play.iprima.cz")
+        ts = int(time.time())
+        shows_menu("https://prima.iprima.cz/iprima-api/ListWithFilter/Series/Content?ts=" + str(
+            ts) + "&filter=all&featured_queue_name=iprima:hp-featured-series")
 except Exception as ex:
     exc_type, exc_value, exc_traceback = sys.exc_info()
     _exception_log(exc_type, exc_value, exc_traceback)

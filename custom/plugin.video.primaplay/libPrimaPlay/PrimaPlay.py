@@ -8,17 +8,61 @@ import time
 import re
 import sys
 import ssl
+import os
+import datetime
+from Components.config import config
 
 __author__ = "Ladislav Dokulil"
 __license__ = "GPL 2"
 __version__ = "1.0.0"
 __email__ = "alladdin@zemres.cz"
 
+
+class primalog(object):
+    ERROR = 0
+    INFO = 1
+    DEBUG = 2
+    mode = INFO
+
+    logEnabled = True
+    logDebugEnabled = True
+    LOG_FILE = ""
+
+    @staticmethod
+    def logDebug(msg):
+        if primalog.logDebugEnabled:
+            primalog.writeLog(msg, 'DEBUG')
+
+    @staticmethod
+    def logInfo(msg):
+        primalog.writeLog(msg, 'INFO')
+
+    @staticmethod
+    def logError(msg):
+        primalog.writeLog(msg, 'ERROR')
+
+    @staticmethod
+    def writeLog(msg, type):
+        try:
+            if not primalog.logEnabled:
+                return
+            # if log.LOG_FILE=="":
+            primalog.LOG_FILE = os.path.join(config.plugins.archivCZSK.logPath.getValue(), 'prima.log')
+            f = open(primalog.LOG_FILE, 'a')
+            dtn = datetime.datetime.now()
+            f.write(dtn.strftime("%d.%m.%Y %H:%M:%S.%f")[:-3] + " [" + type + "] %s\n" % msg)
+            f.close()
+        except:
+            print "####PRIMA#### write log failed!!!"
+            pass
+        finally:
+            print "####PRIMA#### [" + type + "] " + msg
+
 class UserAgent(object):
     def __init__(self, session_id = None, agent = 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:43.0) Gecko/20100101 Firefox/43.0'):
         self.agent = agent
-        self.play_url = 'http://play.iprima.cz'
-        self.cookie_domain = 'play.iprima.cz'
+        self.play_url = 'https://prima.iprima.cz'
+        self.cookie_domain = 'prima.iprima.cz'
         self.cookie_port = '80'
         self.cookie_jar = cookielib.CookieJar()
         self.cookie_jar.set_cookie(self.cookie('ott_cookies_confirmed', '1'))
@@ -83,14 +127,42 @@ class Parser:
             'query': query
         })
 
-    def get_video_link(self, productID):
+    def get_productID(self, episode_link):
+        content = self.ua.get(episode_link)
+
+        product_id_re = re.compile('src="https://api.play-backend.iprima.cz/prehravac/embedded\?id=(.*?)"', re.S)
+        product_id_result = product_id_re.search(content)
+
+        if product_id_result is None:
+            return None
+
+        product_id = product_id_result.group(1)
+
+        return product_id
+
+    def get_video(self, productID):
         content = self.ua.get(self.get_player_init_url(productID))
+
         link_re = re.compile("'?src'?\s*:\s+'(https?://[^']+\\.m3u8.*)'")
-        sd_link = link_re.search(content).group(1)
+        title_re = re.compile("programName: '(.*?)',")
+        thumb_re = re.compile("thumbnails: {[\s\n]*url: '(.*?)\$")
+
+        link = None
+        sd_link = link_re.search(content)
+        if sd_link:link = sd_link.group(1)
+
         hd_link = None
-        if self.hd_enabled: hd_link = self.try_get_hd_link(sd_link)
-        if hd_link: return hd_link
-        return sd_link
+        if self.hd_enabled: hd_link = self.try_get_hd_link(sd_link.group(1))
+        if hd_link: link = hd_link
+
+        title = title_re.search(content).group(1)
+
+        thumb = None
+        thumb_result = thumb_re.search(content)
+        if thumb_result:
+            thumb = thumb_result.group(1) + '010.jpg'
+
+        return Item(title, link, thumb)
 
     def try_get_hd_link(self, sd_link):
         hd_link = re.sub(".smil/", "-hd1-hd2.smil/", sd_link)
@@ -116,19 +188,60 @@ class Parser:
         return self.get_items_from_wrapper(cdata_match.group(1), '')
 
     def get_next_list_link(self, content):
-        next_link_re = re.compile('(https?://play.iprima.cz/tdi/dalsi.*offset=\d+)')
+        next_link_re = re.compile('<section class="molecule--button--load-more-button">.*?<a href="(.*?)"', re.S)
         result = next_link_re.search(content)
         if result: return result.group(1)
         return None
 
     def get_page(self, link):
         content = self.ua.get(link)
-        return Page(
-            self.get_page_player(content),
-            self.get_video_lists(content, link),
-            self.get_filter_lists(content, link),
-            self.get_current_filters(content, link)
-        )
+        return Page(None, self.get_video_lists(content, link))
+
+    def get_shows(self, src_link):
+        list = []
+        content = self.ua.get(src_link)
+        content_unescaped = eval('u"""' + content.replace('"', r'\"') + '-"""').replace('\\', '')
+
+        wrapper_items = re.split('<div class="component--scope--cinematography ', content_unescaped)
+
+        title_re = re.compile('<div class="component--scope--cinematography--details--title">(.*?)</div>', re.S)
+        link_re = re.compile('<a href="([^\s"]*)', re.S)
+        thumb_re = re.compile('<picture.*?data-srcset="(.*?)\?', re.S)
+
+        for wrapper_item in wrapper_items:
+            title_result = title_re.search(wrapper_item)
+            if title_result is None: continue
+            title = self.strip_tags(title_result.group(1).strip())
+
+            link_result = link_re.search(wrapper_item)
+            link = None
+            if link_result: link = link_result.group(1)
+
+            thumb_result = thumb_re.search(wrapper_item)
+            thumb = None
+            if thumb_result: thumb = thumb_result.group(1)
+
+            items = self.get_items_from_wrapper(wrapper_item, src_link)
+            list.append(PageVideoList(title, link, None, items, thumb))
+
+        return Page(None, list)
+
+    def get_show_navigation(self, link):
+        list = []
+        valid_items = ['Epizody', 'Bonusy', 'Sestřihy']
+        content = self.ua.get(link)
+
+        wrapper_re = re.compile('<nav.*?id="program-navigation-menu"(.*?)</nav>', re.S)
+        item_re = re.compile('<a href="//(.*?)".*?>(.*?)</a>', re.S)
+
+        wrapper_result = wrapper_re.search(content).group(1)
+        item_result = item_re.findall(wrapper_result)
+
+        for (link, txt) in item_result:
+            if txt in valid_items:
+                list.append(PageVideoList(txt, 'https://' + link))
+
+        return Page(None, list)
 
     def get_redirect_from_remove_link(self, link):
         content = self.ua.get(link)
@@ -136,7 +249,7 @@ class Parser:
         redirect_result = redirect_re.search(content)
         if redirect_result is None: return None
         return self.make_full_link(redirect_result.group(1), link)
-
+    """
     def get_page_player(self, content):
         title_re = re.compile('<meta property="og:title" content="([^"]+)"/>', re.S)
         description_re = re.compile('<meta property="og:description" content="([^"]+)"/>', re.S)
@@ -163,75 +276,83 @@ class Parser:
             year = additional_info_result.group(3).strip()
         video_link = self.get_video_link(product_id)
         return Player(title, video_link, image_url, description, broadcast_date, duration, year)
-
+    """
     def get_video_lists(self, content, src_link):
         list = []
-        tdi_items_re = re.compile('<div class="[^"]+" id="js-tdi-items-next"')
 
-        if tdi_items_re.search(content):
-            items = self.get_items_from_wrapper(content, src_link)
-            if (len(items) <= 0): return list
+        next_link_re = re.compile('<section class="molecule--button--load-more-button">[\s\n]*?<a.*?href="(.*?)"', re.S)
+        next_link_result = next_link_re.search(content)
+        next_link = None
+        if next_link_result:
+            next_link = next_link_result.group(1)
 
-            next_link_re = re.compile('<div class="infinity-scroll" data-href="([^"]+)"')
-            next_link_result = next_link_re.search(content)
-            next_link = None
-            if next_link_result: next_link = next_link_result.group(1)
+        seasons = self.get_seasons(content, src_link)
+        items = self.get_items_from_wrapper(content, src_link)
+        if seasons: list.append(PageVideoList(None, None, self.make_full_link(next_link, src_link), seasons))
+        list.append(PageVideoList(None, None, self.make_full_link(next_link, src_link), items))
 
-            list.append(PageVideoList(None,
-                None, self.make_full_link(next_link, src_link),
-                items))
+        return list
 
-            return list
+    def get_seasons(self, content, src_link):
+        list = []
 
-        wrapper_items = re.split('<section class="l-constrained movies-list-carousel-wrapper">', content)
+        seasons_re = re.compile('<div class="section--view--program-videos-section--seasons">(.*?)</a>[\s\n]*?</div>',
+                                re.S)
+        seasons_result = seasons_re.search(content)
+        if seasons_result is None: return None
 
-        title_re = re.compile('<h2(?: class="[^"]+")?(?: data-scroll="cid-[^"]+")?>(.+)</h2>[^<]*<div class="l-movies-list', re.S)
-        link_re = re.compile('<h2[^>]*>[^<]*<a href="([^"]+)">', re.S)
-        for wrapper_item in wrapper_items:
-            title_result = title_re.search(wrapper_item)
-            if title_result is None: continue
-            title = self.strip_tags(title_result.group(1))
-            link_result = link_re.search(wrapper_item)
-            link = None
-            if link_result: link = self.make_full_link(link_result.group(1), src_link)
-            items = self.get_items_from_wrapper(wrapper_item, src_link)
-            if (len(items) <= 0): continue
-            list.append(PageVideoList(title.decode('utf-8'),
-                self.make_full_link(link, src_link),
-                None, items))
+        seasons_items = re.findall(
+            '<a class="season.*?href="//(.*?)">[\s\n]*?<div class="title">(.*?)</div>[\s\n]*?<div class="description">(.*?)</div>',
+            seasons_result.group(0), re.S)
+
+        for item in seasons_items:
+            link = 'https://' + item[0]
+            title = item[1]
+            description = item[2]
+
+            list.append(Item('[B]' + title + '[/B]', link, None, description, isFolder=True))
 
         return list
 
     def get_items_from_wrapper(self, content, src_link):
         list = []
 
-        html_items = re.split('<div id="[^"]+" class="movie-border"[^>]+>', content)
+        html_items = re.findall('class="compoment--scope--video-type.*?">(.*?)</a>', content, re.S)
 
-        item_link_re = re.compile('<a href="([^"]+)">')
-        item_img_re = re.compile('<img data-srcset="(\S+)')
-        item_title_re = re.compile('<div class="back">[^<]*<a[^>]*>[^<]*<div class="header">(.+)</div>[^<]*<div class="content">', re.S)
-        item_description_re = re.compile('<div class="content">[^<]*<p class="promo-notice[^"]*">([^<]*)</p>', re.S)
-        item_additional_re = re.compile('<p>[^\|]*\|\s*(\d{4})[^<]*</p>[^<]*(?:<p data-jnp="i.BroadcastDate">[^:]+: ([^<]+)</p>[^<]*)<div class="attributes">', re.S)
+        item_link_re = re.compile('<a class="compoment--scope--video-type--link" href="(.*?)"', re.S)
+        item_img_re = re.compile('<div class="compoment--scope--video-type--picture.*?<source data-srcset.*?<source data-srcset="(.*?)\?'
+                                 ,
+                                 re.S)
+        item_title_re = re.compile('<div class="compoment--scope--video-type--details--title">(.*?)</div>', re.S)
+        item_description_re = re.compile('<div class="compoment--scope--video-type--details--description">(.*?)</div>',
+                                         re.S)
 
         for html_item in html_items:
-            link_result = item_link_re.search(html_item)
-            img_result = item_img_re.search(html_item)
-            title_result = item_title_re.search(html_item)
-            description_result = item_description_re.search(html_item)
-            additional_result = item_additional_re.search(html_item)
+            item_content = html_item
+            link_result = item_link_re.search(item_content)
+            img_result = item_img_re.search(item_content,re.DOTALL)
+            title_result = item_title_re.search(item_content)
+            description_result = item_description_re.search(item_content)
+
             if title_result is None: continue
             title = self.strip_tags(title_result.group(1))
-            link = self.make_full_link(link_result.group(1), src_link)
+
+            if link_result is None: continue
+            link = link_result.group(1)
+            link = {'action': 'PLAY', 'linkurl': 'https:' + link}
+
             image_url = None
-            description = None
-            broadcast_date = None
-            year = None
+            description = ''
+
             if img_result: image_url = img_result.group(1)
-            if description_result: description = description_result.group(1).strip().decode('utf-8')
-            if additional_result:
-                year = additional_result.group(1).strip()
-                broadcast_date = additional_result.group(2).strip()
-            list.append(Item(title.decode('utf-8'), link, image_url, description, broadcast_date, None, year))
+
+            if description_result:
+                description = description_result.group(1).strip()
+                title = title + ' | ' + description
+
+
+            list.append(Item(title, link, image_url, description))
+
         return list
 
     def get_filter_lists(self, content, src_link):
@@ -361,11 +482,12 @@ class Page:
         self.player = player
 
 class PageVideoList:
-    def __init__(self, title = None, link = None, next_link = None, item_list = []):
+    def __init__(self, title=None, link=None, next_link=None, item_list=[], thumbnail=None):
         self.title = title
         self.link = link
         self.next_link = next_link
         self.item_list = item_list
+        self.thumbnail = thumbnail
 
 class Player:
     def __init__(self, title, video_link, image_url, description, broadcast_date = None, duration = None, year = None):
@@ -383,7 +505,7 @@ class NextList:
         self.list = list
 
 class Item:
-    def __init__(self, title, link, image_url = None, description = None, broadcast_date = None, duration = None, year = None):
+    def __init__(self, title, link, image_url=None, description=None, broadcast_date=None, duration=None, year=None, isFolder=False):
         self.title = title
         self.link = link
         self.image_url = image_url
@@ -391,3 +513,4 @@ class Item:
         self.broadcast_date = broadcast_date
         self.year = year
         self.duration = duration
+        self.isFolder = isFolder
