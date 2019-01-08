@@ -1,8 +1,11 @@
-2019-03-01 [0.4.1]
+2019-01-08 [0.4.2]
+ * kozmetika
+
+2019-01-03 [0.4.1]
  * Plugin now displays shows from all Prima channels
  * Fixed bug when episode list wouldn't load when containing unavailable episodes
 
-2019-02-01 [0.4.0]
+2019-01-02 [0.4.0]
  * Changes to allow scraping new iPrima site / thx RomanSmolka
  * New icon
 
