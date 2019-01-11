@@ -59,6 +59,8 @@ class WebshareContentProvider(ContentProvider):
             if not xml.find('status').text == 'OK':
                 return False
             salt = xml.find('salt').text
+            if salt is None:
+                salt = ''
             password = hashlib.sha1(md5crypt(self.password.encode('utf-8'), salt.encode('utf-8'))).hexdigest()
             digest = hashlib.md5(self.username + ':Webshare:' + self.password).hexdigest()
             headers,req = self._create_request('',{'username_or_email':self.username,'password':password,'digest':digest,'keep_logged_in':1})
