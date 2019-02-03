@@ -1,4 +1,7 @@
-2019-01-08 [0.4.2]
+2019-02-03 [0.4.2]
+ * Fixed scraping iPrima site
+ * Added cache
+ * Added automatic quality selection
  * kozmetika
 
 2019-01-03 [0.4.1]

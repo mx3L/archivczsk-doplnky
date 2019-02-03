@@ -221,7 +221,7 @@ class PrimaPlayUnitTest(unittest.TestCase):
 
     def test_Account_login(self):
         prima_play = PrimaPlay.Parser(mockUserAgent(), mockTime())
-        parser_account = PrimaPlay.Account( user, password, prima_play )
+        parser_account = PrimaPlay.Account(user, password, prima_play)
         self.assertEqual(parser_account.login(), True)
 
     def test_get_page__moje_play(self):
