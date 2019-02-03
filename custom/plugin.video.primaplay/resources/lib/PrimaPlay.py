@@ -11,12 +11,20 @@ import ssl
 import os
 import datetime
 from Components.config import config
+from cachestack import lru_cache
+from Plugins.Extensions.archivCZSK.engine.tools.util import toString
 
 __author__ = "Ladislav Dokulil"
 __license__ = "GPL 2"
 __version__ = "1.0.0"
 __email__ = "alladdin@zemres.cz"
 
+class Singleton(type):
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
 
 class primalog(object):
     ERROR = 0
@@ -25,7 +33,7 @@ class primalog(object):
     mode = INFO
 
     logEnabled = True
-    logDebugEnabled = True
+    logDebugEnabled = False
     LOG_FILE = ""
 
     @staticmethod
@@ -107,19 +115,60 @@ class UserAgent(object):
         return url
 
 class Parser:
-    def __init__(self, ua = UserAgent(), time_obj = time, hd_enabled = True):
+    __metaclass__ = Singleton
+
+    # must be in Singleton or Static class/method because cachce store per instance but in plugin class create in each request
+    @lru_cache(maxsize = 500, timeout = 30*60) #30min
+    def cache_request_30(self, url):
+        primalog.logDebug("NOT CACHED REQUEST")
+        return self.ua.get(url)
+    @lru_cache(maxsize = 500, timeout = 60*60) #1h
+    def cache_request_1(self, url):
+        primalog.logDebug("NOT CACHED REQUEST")
+        return self.ua.get(url)
+    @lru_cache(maxsize = 500, timeout = 180*60) #3h
+    def cache_request_3(self, url):
+        primalog.logDebug("NOT CACHED REQUEST")
+        return self.ua.get(url)
+    @lru_cache(maxsize = 250, timeout = 360*60) #6h
+    def cache_request_6(self, url):
+        primalog.logDebug("NOT CACHED REQUEST")
+        return self.ua.get(url)
+    @lru_cache(maxsize = 100, timeout = 12*60*60) #12h
+    def cache_request_12(self, url):
+        primalog.logDebug("NOT CACHED REQUEST")
+        return self.ua.get(url)
+
+    def get_data_cached(self, url, useCache, timeout):
+        if useCache:
+            if timeout==1:
+                return self.cache_request_1(url);
+            if timeout==3:
+                return self.cache_request_3(url);
+            if timeout==6:
+                return self.cache_request_6(url);
+            if timeout==12:
+                return self.cache_request_12(url);
+
+            return self.cache_request_30(url);
+        else:
+            return self.ua.get(url)
+
+    def __init__(self, ua = UserAgent(), time_obj = time, hd_enabled = True, useCache = True):
         self.ua = ua
         self.player_init_url = 'http://api.play-backend.iprima.cz/prehravac/init?'
         self.search_url = 'http://play.iprima.cz/vysledky-hledani-vse?'
         self.time = time_obj
         self.hd_enabled = hd_enabled
+        self.useCache = useCache
 
     def get_player_init_url(self, productID):
         return self.player_init_url + urllib.urlencode({
             '_infuse': '1',
-            '_ts': int(self.time.time()),
+            # '_ts': int(self.time.time()),
             'productId': productID
         })
+
         #http://api.play-backend.iprima.cz/prehravac/init?_infuse=1&_ts=1450864235286&productId=p135603
 
     def get_search_url(self, query):
@@ -127,8 +176,12 @@ class Parser:
             'query': query
         })
 
+    def get_manifest(self, manifest_link):
+        manifest = toString(self.get_data_cached(manifest_link , self.useCache, 30))
+        return manifest
+
     def get_productID(self, episode_link):
-        content = self.ua.get(episode_link)
+        content = self.get_data_cached(episode_link, self.useCache, 1)
 
         product_id_re = re.compile('src="https://api.play-backend.iprima.cz/prehravac/embedded\?id=(.*?)"', re.S)
         product_id_result = product_id_re.search(content)
@@ -141,7 +194,8 @@ class Parser:
         return product_id
 
     def get_video(self, productID):
-        content = self.ua.get(self.get_player_init_url(productID))
+        url = self.get_player_init_url(productID)
+        content = self.get_data_cached(url, self.useCache, 1)
 
         link_re = re.compile("'?src'?\s*:\s+'(https?://[^']+\\.m3u8.*)'")
         title_re = re.compile("programName: '(.*?)',")
@@ -177,7 +231,7 @@ class Parser:
         return hd_link
 
     def get_next_list(self, link):
-        content = self.ua.get(link)
+        content = self.get_data_cached(link, self.useCache, 1)
         next_link = self.get_next_list_link(content)
         list = self.get_next_list_items(content)
         return NextList(next_link, list)
@@ -194,12 +248,12 @@ class Parser:
         return None
 
     def get_page(self, link):
-        content = self.ua.get(link)
+        content = self.get_data_cached(link, self.useCache, 1)
         return Page(None, self.get_video_lists(content, link))
 
     def get_shows(self, src_link):
         list = []
-        content = self.ua.get(src_link)
+        content = self.get_data_cached(src_link, self.useCache, 8)
         content_unescaped = eval('u"""' + content.replace('"', r'\"') + '-"""').replace('\\', '')
 
         wrapper_items = re.split('<div class="component--scope--cinematography ', content_unescaped)
@@ -229,7 +283,7 @@ class Parser:
     def get_show_navigation(self, link):
         list = []
         valid_items = ['Epizody', 'Bonusy', 'Sestřihy']
-        content = self.ua.get(link)
+        content = self.get_data_cached(link, self.useCache, 3)
 
         wrapper_re = re.compile('<nav.*?id="program-navigation-menu"(.*?)</nav>', re.S)
         item_re = re.compile('<a href="//(.*?)".*?>(.*?)</a>', re.S)
@@ -249,34 +303,7 @@ class Parser:
         redirect_result = redirect_re.search(content)
         if redirect_result is None: return None
         return self.make_full_link(redirect_result.group(1), link)
-    """
-    def get_page_player(self, content):
-        title_re = re.compile('<meta property="og:title" content="([^"]+)"/>', re.S)
-        description_re = re.compile('<meta property="og:description" content="([^"]+)"/>', re.S)
-        additional_info_re = re.compile('<span data-jnp="i.BroadcastDate">[^<]*</span>:([^\|]*)\|([^\|]*)\|([^<]*)</p>', re.S)
-        fake_player_re = re.compile('<div id="fake-player" class="[^"]+" data-product="([^"]+)">[^<]*(?:<img src="([^"]+)")?', re.S)
-        fake_player_result = fake_player_re.search(content)
-        if fake_player_result is None:
-            return None
-        title_result = title_re.search(content)
-        description_result = description_re.search(content)
-        additional_info_result = additional_info_re.search(content)
-        product_id = fake_player_result.group(1)
-        image_url = fake_player_result.group(2)
-        title = title_result.group(1).strip().decode('utf-8')
-        description = None
-        broadcast_date = None
-        duration = None
-        year = None
-        if description_result:
-            description = description_result.group(1)
-        if additional_info_result:
-            broadcast_date = additional_info_result.group(1).strip()
-            duration = additional_info_result.group(2).strip()
-            year = additional_info_result.group(3).strip()
-        video_link = self.get_video_link(product_id)
-        return Player(title, video_link, image_url, description, broadcast_date, duration, year)
-    """
+
     def get_video_lists(self, content, src_link):
         list = []
 
@@ -319,15 +346,14 @@ class Parser:
     def get_items_from_wrapper(self, content, src_link):
         list = []
 
-        html_items = re.findall('class="compoment--scope--video-type.*?">(.*?)</a>', content, re.S)
+        html_items = re.findall('<div class="component--scope--episode-latest program">(.*?)</a>', content, re.S)
 
-        item_link_re = re.compile('<a class="compoment--scope--video-type--link" href="(.*?)"', re.S)
-        item_img_re = re.compile('<div class="compoment--scope--video-type--picture.*?<source data-srcset.*?<source data-srcset="(.*?)\?'
+        item_link_re = re.compile('<a href="(.*?)"', re.S)
+        item_img_re = re.compile('<div class="component--scope--episode-latest--picture.*?<img class="lazyload" data-srcset="(.*?)\?'
                                  ,
                                  re.S)
-        item_title_re = re.compile('<div class="compoment--scope--video-type--details--title">(.*?)</div>', re.S)
-        item_description_re = re.compile('<div class="compoment--scope--video-type--details--description">(.*?)</div>',
-                                         re.S)
+        item_title_re = re.compile('<div class="component--scope--episode-latest--details--title">(.*?)</div>', re.S)
+        item_description_re = re.compile('<div class="component--scope--episode-latest--details--episode">(.*?)</div>',re.S)
 
         for html_item in html_items:
             item_content = html_item
