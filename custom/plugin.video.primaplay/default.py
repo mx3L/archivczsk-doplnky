@@ -235,9 +235,10 @@ try:
     elif action == "PLAY":
         resolve_videos(linkurl)
     else:
-        ts = int(time.time())
-        shows_menu("https://prima.iprima.cz/iprima-api/ListWithFilter/Series/Content?ts=" + str(
-            ts) + "&filter=all&featured_queue_name=iprima:hp-featured-series")
+        #ts = int(time.time())
+        #shows_menu("https://prima.iprima.cz/iprima-api/ListWithFilter/Series/Content?ts=" + str(
+        #    ts) + "&filter=all&featured_queue_name=iprima:hp-featured-series")
+        shows_menu("https://prima.iprima.cz/iprima-api/ListWithFilter/Series/Content?filter=all&featured_queue_name=iprima:hp-featured-series")
 except Exception as ex:
     exc_type, exc_value, exc_traceback = sys.exc_info()
     _exception_log(exc_type, exc_value, exc_traceback)

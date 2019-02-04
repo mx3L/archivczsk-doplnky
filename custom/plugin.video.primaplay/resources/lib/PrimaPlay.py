@@ -190,7 +190,7 @@ class Parser:
             return None
 
         product_id = product_id_result.group(1)
-
+        del content
         return product_id
 
     def get_video(self, productID):
@@ -215,7 +215,7 @@ class Parser:
         thumb_result = thumb_re.search(content)
         if thumb_result:
             thumb = thumb_result.group(1) + '010.jpg'
-
+        del content
         return Item(title, link, thumb)
 
     def try_get_hd_link(self, sd_link):
@@ -234,6 +234,7 @@ class Parser:
         content = self.get_data_cached(link, self.useCache, 1)
         next_link = self.get_next_list_link(content)
         list = self.get_next_list_items(content)
+        del content
         return NextList(next_link, list)
 
     def get_next_list_items(self, content):
@@ -277,7 +278,7 @@ class Parser:
 
             items = self.get_items_from_wrapper(wrapper_item, src_link)
             list.append(PageVideoList(title, link, None, items, thumb))
-
+        del content
         return Page(None, list)
 
     def get_show_navigation(self, link):
@@ -294,7 +295,7 @@ class Parser:
         for (link, txt) in item_result:
             if txt in valid_items:
                 list.append(PageVideoList(txt, 'https://' + link))
-
+        del content
         return Page(None, list)
 
     def get_redirect_from_remove_link(self, link):
