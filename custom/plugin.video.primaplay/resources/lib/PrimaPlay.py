@@ -243,9 +243,13 @@ class Parser:
         return self.get_items_from_wrapper(cdata_match.group(1), '')
 
     def get_next_list_link(self, content):
-        next_link_re = re.compile('<section class="molecule--button--load-more-button">.*?<a href="(.*?)"', re.S)
-        result = next_link_re.search(content)
-        if result: return result.group(1)
+        next_link_section_re = re.compile('<section class="molecule--button--load-more-button">(.*?)</section>', re.S)
+        next_link_re = re.compile('<a href="(.*?)".*?</a>', re.S)
+        result_section = next_link_section_re.search(content,re.DOTALL)
+        if result_section:
+            result_link = next_link_re.search(result_section.group(1))
+            if result_link:
+                return result_link.group(1)
         return None
 
     def get_page(self, link):
