@@ -736,13 +736,18 @@ class StreamCinemaContentProvider(ContentProvider):
                     #sclog.logDebug('trakt item=%s'%m)
                     if 'menu' in data and data['menu']:
                         found = False
+                        adinfo = ''
                         for x in data['menu']:
-                            if 'imdb' in x and int(x['imdb']) == int(m['imdb'].replace('tt','')):
-                                found = True
-                                break
+                            try:
+                                if 'imdb' in x and int(x['imdb']) == int(m['imdb'].replace('tt','')):
+                                    found = True
+                                    break
+                            except:
+                                sclog.DEBUG('Trakt imdb missmatch TRAKT:"%s"  SC:"%s"'%(m['imdb'], x['imdb']))
+                                adinfo='(missing imdb) '
                         if not found:
                             item = self.video_item(url='', img='', quality='')
-                            item['title']= '%s ***NOT FOUND***'%m['title']
+                            item['title']= '%s %s***NOT FOUND***'%(m['title'], adinfo)
                             result.append(item)
                     else:
                         item = self.video_item(url='', img='', quality='')

@@ -1,3 +1,6 @@
+2019-02-08
+    - trakt.tv kozmetika
+
 2019-01-02
     - fix obnovy pristupoveho tokenu trakt.tv
     - nastavenie poctu zapamatanych poloziek vyhladavania
