@@ -1,3 +1,5 @@
+1.8.3 (2019-02-18)
+    - fix cloudflare
 1.8.2 (2019-01-02)
     - fix search history maximum items
 1.8.1 (2018-06-16)

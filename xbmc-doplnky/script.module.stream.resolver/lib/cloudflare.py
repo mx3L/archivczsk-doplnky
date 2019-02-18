@@ -24,7 +24,6 @@
 import re
 import urllib
 import urllib2
-#import util
 import urlparse
 from time import sleep
 from resolver import rslog
@@ -45,8 +44,10 @@ class NoRedirection(urllib2.HTTPErrorProcessor):
 def solve_equation(equation):
     try:
         offset = (1 if equation[0] == '+' else 0)
-        return int(eval(equation.replace('!+[]', '1').replace('!![]',
-                   '1').replace('[]', '0').replace('(', 'str(')[offset:]))
+        ev = equation.replace('!+[]', '1').replace('!![]',
+                   '1').replace('[]', '0').replace('(', 'str(')[offset:]
+        ev = re.sub(r'^str', 'float', re.sub(r'\/(.)str', r'/\1float', ev))
+        return float(eval(ev))
     except:
         pass
 
@@ -64,13 +65,15 @@ def solve(url, cj, user_agent=None, wait=True):
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
         urllib2.install_opener(opener)
 
+    scheme = urlparse.urlparse(url).scheme
+    domain = urlparse.urlparse(url).hostname
     request = urllib2.Request(url)
     for key in headers:
         request.add_header(key, headers[key])
     try:
         response = urllib2.urlopen(request)
         html = response.read()
-    except urllib2.HTTPError, e:
+    except urllib2.HTTPError as e:
         html = e.read()
 
     tries = 0
@@ -78,60 +81,61 @@ def solve(url, cj, user_agent=None, wait=True):
         solver_pattern = \
             'var (?:s,t,o,p,b,r,e,a,k,i,n,g|t,r,a),f,\s*([^=]+)'
         solver_pattern += \
-            '={"([^"]+)":([^}]+)};.+challenge-form\'\);.*?\n.*?;(.*?);a\.value'
+            '={"([^"]+)":([^}]+)};.+challenge-form\'\);'
         vc_pattern = \
             'input type="hidden" name="jschl_vc" value="([^"]+)'
         pass_pattern = 'input type="hidden" name="pass" value="([^"]+)'
+        s_pattern = 'input type="hidden" name="s" value="([^"]+)'
         init_match = re.search(solver_pattern, html, re.DOTALL)
         vc_match = re.search(vc_pattern, html)
         pass_match = re.search(pass_pattern, html)
+        s_match = re.search(s_pattern, html)
 
-        if not init_match or not vc_match or not pass_match:
+        if not init_match or not vc_match or not pass_match or not s_match:
             msg = \
-                "Couldn't find attribute: init: |%s| vc: |%s| pass: |%s| No cloudflare check?"
+                "[CF] Couldn't find attribute: init: |%s| vc: |%s| pass: |%s| No cloudflare check?"
             rslog.logDebug(msg % (init_match, vc_match, pass_match))
             return False
 
-        (init_dict, init_var, init_equation, equations) = \
+        (init_dict, init_var, init_equation) = \
             init_match.groups()
         vc = vc_match.group(1)
         password = pass_match.group(1)
+        s = s_match.group(1)
 
-
+        equations = re.compile(r"challenge-form\'\);\s*(.*)a.v").findall(html)[0]
         varname = (init_dict, init_var)
-        result = int(solve_equation(init_equation.rstrip()))
-        rslog.logDebug('Initial value: |%s| Result: |%s|' % (init_equation, result))
+        result = float(solve_equation(init_equation.rstrip()))
+        rslog.logDebug('[CF] Initial value: |%s| Result: |%s|' % (init_equation, result))
 
         for equation in equations.split(';'):
             equation = equation.rstrip()
-            if equation[:len('.'.join(varname))] != '.'.join(varname):
-                rslog.logDebug('Equation does not start with varname |%s|' % equation)
-                tmppp = "do nothing"
-            else:
-                equation = equation[len('.'.join(varname)):]
+            if len(equation) > len('.'.join(varname)):
+                if equation[:len('.'.join(varname))] != '.'.join(varname):
+                    rslog.logDebug('[CF] Equation does not start with varname |%s|' % equation)
+                else:
+                    equation = equation[len('.'.join(varname)):]
 
-            expression = equation[2:]
-            operator = equation[0]
-            if operator not in ['+', '-', '*', '/']:
-                rslog.logDebug('Unknown operator: |%s|' % equation)
-                continue
+                expression = equation[2:]
+                operator = equation[0]
+                if operator not in ['+', '-', '*', '/']:
+                    rslog.logDebug('[CF] Unknown operator: |%s|' % equation)
+                    continue
 
-            result = int(str(eval(str(result) + operator + str(solve_equation(expression)))))
-            rslog.logDebug('intermediate: %s = %s' % (equation, result))
-
-        scheme = urlparse.urlparse(url).scheme
-        domain = urlparse.urlparse(url).hostname
-        result += len(domain)
-        rslog.logDebug('Final Result: |%s|' % result)
+                result = float(str(eval(str(result) + operator + str(solve_equation(expression)))))
+                rslog.logDebug('[CF] intermediate: %s = %s' % (equation, result))
+        
+        result = '{0:.10f}'.format(eval('float({0} + {1})'.format(result, len(domain))))
+        rslog.logDebug('[CF] Final Result: |%s|' % result)
 
         if wait:
             rslog.logDebug('Sleeping for 5 Seconds')
             sleep(5.1)
 
         url = \
-            '%s://%s/cdn-cgi/l/chk_jschl?jschl_vc=%s&jschl_answer=%s&pass=%s' \
-            % (scheme, domain, vc, result, urllib.quote(password))
-        rslog.logDebug('url: %s' % url)
+            '%s://%s/cdn-cgi/l/chk_jschl?s=%s&jschl_vc=%s&pass=%s&jschl_answer=%s' \
+            % (scheme, domain, urllib.quote(s), urllib.quote(vc), urllib.quote(password), urllib.quote(result))
+        #rslog.logDebug('[CF] url: %s' % url)
         request = urllib2.Request(url)
         for key in headers:
             request.add_header(key, headers[key])
@@ -161,16 +165,16 @@ def solve(url, cj, user_agent=None, wait=True):
             final = response.read()
             
             if 'cf-browser-verification' in final:
-                rslog.logDebug('CF Failure: html: %s url: %s' % (html, url))
+                rslog.logDebug('[CF] Failure: html: %s url: %s' % (html, url))
                 tries += 1
                 html = final
             else:
                 break
-        except urllib2.HTTPError, e:
-            rslog.logDebug('CloudFlare HTTP Error: %s on url: %s' % (e.code, url))
+        except urllib2.HTTPError as e:
+            rslog.logDebug('[CF] HTTP Error: %s on url: %s' % (e.code, url))
             return False
         except urllib2.URLError, e:
-            rslog.logDebug('CloudFlare URLError Error: %s on url: %s' % (e, url))
+            rslog.logDebug('[CF] URLError Error: %s on url: %s' % (e, url))
             return False
 
     # cant call without param cache
