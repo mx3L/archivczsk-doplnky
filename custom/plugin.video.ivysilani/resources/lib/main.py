@@ -149,7 +149,7 @@ class iVysilaniContentProvider(ContentProvider):
                 plot += " (" + _toString(live_programme.elapsedPercentage) + "%)"
             if hasattr(live_programme, "synopsis") and live_programme.synopsis:
                 plot += "\n\n" + _toString(live_programme.synopsis)
-            if live_programme.ID:
+            if hasattr(live_programme, "ID") and live_programme.ID:
                 try:
                     programme = ivysilani.Programme(live_programme.ID)
                     if programme.videoURL:
