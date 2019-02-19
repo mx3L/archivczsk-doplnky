@@ -1,3 +1,6 @@
+2019-02-19 verzia 1.0.9
+	- fixes by @hansolo
+
 [B]1.0.7:[/B]
 - added all live streams
 - default quality option is set back to always ask

@@ -151,10 +151,16 @@ class RtvsContentProvider(ContentProvider):
         item = self.video_item("live.2")
         item['title'] = "STV2"
         result.append(item)
-        for i in range(1,9):
-            item = self.video_item("live.%d"%(i+6))
-            item['title'] = "RIO"+ str(i)
-            result.append(item)
+        item = self.video_item("live.4")
+        item['title'] = "STV Online"
+        result.append(item)
+        item = self.video_item("live.5")
+        item['title'] = "STV NRSR"
+        result.append(item)
+        # for i in range(1,9):
+            # item = self.video_item("live.%d"%(i+6))
+            # item['title'] = "RIO"+ str(i)
+            # result.append(item)
         return result
 
     def az(self):
