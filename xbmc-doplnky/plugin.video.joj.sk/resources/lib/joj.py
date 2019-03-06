@@ -30,7 +30,7 @@ from xml.etree.ElementTree import fromstring
 import util
 from provider import ContentProvider
 
-BASE_URL = {"JOJ":  "http://joj.sk",
+BASE_URL = {"JOJ":  "http://www.joj.sk",
         "JOJ Plus": "http://plus.joj.sk",
         "WAU":      "http://wau.joj.sk"}
 
@@ -196,6 +196,7 @@ class JojContentProvider(ContentProvider):
         item = item.copy()
         url = item['url']
         if url.endswith('live.html'):
+            url = url.replace('www.','')
             channel = urlparse.urlparse(url).netloc.split('.')[0]
             if channel in 'plus':
                 channel = 'jojplus'
