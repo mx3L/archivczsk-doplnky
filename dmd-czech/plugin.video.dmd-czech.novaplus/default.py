@@ -23,7 +23,7 @@ fanart = os.path.join( home, 'fanart.jpg' )
 
 def OBSAH():
     addDir('Seriály a pořady','http://novaplus.nova.cz/porady/',5,icon,1)
-    addDir('Televizní noviny','http://novaplus.nova.cz/porad/televizni-noviny',1,icon,1)
+    addDir('Televizní noviny','http://novaplus.nova.cz/porad/televizni-noviny',2,icon,1)
     addDir('TOP pořady','http://novaplus.nova.cz',9,icon,1)
     addDir('Poslední díly','http://novaplus.nova.cz',8,icon,1)
     addDir('Nejsledovanější','http://novaplus.nova.cz',6,icon,1)
@@ -32,7 +32,7 @@ def OBSAH():
 def HOME_NEJSLEDOVANEJSI(url,page):
     doc = read_page(url)
 
-    for section in doc.findAll('section', 'b-main-section b-section-articles my-5'):
+    for section in doc.findAll('section', 'b-main-section b-section-articles b-section-articles-primary my-5'):
         if section.div.h3.getText(" ").encode('utf-8') == 'Nejsledovanější':
             for article in section.findAll('article'):
                 url = article.a['href'].encode('utf-8')
@@ -45,7 +45,7 @@ def HOME_NEJSLEDOVANEJSI(url,page):
 def HOME_DOPORUCUJEME(url,page):
     doc = read_page(url)
 
-    for section in doc.findAll('section', 'b-main-section b-section-articles b-section-articles-primary my-5'):
+    for section in doc.findAll('section', 'b-main-section b-section-articles my-5'):
         if section.div.h3.getText(" ").encode('utf-8') == 'Doporučujeme':
             for article in section.findAll('article'):
                 url = article.a['href'].encode('utf-8')
