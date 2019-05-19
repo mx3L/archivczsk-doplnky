@@ -83,7 +83,7 @@ class JojContentProvider(ContentProvider):
             if article_dict is not None:
                 item = self.dir_item()
                 item.update(article_dict)
-                item['url'] = '/'.join(item['url'].split('/')[:-2]) + "/epizody#s"
+                item['url'] = '/'.join(item['url'].split('/')[:-2]) + "#s"
                 result.append(item)
         return result
 
@@ -196,7 +196,6 @@ class JojContentProvider(ContentProvider):
         item = item.copy()
         url = item['url']
         if url.endswith('live.html'):
-            url = url.replace('www.','')
             channel = urlparse.urlparse(url).netloc.split('.')[0]
             if channel in 'plus':
                 channel = 'jojplus'
