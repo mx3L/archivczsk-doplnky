@@ -32,6 +32,7 @@ _play_parser = Parser(hd_enabled=_hd_enabled, useCache=_useCache)
 _play_account = None
 if (_addon_.getSetting('account_enabled') == 'true'):
     _play_account = Account(_addon_.getSetting('account_email'), _addon_.getSetting('account_password'), _play_parser)
+#    primalog.logDebug("ACCOUNT: "+ _addon_.getSetting('account_email') +":"+ _addon_.getSetting('account_password'))
 
 
 def _exception_log(exc_type, exc_value, exc_traceback):
@@ -55,11 +56,26 @@ def main_menu(pageurl, list_only=False):
 
 
 def shows_menu(pageurl, list_only=False):
-    page = _play_parser.get_shows(pageurl)
-    for video_list in page.video_lists:
-        if video_list.title: add_show(video_list)
-        add_item_list(video_list.item_list)
-        if video_list.next_link: add_next_link(video_list.next_link)
+    add_dir("ŽIVĚ - Prima", {'action': 'PLAY', 'linkurl': 'https://prima.iprima.cz'}, None, video_item=True)
+    add_dir("ŽIVĚ - Prima COOL", {'action': 'PLAY', 'linkurl': 'https://cool.iprima.cz'}, None, video_item=True)
+    add_dir("ŽIVĚ - Prima MAX", {'action': 'PLAY', 'linkurl': 'https://max.iprima.cz'}, None, video_item=True)
+    add_dir("ŽIVĚ - Prima KRIMI", {'action': 'PLAY', 'linkurl': 'https://krimi.iprima.cz'}, None, video_item=True)
+    add_dir("ŽIVĚ - Prima LOVE", {'action': 'PLAY', 'linkurl': 'https://love.iprima.cz'}, None, video_item=True)
+    add_dir("ŽIVĚ - Prima ZOOM", {'action': 'PLAY', 'linkurl': 'https://zoom.iprima.cz'}, None, video_item=True)
+    add_dir("Velké zprávy", {'action': 'PAGE', 'linkurl': 'https://prima.iprima.cz/porady/velke-zpravy/epizody'}, None)
+    add_dir("Prima ZOOM Svět", {'action': 'PAGE', 'linkurl': 'https://prima.iprima.cz/porady/prima-zoom-svet/epizody'}, None)
+    add_dir("Show Jana Krause", {'action': 'PAGE', 'linkurl': 'https://prima.iprima.cz/porady/show-jana-krause/epizody'}, None)
+    add_dir("Autosalon", {'action': 'PAGE', 'linkurl': 'https://cool.iprima.cz/porady/autosalon/epizody'}, None)
+    add_dir("Receptář Prima nápadů", {'action': 'PAGE', 'linkurl': 'https://prima.iprima.cz/receptar-prima-napadu/epizody'}, None)
+#    add_dir("Experiment 21", {'action': 'PAGE', 'linkurl': 'https://cool.iprima.cz/experiment-21'})
+#    add_dir("Elitní zabiják", {'action': 'PLAY', 'linkurl': 'https://www.iprima.cz/filmy/elitni-zabijak'}, None, video_item=True)
+#    add_search_menu()
+#    add_account_menu()
+#    page = _play_parser.get_shows(pageurl)
+#    for video_list in page.video_lists:
+#        if video_list.title: add_show(video_list)
+#        add_item_list(video_list.item_list)
+#        if video_list.next_link: add_next_link(video_list.next_link)
 
 
 def show_navigation(pageurl, list_only=False):
@@ -177,7 +193,7 @@ def resolve_videos(link):
     baseUrl = video.link[:video.link.index('playlist.m3u8')]
     manifest = _play_parser.get_manifest(video.link)
     result = []
-    for m in re.finditer('#EXT-X-STREAM-INF:BANDWIDTH=(?P<bandwidth>\d+),RESOLUTION=.+\s(?P<chunklist>.+$\s)',manifest, re.MULTILINE):
+    for m in re.finditer('#EXT-X-STREAM-INF:.*?ANDWIDTH=(?P<bandwidth>\d+),RESOLUTION=.+\s(?P<chunklist>.+$\s)',manifest, re.MULTILINE):
         itm = {}
         bandwidth = int(m.group('bandwidth'))
         itm['bandwidth'] = bandwidth

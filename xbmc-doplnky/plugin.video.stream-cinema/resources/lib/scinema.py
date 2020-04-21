@@ -1099,7 +1099,7 @@ class StreamCinemaContentProvider(ContentProvider):
         if itm is None:
             return None;
         #sclog.logDebug("_resolve itm: %s %s"%(itm, itm['provider']))
-        if itm['provider'] == 'plugin.video.online-files': #and itm['params']['cp'] == 'webshare.cz':
+        if itm['provider'] == 'plugin.video.online-files' or itm['provider'] == 'webshare':
             if self.ws is None:
                 #sclog.logDebug("_resolve ws is null...");
                 from webshare import Webshare as wx

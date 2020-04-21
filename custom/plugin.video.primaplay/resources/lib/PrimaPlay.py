@@ -288,7 +288,7 @@ class Parser:
     def get_show_navigation(self, link):
         list = []
         valid_items = ['Epizody', 'Bonusy', 'Sestřihy']
-        content = self.get_data_cached(link, self.useCache, 3)
+        content = self.get_data_cached("https:"+link, self.useCache, 3)
 
         wrapper_re = re.compile('<nav.*?id="program-navigation-menu"(.*?)</nav>', re.S)
         item_re = re.compile('<a href="//(.*?)".*?>(.*?)</a>', re.S)
