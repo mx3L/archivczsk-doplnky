@@ -2,6 +2,7 @@
 # taken grom xbmc-czech-sf.net
 
 TOOLS=$(dirname "$0")
+mkdir -p hashes 2> /dev/null
 
 
 BUILD_DIR=repo
