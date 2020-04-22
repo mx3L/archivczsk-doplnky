@@ -10,6 +10,8 @@ import urllib
 import xml.etree.ElementTree as ET
 import time
 import json
+from StringIO import StringIO
+import gzip
 
 __author__ = "Štěpán Ort"
 __license__ = "MIT"
@@ -285,12 +287,15 @@ def _https_ceska_televize_fetch(url, params):
 	headers = { "Content-type": "application/x-www-form-urlencoded",
 				"Accept-encoding": "gzip",
 				"Connection": "Keep-Alive",
-            	"User-Agent": "Dalvik/1.6.0 (Linux; U; Android 4.4.4; Nexus 7 Build/KTU84P)" }
+				"User-Agent": "Dalvik/1.6.0 (Linux; U; Android 4.4.4; Nexus 7 Build/KTU84P)" }
 	conn = httplib.HTTPSConnection("www.ceskatelevize.cz")
 	conn.request("POST", url, urllib.urlencode(params), headers)
 	response = conn.getresponse()
 	if response.status == 200:
-		data = response.read()
+		if response.getheader('Content-Encoding') == 'gzip':
+			data = gzip.GzipFile(fileobj = StringIO(response.read())).read()
+		else:
+			data = response.read()
 		conn.close()
 		return data
 	return None
