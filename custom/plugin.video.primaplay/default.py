@@ -67,15 +67,18 @@ def shows_menu(pageurl, list_only=False):
     add_dir("Show Jana Krause", {'action': 'PAGE', 'linkurl': 'https://prima.iprima.cz/porady/show-jana-krause/epizody'}, None)
     add_dir("Autosalon", {'action': 'PAGE', 'linkurl': 'https://cool.iprima.cz/porady/autosalon/epizody'}, None)
     add_dir("Receptář Prima nápadů", {'action': 'PAGE', 'linkurl': 'https://prima.iprima.cz/receptar-prima-napadu/epizody'}, None)
+    add_dir("VŠECHNY POŘADY", {'action': 'CATEGORIES', 'linkurl': pageurl}, None)
 #    add_dir("Experiment 21", {'action': 'PAGE', 'linkurl': 'https://cool.iprima.cz/experiment-21'})
 #    add_dir("Elitní zabiják", {'action': 'PLAY', 'linkurl': 'https://www.iprima.cz/filmy/elitni-zabijak'}, None, video_item=True)
 #    add_search_menu()
 #    add_account_menu()
-#    page = _play_parser.get_shows(pageurl)
-#    for video_list in page.video_lists:
-#        if video_list.title: add_show(video_list)
-#        add_item_list(video_list.item_list)
-#        if video_list.next_link: add_next_link(video_list.next_link)
+
+def show_categories(pageurl, list_only=False):
+    page = _play_parser.get_shows(pageurl)
+    for video_list in page.video_lists:
+        if video_list.title: add_show(video_list)
+        add_item_list(video_list.item_list)
+        if video_list.next_link: add_next_link(video_list.next_link)
 
 
 def show_navigation(pageurl, list_only=False):
@@ -246,6 +249,8 @@ try:
         account()
     elif action == "SHOW-NAV":
         show_navigation(linkurl)
+    elif action == "CATEGORIES":
+        show_categories(linkurl)
     elif action == "PAGE":
         main_menu(linkurl)
     elif action == "PLAY":
