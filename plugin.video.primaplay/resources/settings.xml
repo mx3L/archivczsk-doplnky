@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <category label="Kvalita přehrávání">
+        <setting id="tv_addon" type="bool" label="TV archiv" default="true" visible="false"/>
+        <setting id="hd_enabled" type="bool" label="Povolit HD" default="true" />
+        <setting label="30050" id="quality" type="enum" lvalues="30051|30052|30053|30054|30055|30056" default="1" />
+        <setting label="Používat cache" id="use_cache" type="bool" default="true" />
+        <setting label="Debug" id="debug" type="bool" default="false" />
+    </category>
+    <category label="Můj PLAY">
+        <setting id="account_enabled" type="bool" label="povolit přihlášení" default="false" />
+        <setting id="account_email" type="text" label="e-mail" default="" />
+        <setting id="account_password" type="text" option="hidden" label="heslo" default="" />
+    </category>
+</settings>

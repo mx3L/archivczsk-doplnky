@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.dvtv.cz" name="Drtinová Veselovský TV" version="1.2.3" provider-name="Štěpán Ort">
+  <requires>
+    <import addon="xbmc.python" version="2.1.0"/>
+    <import addon="script.module.stream.resolver" version="1.6.22" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary>DVTV - Drtinová, Veselovský TV</summary>
+	<description>Plugin to play videos from DVTV.cz</description>
+    <description lang="cs">Exkluzivní rozhovory s vlivnými lidmi české politiky a byznysu. Nejlepší profesionálové v roli moderátorů, kteří se ptají tak přímo a tak dlouho, dokud nedostanou odpověď. Reportáže z míst, kde byste neměli chybět. Klíčové kulturní a společenské události. To vše nabízí první publicistický videokanál na českém internetu.</description>
+    <platform>all</platform>
+  </extension>
+</addon>

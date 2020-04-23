@@ -3,6 +3,4 @@
 .pydevproject
 *.pyo
 *.pyc
-custom/hashes/
-dmd-czech/hashes/
-xbmc-doplnky/hashes/
+hashes

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.voyosk"
+       name="Voyo SK TV Archiv"
+       version="1.3.1"
+       provider-name="mx3L">
+  <requires>
+    <import addon="xbmc.python" version="1.0"/>
+    <import addon="script.module.dmd-czech.common" version="1.0"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <summary>VOYO SK video-archive plugin</summary>
+    <summary lang="cs">VOYO SK - archiv</summary>
+    <summary lang="sk">VOYO SK - archív</summary>
+    <description>
+        Plugin to play TV video archive from Voyo.sk
+    </description>
+    <description lang="cs">
+        Plugin pro přehrávání videí z archivu Voyo.sk
+    </description>
+    <description lang="sk">
+        Plugin pre prehrávanie videí z archívu Voyo.sk
+    </description>
+  </extension>
+</addon>

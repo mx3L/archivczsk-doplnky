@@ -1,2 +1,0 @@
-- verzia 1.1.1 
-	2017-08-03 new api read from kodi

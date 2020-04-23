@@ -1,4 +1,0 @@
-2011-11-11:
- * zmena enginu webu
-2011-08-31:
- * Muvi.cz (alpha) - first release

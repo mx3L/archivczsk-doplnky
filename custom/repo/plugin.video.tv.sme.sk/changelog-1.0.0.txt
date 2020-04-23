@@ -1,3 +1,0 @@
-[B]2013-11-15 v1.0.0:[/B]
- - TV.SME.sk - first release
-

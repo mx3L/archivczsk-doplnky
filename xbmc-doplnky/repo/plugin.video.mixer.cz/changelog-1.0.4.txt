@@ -1,4 +1,0 @@
-[B]1.0.4:[/B]
-opravene nacitavanie videii
-[B]1.0.0:[/B]
-Initial version

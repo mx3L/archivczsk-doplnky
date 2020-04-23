@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings>
+        <setting label="e-mail" id="markiza_user" type="text" default="" />
+        <setting label="heslo" id="markiza_pass" type="text" default="" option="hidden" />
+</settings>

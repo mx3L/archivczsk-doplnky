@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<settings>
-    <setting id="tv_addon" type="bool" label="TV archiv" default="true" visible="false"/>
-    <setting label="30000" id="quality" type="enum" lvalues="30001|30002|30003" default="0" />
-</settings>
