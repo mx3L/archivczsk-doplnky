@@ -1,5 +1,8 @@
+2020-04-25 [1.0.10]
+- drobne opravy (misanov)
+
 2019-02-19 verzia 1.0.9
-	- fixes by @hansolo
+- fixes by @hansolo
 
 [B]1.0.7:[/B]
 - added all live streams

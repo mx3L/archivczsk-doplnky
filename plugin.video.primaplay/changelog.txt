@@ -1,3 +1,8 @@
+2020-04-22 [0.4.6] (misanov)
+ * Pridano LIVE
+ * Pridan vyber poradu
+ * Drobne opravy
+
 2019-02-05 [0.4.4]
  * Fixed restart E2 / thx hansolo test
  * Fixed next link

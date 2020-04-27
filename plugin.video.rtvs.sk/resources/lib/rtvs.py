@@ -47,14 +47,14 @@ START_AZ = '<h2 class="az"'
 END_AZ = START_TOP
 AZ_ITER_RE = TOP_ITER_RE
 
-START_DATE = '<div class="row verticalLine tvarchivDate">'
+START_DATE = '<div class="row-fluid verticalLine verticalLine--tripple tvarchivDate">'
 END_DATE = START_TOP
 DATE_ITER_RE = '<div class=\"media\">\s*<a href=\"(?P<url>[^\"]+)\"[^<]+>\s*<img src=\"(?P<img>[^\"]+)\".+?</a>\s*<div class=\"media-body\">.+?<span class=\"programmeTime\">(?P<time>[^\<]+)<\/span>.+?<a class=\"link\".+?title=\"(?P<title>[^\"]+)\">.+?<\/div>'
 
 START_LISTING = "<div class='calendar modal-body'>"
 END_LISTING = '</table>'
 LISTING_PAGER_RE = "<a class=\'prev calendarRoller' href=\'(?P<prevurl>[^\']+)\'.+?<a class=\'next calendarRoller\' href=\'(?P<nexturl>[^\']+)"
-LISTING_DATE_RE = '<div class=\'calendar-header\'>\s+<h6>(?P<date>[^<]+)</h6>'
+LISTING_DATE_RE = '<div class=\'calendar-header\'>\s+.*?<h6>(?P<date>[^<]+)</h6>'
 LISTING_ITER_RE = '<td class=(\"day\"|\"active day\")>\s+<a href=[\'\"](?P<url>[^\"^\']+)[\"\']>(?P<daynum>[\d]+)</a>\s+</td>'
 
 EPISODE_START = '<div class="span9">'
@@ -146,10 +146,13 @@ class RtvsContentProvider(ContentProvider):
     def live(self):
         result = []
         item = self.video_item("live.1")
-        item['title'] = "STV1"
+        item['title'] = "STV 1"
         result.append(item)
         item = self.video_item("live.2")
-        item['title'] = "STV2"
+        item['title'] = "STV 2"
+        result.append(item)
+        item = self.video_item("live.3")
+        item['title'] = "STV 3"
         result.append(item)
         item = self.video_item("live.4")
         item['title'] = "STV Online"
@@ -278,9 +281,9 @@ class RtvsContentProvider(ContentProvider):
         item = item.copy()
         if item['url'].startswith('live.'):
             channel_id = item['url'].split('.')[1]
-            data = util.request("http://www.rtvs.sk/json/live5.json?c=%s&b=mozilla&p=linux&v=47&f=1&d=1"%(channel_id))
-            videodata = util.json.loads(data)[0]
-            for stream in get_streams_from_manifest_url(videodata['sources'][0]['file']):
+            data = util.request("http://www.rtvs.sk/json/live5f.json?c=%s&b=mozilla&p=linux&v=47&f=1&d=1"%(channel_id))
+            videodata = util.json.loads(data)['clip']
+            for stream in get_streams_from_manifest_url(videodata['sources'][0]['src']):
                 item = self.video_item()
                 item['title'] = videodata.get('title','')
                 item['url'] = stream['url']

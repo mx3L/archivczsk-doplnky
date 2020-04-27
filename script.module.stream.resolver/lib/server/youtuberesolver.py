@@ -57,9 +57,9 @@ class YoutubePlayer(object):
 
     # YouTube Playback Feeds
     urls = {}
-    urls['video_stream'] = "http://www.youtube.com/watch?v=%s&safeSearch=none"
-    urls['embed_stream'] = "http://www.youtube.com/get_video_info?video_id=%s"
-    urls['video_info'] = "http://gdata.youtube.com/feeds/api/videos/%s"
+    urls['video_stream'] = "https://www.youtube.com/watch?v=%s&safeSearch=none"
+    urls['embed_stream'] = "https://www.youtube.com/get_video_info?video_id=%s"
+    urls['video_info'] = "https://gdata.youtube.com/feeds/api/videos/%s"
 
     def __init__(self):
         pass

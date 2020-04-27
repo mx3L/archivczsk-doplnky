@@ -1,3 +1,6 @@
+2020-04-22 1.3.10
+    - opravy prehravani (misanov)
+
 2019-02-08 verzia 1.3.8
     - trakt.tv kozmetika
 
