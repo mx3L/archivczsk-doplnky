@@ -198,10 +198,10 @@ try:
 except:
         pass
 
-writeLog('URL: '+str(url))
-writeLog('NAME: '+str(name))
-writeLog('ACT: '+str(action))
-writeLog('ACTVAL: '+str(action_value))
+#writeLog('URL: '+str(url))
+#writeLog('NAME: '+str(name))
+#writeLog('ACT: '+str(action))
+#writeLog('ACTVAL: '+str(action_value))
 
 if action is None:
 	for c in menu['root']:

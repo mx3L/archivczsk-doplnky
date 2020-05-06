@@ -426,8 +426,7 @@ class O2TvContentProvider(ContentProvider):
 '''
 
 
-#o2log.logDebugEnabled = __gets('debug_enabled') == 'true'
-o2log.logDebugEnabled = True
+o2log.logDebugEnabled = __gets('debug_enabled') == 'true'
 
 def getDeviceUid():
     uid = str(__gets('deviceid'))

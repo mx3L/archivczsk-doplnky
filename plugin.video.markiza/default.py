@@ -64,7 +64,7 @@ class loguj(object):
             print "####MARKIZA#### [" + type + "] " + msg
 
 def fetchUrl(url):
-    loguj.logInfo("fetchUrl " + url)
+#    loguj.logInfo("fetchUrl " + url)
     httpdata = ''	
     req = urllib2.Request(url)
     req.add_header('User-Agent', _UserAgent_)
