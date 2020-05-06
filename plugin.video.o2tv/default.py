@@ -60,10 +60,10 @@ class o2log(object):
             f.write(dtn.strftime("%d.%m.%Y %H:%M:%S.%f")[:-3] +" ["+type+"] %s\n" % msg)
             f.close()
         except:
-            print "####O2-TV#### write log failed!!!"
+#            print "####O2-TV#### write log failed!!!"
             pass
-        finally:
-            print "####O2-TV#### ["+type+"] "+msg
+#        finally:
+#            print "####O2-TV#### ["+type+"] "+msg
 
 class O2TvContentProvider(ContentProvider):
     __metaclass__ = Singleton

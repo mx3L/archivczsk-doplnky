@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <settings>
-    <setting label="30000" id="orangetvuser" type="text" default="" />
-    <setting label="30001" id="orangetvpwd" type="text" default="" option="true" />
+   <setting id="tv_addon" type="bool" label="TV archiv" default="true" visible="false"/>
+   <setting label="30000" id="orangetvuser" type="text" default="" />
+   <setting label="30001" id="orangetvpwd" type="text" default="" option="true" />
+   <setting label="DeviceId" id="deviceid" type="text" default="" visible="false"/>
 </settings>

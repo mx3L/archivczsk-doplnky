@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<strings>
+    <string id="30010">Accounts</string>
+    <string id="30100">Webshare.cz</string>
+    <string id="30101">Username</string>
+    <string id="30102">Password</string>
+    <string id="30200">Movies</string>
+    <string id="30201">Series</string>
+    <string id="30202">Main Menu</string>
+    <string id="30203">Next page</string>
+    <string id="30204">Search</string>
+    <string id="30205">Genre</string>
+    <string id="30206">A-Z</string>
+    <string id="30207">Search media by Title | Actor(s)</string>
+    <string id="30211">Popular</string>
+    <string id="30212">Watching now</string>
+    <string id="30250">Select a media source</string>
+    <string id="30919">Series</string>
+</strings>
