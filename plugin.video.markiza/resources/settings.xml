@@ -2,4 +2,6 @@
 <settings>
         <setting label="e-mail" id="markiza_user" type="text" default="" />
         <setting label="heslo" id="markiza_pass" type="text" default="" option="hidden" />
+
+        <setting id="tv_addon" type="bool" label="TV archiv" default="true" visible="false"/>
 </settings>
