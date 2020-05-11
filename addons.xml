@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addons>
-<addon id="plugin.video.videacesky.cz" name="videacesky.cz" provider-name="Libor Zoubek" version="1.0.15">
+<addon id="plugin.video.videacesky.cz" name="videacesky.cz" provider-name="Libor Zoubek" version="1.0.25">
   <requires>
     <import addon="xbmc.python" version="2.1.0" />
     <import addon="script.module.stream.resolver" version="1.6.17" />
@@ -42,7 +42,7 @@
   </extension>
 </addon>
 
-<addon id="plugin.video.rtvs.sk" name="rtvs.sk" provider-name="Maros Ondrasek, Michal Novotný" version="1.0.11">
+<addon id="plugin.video.rtvs.sk" name="rtvs.sk" provider-name="Maros Ondrasek" version="1.8.6">
   <requires>
     <import addon="xbmc.python" version="2.1.0" />
     <import addon="script.module.stream.resolver" version="1.6.13" />
@@ -58,7 +58,7 @@
     <description lang="cs">Sledujte TV archiv zo serveru rtvs.sk</description>
     <description lang="sk">Sledujte TV archív zo serveru rtvs.sk</description>
     <platform>all</platform>
-    <source>https://github.com/kodi-czsk/plugin.video.rtvs.sk</source>
+    <source>https://github.com/mx3L/plugin.video.rtvs.sk</source>
   </extension>
 </addon>
 
@@ -127,7 +127,7 @@
     <summary lang="cs">joj.sk</summary>
     <summary lang="sk">joj.sk</summary>
     <description lang="en">Watch online TV archive from joj.sk</description>
-    <description lang="cs">Sledujte online TV archiv zo serveru joj.sk</description>
+    <description lang="cs">Sledujte online TV archiv ze serveru joj.sk</description>
     <description lang="sk">Sledujte online TV archív zo serveru joj.sk</description>
     <platform>all</platform>
     <source>https://github.com/kodi-czsk/plugin.video.joj.sk</source>
@@ -359,23 +359,23 @@
   </extension>
 </addon>
 
-<addon id="plugin.video.orangetv" name="OrangeTV" provider-name="Yoda" version="1.0.2">
+<addon id="plugin.video.orangetv"
+       name="OrangeTV"
+       version="1.0"
+       provider-name="Michal Novotný, Štěpán Ort">
   <requires>
-    <import addon="xbmc.python" version="2.1.0" />
-    <import addon="script.module.stream.resolver" version="1.6.24" />
+    <import addon="xbmc.python" version="2.1.0"/>
+    <import addon="script.module.dmd-czech.common" version="1.5.0"/>
   </requires>
-  <extension library="default.py" point="xbmc.python.pluginsource" provides="video">
+  <extension point="xbmc.python.pluginsource" library="default.py">
     <provides>video</provides>
   </extension>
   <extension point="xbmc.addon.metadata">
-    <summary lang="en">OrangeTV</summary>
-    <summary lang="cs">OrangeTV</summary>
-    <summary lang="sk">OrangeTV</summary>
-    <description lang="en">Watch online TV</description>
-    <description lang="cs">Sledujte online TV</description>
-    <description lang="sk">Sledujte online TV</description>
     <platform>all</platform>
-    <source>https://github.com/mx3L/archivczsk-doplnky</source>
+    <summary>OrangeTV live plugin</summary>
+    <description>Plugin to play live videos from orange.sk</description>
+    <description lang="cs">Plugin pro přehrávání živých videí z orange.sk</description>
+    <description lang="sk">Plugin pre prehrávanie živých videí z orange.sk</description>
   </extension>
 </addon>
 
@@ -533,6 +533,25 @@
     <description lang="sk">Gordon Ramsay a jeho hustokrutý pořady ze serveru http://gordon.ura.cz</description>
     <platform>all</platform>
     <source>https://github.com/kodi-czsk/plugin.video.gordon.ura.cz</source>
+  </extension>
+</addon>
+
+<addon id="plugin.video.sc2"
+       name="Stream Cinema 2.0 CZ/SK"
+       version="0.0.1"
+       provider-name="hotshot.sk, misanov">
+  <requires>
+    <import addon="xbmc.python" version="2.1.0"/>
+    <import addon="script.module.stream.resolver" version="1.6.25" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <summary>Stream Cinema 2.0 CZ/SK</summary>
+    <description>Plugin to play video archive</description>
+    <description lang="cs">Plugin pro přehrávání videí</description>
   </extension>
 </addon>
 
