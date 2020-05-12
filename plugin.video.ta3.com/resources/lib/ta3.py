@@ -223,23 +223,24 @@ class TA3ContentProvider(ContentProvider):
     def _resolve_live(self, item):
         resolved = []
         data = util.request(self._url(item['url']))
-        player_data = util.request("http://embed.livebox.cz/ta3/live-source.js", {'Referer':self._url(item['url'])})
+        player_data = util.request("http://embed.livebox.cz/ta3_v2/live-source.js", {'Referer':self._url(item['url'])})
         #print "player_data", player_data
         for m_manifest in re.finditer(r'\{"src"\s*:\s*"([^"]+)"\s*\}', player_data, re.DOTALL):
             manifest_url = m_manifest.group(1)
+            if manifest_url.startswith('//'):
+               manifest_url = 'http:'+ manifest_url
             #print "manifest_url", manifest_url
-            manifest = util.request(manifest_url)
+            req = urllib2.Request(manifest_url)
+            resp = urllib2.urlopen(req)
+            manifest = resp.read()
+            resp.close()
             #print "manifest", manifest
-            for m in re.finditer('#EXT-X-STREAM-INF:PROGRAM-ID=\d+,BANDWIDTH=(?P<bandwidth>\d+)(,RESOLUTION=(?P<resolution>\d+x\d+))?.*\s(?P<chunklist>[^\s]+)', manifest, re.DOTALL):
+            for m in re.finditer('RESOLUTION=\d+x(?P<resolution>\d+)\s*(?P<chunklist>[^\s]+)', manifest, re.DOTALL):
                 item = self.video_item()
                 item['surl'] = item['title']
-                if m.group('resolution') == '720x404':
-                    item['quality'] = '404p'
-                else:
-                    item['quality'] = '???'
-                item['url'] = manifest_url[:manifest_url.rfind('/')+1] + m.group('chunklist')
+                item['quality'] = m.group('resolution') + 'p'
+                item['url'] = resp.geturl().rsplit('/', 1)[0] + '/' + m.group('chunklist')
                 resolved.append(item)
             # only first manifest url looks to be is valid
             break
         return resolved
-
