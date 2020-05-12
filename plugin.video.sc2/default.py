@@ -121,7 +121,7 @@ def add_translations(s):
 	return regex.sub(lambda m: m.group().replace(m.group(),addon.getLocalizedString(int(m.group()[1:])),1), s)
 
 def page_info(page, pageCount):
-	return ' ('+ page + '/' + pageCount +') '
+	return ' ('+ str(page) + '/' + str(pageCount) +') '
 
 def stream_title(stream):
 	vinfo=stream['vinfo'] if 'vinfo' in stream else ''
