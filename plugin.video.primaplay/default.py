@@ -62,14 +62,8 @@ def shows_menu(pageurl, list_only=False):
     add_dir("ŽIVĚ - Prima KRIMI", {'action': 'PLAY', 'linkurl': 'https://krimi.iprima.cz'}, None, video_item=True)
     add_dir("ŽIVĚ - Prima LOVE", {'action': 'PLAY', 'linkurl': 'https://love.iprima.cz'}, None, video_item=True)
     add_dir("ŽIVĚ - Prima ZOOM", {'action': 'PLAY', 'linkurl': 'https://zoom.iprima.cz'}, None, video_item=True)
-#    add_dir("Velké zprávy", {'action': 'PAGE', 'linkurl': 'https://prima.iprima.cz/porady/velke-zpravy/epizody'}, None)
-#    add_dir("Prima ZOOM Svět", {'action': 'PAGE', 'linkurl': 'https://prima.iprima.cz/porady/prima-zoom-svet/epizody'}, None)
-#    add_dir("Show Jana Krause", {'action': 'PAGE', 'linkurl': 'https://prima.iprima.cz/porady/show-jana-krause/epizody'}, None)
-#    add_dir("Autosalon", {'action': 'PAGE', 'linkurl': 'https://cool.iprima.cz/porady/autosalon/epizody'}, None)
-#    add_dir("Receptář Prima nápadů", {'action': 'PAGE', 'linkurl': 'https://prima.iprima.cz/receptar-prima-napadu/epizody'}, None)
+    add_dir("ŽIVĚ - CNN Prima News", {'action': 'PLAY', 'linkurl': 'https://cnn.iprima.cz/vysilani'}, None, video_item=True)
     add_dir("VŠECHNY POŘADY", {'action': 'CATEGORIES', 'linkurl': pageurl}, None)
-#    add_dir("Experiment 21", {'action': 'PAGE', 'linkurl': 'https://cool.iprima.cz/experiment-21'})
-#    add_dir("Elitní zabiják", {'action': 'PLAY', 'linkurl': 'https://www.iprima.cz/filmy/elitni-zabijak'}, None, video_item=True)
 #    add_search_menu()
 #    add_account_menu()
 
@@ -187,9 +181,27 @@ def add_player(player):
     url = get_menu_link(action='RESOLVE', linkurl=player.video_link)
     add_dir(u"[B]Přehraj:[/B] " + player.title, url, player.image_url, video_item=True)
 
+def get_cnn_videos(link):
+    content = _play_parser.get_data_cached("https:"+link, _play_parser.useCache, 3)
+    prodId = re.search("/_snippet/videos-detail/limit/offset/([0-9]*?)'", content, re.S)
+    if prodId:
+        primalog.logDebug(str(prodId.group(1)))
+        content = _play_parser.get_data_cached("https://cnn.iprima.cz/_snippet/videos-detail/60/0/"+prodId.group(1), _play_parser.useCache, 3)
+        articles = re.findall('<article .*?<a href="(.*?)".*?<img.*?data-src="(.*?)".*?alt="(.*?)".*?</article>', content, re.S)
+        if articles:
+            for article in articles:
+                add_dir(article[2], {'action': 'PLAY', 'linkurl': article[0]}, article[1], video_item=True)
 
 def resolve_videos(link):
-    product_id = _play_parser.get_productID(link)
+    if 'cnn' in link and '/vysilani' not in link:
+        content = _play_parser.get_data_cached(link, _play_parser.useCache, 1)
+        prodId = re.search("playerId: 'player-(.*?)'", content, re.S)
+        if prodId:
+            product_id = prodId.group(1)
+        else:
+            return None
+    else:
+        product_id = _play_parser.get_productID(link)
     video = _play_parser.get_video(product_id)
 
     # '/playlist.m3u8'
@@ -206,9 +218,11 @@ def resolve_videos(link):
             itm['quality'] = "360p"
         elif bandwidth >= 1150000 and bandwidth < 1660000:
             itm['quality'] = "480p"
+        elif bandwidth >= 1660000 and bandwidth < 3000000:
+            itm['quality'] = "576p"
         else:
             itm['quality'] = "720p"
-        itm['title'] = "%s - %s" % (video.title, itm['quality'])
+        itm['title'] = "[%s] %s" % (itm['quality'], video.title)
         itm['url'] = baseUrl + m.group('chunklist').replace('\n', '')
         itm['surl'] = video.title
         primalog.logDebug("item=%s" % itm)
@@ -248,7 +262,10 @@ try:
     elif action == "ACCOUNT":
         account()
     elif action == "SHOW-NAV":
-        show_navigation(linkurl)
+        if 'cnn' in linkurl:
+            get_cnn_videos(linkurl)
+        else:
+            show_navigation(linkurl)
     elif action == "CATEGORIES":
         show_categories(linkurl)
     elif action == "PAGE":

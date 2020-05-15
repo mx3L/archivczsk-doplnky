@@ -1,3 +1,7 @@
+2020-05-15 [0.4.8] (misanov)
+ * Pridano CNN Prima News Live
+ * Pridano CNN porady (Hlavni zpravy, 360 Pavliny Wolfove atd.)
+
 2020-04-22 [0.4.6] (misanov)
  * Pridano LIVE
  * Pridan vyber poradu

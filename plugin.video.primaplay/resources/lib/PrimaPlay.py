@@ -186,8 +186,11 @@ class Parser:
         product_id_re = re.compile('src="https://api.play-backend.iprima.cz/prehravac/embedded\?id=(.*?)"', re.S)
         product_id_result = product_id_re.search(content)
 
-        if product_id_result is None:
-            return None
+        if product_id_result is None: ### try new cnn style
+            product_id_re = re.compile("BROADCAST_PLAY_ID = '(.*?)'", re.S)
+            product_id_result = product_id_re.search(content)
+            if product_id_result is None:
+                return None
 
         product_id = product_id_result.group(1)
         del content
