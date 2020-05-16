@@ -55,12 +55,12 @@ def login():
     username = addon.getSetting('wsuser')
     password = addon.getSetting('wspass')
     if not username and not password:
-        return False
+        return ""
     elif username and password and len(username)>0 and len(password)>0:
         req = ws_api_request('/salt/', { 'username_or_email': username })
         xml = ET.fromstring(req.text)
         if not xml.find('status').text == 'OK':
-            return False
+            return ""
         salt = xml.find('salt').text
         if salt is None:
             salt = ''
@@ -69,15 +69,20 @@ def login():
         req = ws_api_request('/login/', { 'username_or_email': username, 'password': encrypted_pass, 'digest': digest, 'keep_logged_in': 1 })
         xml = ET.fromstring(req.text)
         if not xml.find('status').text == 'OK':
-            return False
+            return ""
         token = xml.find('token').text
+        req = ws_api_request('/user_data/', {'wst': token})
+        xml = ET.fromstring(req.text)
+        if xml.find('vip_days').text:
+            addon.setSetting('wsvipdays', xml.find('vip_days').text)
+            client.add_operation("SHOW_MSG", {'msg': 'Mate jeste %s VIP dnu'%xml.find('vip_days').text, 'msgType': 'info', 'msgTimeout': 5, 'canClose': True })
         return token
-    return False
+    return ""
 
 def get_stream_url(ident):
 	token = login()
-	if not token:
-		client.add_operation("SHOW_MSG", {'msg': 'Nelze se prihlasit na WS, pokracuji s uctem zdarma', 'msgType': 'error', 'msgTimeout': 5, 'canClose': True })
+	if token == "":
+		client.add_operation("SHOW_MSG", {'msg': 'Nelze se prihlasit na WS, pokracuji s uctem zdarma...', 'msgType': 'error', 'msgTimeout': 1, 'canClose': True })
 #		writeLog("Nelze se prihlasit. Pokracuji s free uctem.")
 	req = ws_api_request('/file_link/', { 'wst': token, 'ident': ident })
 	xml = ET.fromstring(req.text)
@@ -156,8 +161,14 @@ def process_movies(mediaList):
 #		render_item(build_item(media['title'], 'movies.streams', media['id'], media), folder = False)
 
 def show_stream_dialog(streams):
-	for stream in streams:
-		add_video(stream_title(stream),get_stream_url(stream['ident']),None,None)
+    count = 0
+    for stream in streams:
+        gurl = get_stream_url(stream['ident'])
+        if gurl is not None:
+            add_video(stream_title(stream),gurl,None,None)
+            count = count+1
+    if count == 0:
+		addDir("Hlavni menu", build_plugin_url({ 'action': None, 'action_value': None }), 1, None)
 
 menu = {
 	'root': [

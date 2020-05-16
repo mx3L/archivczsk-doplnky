@@ -40,7 +40,7 @@ from Components.Language import language
 from Plugins.Extensions.archivCZSK.engine import client
 from Plugins.Extensions.archivCZSK.compat import eConnectCallback
 
-sys.path.append( os.path.join ( os.path.dirname(__file__),'myprovider') )
+#sys.path.append( os.path.join ( os.path.dirname(__file__),'myprovider') )
 #sys.setrecursionlimit(10000)
 
 
@@ -560,12 +560,12 @@ class StreamCinemaContentProvider(ContentProvider):
             qs = '?'
             if '?' in url:
                 qs='&'
-            #sclog.logDebug("json url: %s" % url)
+            sclog.logDebug("json url: %s" % url)
             urlapi = url+qs+'ver='+API_VERSION+'&uid='+self.deviceUid
-            #sclog.logDebug("json url: %s" % urlapi)
+            sclog.logDebug("json url: %s" % urlapi)
             jsonData = self.get_data_cached(urlapi, useCache, cacheTimeout)
             data = json.loads(jsonData)
-            #sclog.logDebug("_json '%s' data:\n%s"%(urlapi, data))
+            sclog.logDebug("_json '%s' data:\n%s"%(urlapi, jsonData))
             return data
         except urllib2.HTTPError as err:
             #sclog.logError("HTTP error (%s), url=%s.\n%s" % (err.code, url, traceback.format_exc()))
@@ -681,6 +681,24 @@ class StreamCinemaContentProvider(ContentProvider):
                 url = url+'/1'
         
         result = []
+
+        if 'ksearch' in url: #MN
+            searchValue = client.getTextInput(self.session, "", url[9:])
+            if searchValue is not "":
+                url = '/wsearch/'+searchValue
+    
+        if 'wsearch' in url: #MN
+            if self.ws is None:
+                from webshare import Webshare as wx
+                self.ws = wx(self.wsuser, self.wspass, self.useHttps)
+            result.append(self.dir_item('Upravit hledani','/ksearch/'+url[9:]))
+            items = self.ws.search(url[9:])
+            for item in items:
+                itemV = self.video_item(url=item['url'], img=item['img'], quality='')
+                itemV['title'] = "["+item['size']+"] "+item['title']
+                result.append(itemV)
+            return result
+
         try:
             # reload trakt user watched data
             if StaticTraktWatched().loadUserWatchedError:
@@ -808,33 +826,37 @@ class StreamCinemaContentProvider(ContentProvider):
                             self.setAditionalVideoItemInfo(m, item)
                         
                         if m['type'] == 'video':
-                            # check subs
-                            try:
-                                isVipAccount = int(StaticDataSC().vipDaysLeft) > 0
-                                lngtmp = ''
-                                if 'lang' in m:
-                                    lngtmp = m['lang'].lower()
-                                if isVipAccount and 'subs' in m and not lngtmp.startswith("cz") and not lngtmp.startswith("sk"):
-                                    if 'webshare.cz' in m['subs'] and '/file/' in m['subs']:
-                                        m['title'] = m['title'] + " (%s)"%self._getName("$66670")
-                            except:
-                                sclog.logError("Check substitle failed.\n%s"%traceback.format_exc())
-                                pass
-
                             image = ""
                             try:
                                 image = str(m['art']['poster'])
                             except:
                                 pass;
-                        
-                            item = self.video_item(url=itemUrl, img=image, quality='')
 
-                            item['title']= m['title']
-                            if '/Tv' in url:
-                                item['title'] = m['title'].replace('[LIGHT]','').replace('[/LIGHT]','')
-                            # set data for item
-                            self.setAditionalVideoItemInfo(m, item)
+                            if 'episode' in m and 'season' in m and 'tvshowtitle' in m: #MN
+                                item = self.dir_item(m['title'], "/wsearch/"+m['tvshowtitle'].replace(' ','-')+'-S'+str(m['season']).zfill(2)+'E'+str(m['episode']).zfill(2)+'-'+m['year'])
+                            else:
+                                item = self.dir_item(m['title'], "/wsearch/"+m['sorttitle']+'-'+m['year'])
 
+#                            # check subs
+#                            try:
+#                                isVipAccount = int(StaticDataSC().vipDaysLeft) > 0
+#                                lngtmp = ''
+#                                if 'lang' in m:
+#                                    lngtmp = m['lang'].lower()
+#                                if isVipAccount and 'subs' in m and not lngtmp.startswith("cz") and not lngtmp.startswith("sk"):
+#                                    if 'webshare.cz' in m['subs'] and '/file/' in m['subs']:
+#                                        m['title'] = m['title'] + " (%s)"%self._getName("$66670")
+#                            except:
+#                                sclog.logError("Check substitle failed.\n%s"%traceback.format_exc())
+#                                pass
+#
+#                            item = self.video_item(url=itemUrl, img=image, quality='')
+#
+#                            item['title']= m['title']
+#                            if '/Tv' in url:
+#                                item['title'] = m['title'].replace('[LIGHT]','').replace('[/LIGHT]','')
+#                            # set data for item
+#                            self.setAditionalVideoItemInfo(m, item)
                         
                         # use for trakt
                         if 'imdb' in m or 'trakt' in m or 'tvdb' in m:
@@ -1098,10 +1120,10 @@ class StreamCinemaContentProvider(ContentProvider):
     def _resolve(self, itm):
         if itm is None:
             return None;
-        #sclog.logDebug("_resolve itm: %s %s"%(itm, itm['provider']))
+        sclog.logDebug("_resolve itm: %s %s"%(itm, itm['provider']))
         if itm['provider'] == 'plugin.video.online-files' or itm['provider'] == 'webshare':
             if self.ws is None:
-                #sclog.logDebug("_resolve ws is null...");
+                sclog.logDebug("_resolve ws is null...");
                 from webshare import Webshare as wx
                 self.ws = wx(self.wsuser, self.wspass, self.useHttps)
                     

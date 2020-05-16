@@ -190,3 +190,35 @@ class Webshare():
             return xml.find('link').text
         except:
             raise
+
+    def search(self, title):
+        result = []
+        headers,req = self._create_request('/',{'what': title, 'offset': 0, 'limit': 30, 'category': 'video', 'sort': 'rating', 'wst': self.token})
+        data = util.post(self._url('api/search/'), req, headers=headers)
+        xml = ET.fromstring(data)
+        if not xml.find('status').text == 'OK':
+            self.error('Server returned error status, response: %s' % data)
+            return []
+        total = int(xml.find('total').text)
+        for file in xml.findall('file'):
+            item = {}
+            item['title'] = file.find('name').text
+            item['url'] = 'ident=%s' % file.find('ident').text
+            osize = file.find('size').text
+            size = int(file.find('size').text)
+            item['size'] = '%d MB' % (int(size)/1024/1024)
+#            img = file.find('img').text
+#            if img:
+#                item['img'] = self._url(img)
+            item['img'] = file.find('img').text
+            result.append(item)
+#            sclog.logDebug(item['url']+str(osize)+item['size']+item['img']+item['title'])
+#        listed = int(req['limit']) + int(req['offset'])
+#        if total > listed:
+#            req['offset'] = listed
+#            item = self.dir_item()
+#            item['type'] = 'next'
+#            item['url'] = urllib.urlencode(req)
+#            result.append(item)
+#            sclog.logDebug(item['url']+item['type'])
+        return result

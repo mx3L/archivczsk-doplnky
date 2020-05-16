@@ -20,8 +20,9 @@
 # *
 # */
 
-sys.path.append( os.path.join ( os.path.dirname(__file__),'resources','lib') )
-sys.path.append( os.path.join ( os.path.dirname(__file__),'myprovider') )
+#sys.path.append( os.path.join ( os.path.dirname(__file__),'resources','lib') )
+#sys.path.append( os.path.join ( os.path.dirname(__file__),'myprovider') )
+sys.path.append( os.path.dirname(__file__) )
 
 from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
 
@@ -37,7 +38,7 @@ __language__   = __addon__.getLocalizedString
 __gets         = __addon__.getSetting
 __sets         = __addon__.setSetting
 
-sclog.logDebugEnabled = __gets('debug_enabled') == 'true'
+sclog.logDebugEnabled = __gets('debug_enabled') == 'false'
 
 def getDeviceUid():
     uid = str(__gets('deviceid'))
@@ -131,7 +132,13 @@ scinema.streamHevc3dFilter = __gets('filter_hevc_3d') == 'true'
 
 scinema.session = session
 
+sclog.logDebug("PARAMS=%s"%params)
 
-#sclog.logDebug("PARAMS=%s"%params)
-StreamCinemaProvider(scinema,settings,__addon__, session).run(params)
-
+if 'play' in params and 'ident' in params['play']:
+    from webshare import Webshare as wx
+    ws = wx(scinema.wsuser, scinema.wspass, scinema.useHttps)
+    link = ws.resolve(params['play'][6:], scinema.deviceUid)
+    from Plugins.Extensions.archivCZSK.engine.client import add_video
+    add_video(params['title'], link, None, None)
+else:
+    StreamCinemaProvider(scinema,settings,__addon__, session).run(params)
