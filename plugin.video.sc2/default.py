@@ -95,10 +95,15 @@ def get_stream_url(ident):
 def api_request(url):
 	url = hotshot_url + url
 	try:
-		return requests.get(url=url).json()
+		data=requests.get(url=url)
+		if data.status_code != 200:
+			client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru', 'msgType': 'info', 'msgTimeout': 10, 'canClose': True })
+			return {'data': "" }
+		else:
+			return data.json()
 	except Exception as e:
 		pass
-	return 
+	return {'data': "" }
 
 def get_media_data(url):
 	data = api_request(url)
@@ -153,22 +158,16 @@ def process_series(mediaList):
 def process_episodes(mediaList):
 	for i, media in enumerate(mediaList):
 		addDir(media['title'], build_plugin_url({ 'action': 'series.streams', 'action_value': action_value[0] + ' ' + str(i)}), 1, media['poster'] if 'poster' in media else None, None, None, { 'plot': media['plot'] if 'plot' in media else '', 'rating': media['rating'] if 'rating' in media else 0, 'duration': media['duration'] if 'duration' in media else 0})
-#		render_item(build_item(media['title'], 'series.streams', action_value[0] + ' ' + str(i)), folder = False)
 
 def process_movies(mediaList):
 	for media in mediaList:
 		addDir(media['title'], build_plugin_url({ 'action': 'movies.streams', 'action_value': media['id'] }), 1, media['poster'] if 'poster' in media else None, None, None, { 'plot': media['plot'] if 'plot' in media else '', 'rating': media['rating'] if 'rating' in media else 0, 'duration': media['duration'] if 'duration' in media else 0})
-#		render_item(build_item(media['title'], 'movies.streams', media['id'], media), folder = False)
 
 def show_stream_dialog(streams):
-    count = 0
     for stream in streams:
         gurl = get_stream_url(stream['ident'])
         if gurl is not None:
             add_video(stream_title(stream),gurl,None,None)
-            count = count+1
-    if count == 0:
-		addDir("Hlavni menu", build_plugin_url({ 'action': None, 'action_value': None }), 1, None)
 
 menu = {
 	'root': [
@@ -231,13 +230,11 @@ elif action[0] == 'movies':
 	process_movies(data['data'])
 	if 'next' in data:
 		add_paging(data['page'], data['pageCount'], data['next'])
-	render_item(build_item(addon.getLocalizedString(30202), ''))
 elif action[0] == 'series':
 	data = get_media_data(action_value[0])
 	process_series(data['data'])
 	if 'next' in data:
 		add_paging(data['page'], data['pageCount'], data['next'])
-	render_item(build_item(addon.getLocalizedString(30202), ''))
 elif action[0] == 'series.streams':
 	media = get_cache('media')
 	s_e = action_value[0].split()
@@ -263,3 +260,5 @@ elif action[0] == 'episodes':
 elif action[0] == 'seasons':
 	media = get_media_data(action_value[0])
 	process_seasons(media['seasons'])
+
+render_item(build_item(addon.getLocalizedString(30202), ''))
