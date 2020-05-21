@@ -388,7 +388,7 @@
 
 <addon id="plugin.video.sc2"
        name="Stream Cinema 2.0 CZ/SK"
-       version="0.0.5"
+       version="2.0.0-beta"
        provider-name="hotshot.sk">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
@@ -400,8 +400,9 @@
   <extension point="xbmc.addon.metadata">
     <platform>all</platform>
     <summary>Stream Cinema 2.0 CZ/SK</summary>
-    <description>Plugin to play video archive. Alpha version!!!</description>
-    <description lang="cs">Plugin pro přehrávání videí. Alpha verze!!!</description>
+    <description>Plugin to play video archive. Beta version!!!</description>
+    <description lang="cs">Plugin pro přehrávání videí. Beta verze!!!</description>
+    <description lang="sk">Plugin pre prehravanie videí. Beta verze!!!</description>
   </extension>
 </addon>
 
