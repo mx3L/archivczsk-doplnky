@@ -13,7 +13,7 @@
         <setting label="Zobrazovat detaily u budoucích nahrávek (pomalé)" type="bool" id="details_future" default="false"/>
         <setting label="Přehrávat i po konci pořadu (minut)" type="text" id="offset" default="0"/>
         <setting label="Historie vyhledávání" type="text" id="search_history" default="10"/>
-        <setting label="Skrýt položku Pořadí kanálů v menu" type="bool" id="hide_channel_list_edit" default="false"/>
+        <setting label="Skrýt položku Pořadí kanálů v menu" type="bool" id="hide_channel_list_edit" default="true"/>
 	</category>
 	<category label="Logování">
         <setting label="Logování požadavků - URL" type="bool" id="log_request_url" default="false"/>

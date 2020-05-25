@@ -58,10 +58,10 @@ def get_url(**kwargs):
 def check_settings():
 	if not addon.getSetting("deviceid"):
 		addon.setSetting("deviceid",''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(15)))
-
 	if not addon.getSetting("username") or not addon.getSetting("password") or not addon.getSetting("deviceid") or not addon.getSetting("devicename") or  not addon.getSetting("devicetype"):
 		showError('V nastavení je nutné mít vyplněné všechny přihlašovací údaje')
-		return
+		return False
+	return True
 
 ############### hledani - historie ################
 
@@ -297,7 +297,7 @@ def list_days(channelKey):
 	  elif i == 1:
 		den = "Včera"
 	  else:
-		den = day_translation[day.strftime("%A")].decode("utf-8") + " " + day.strftime("%d.%m.%Y");
+		den = day_translation[day.strftime("%A")].decode("utf-8") + " " + day.strftime("%d.%m.%Y") if day.strftime("%A") in day_translation else day.strftime("%A").decode("utf-8") + " " + day.strftime("%d.%m.%Y")
 	  url = get_url(action='list_program', channelKey = channelKey, day_min = i)  
 	  addDir(den, url, 1, None)
 
@@ -339,7 +339,10 @@ def list_program(channelKey, day_min):
    
 		  infoLabels = {}
 		  thumb = None
-		  nazev = day_translation_short[start.strftime("%A")].decode("utf-8") + " " + start.strftime("%d.%m %H:%M") + " - " + end.strftime("%H:%M") + " | " + programs["name"]
+		  if start.strftime("%A") in day_translation_short:
+		    nazev = day_translation_short[start.strftime("%A")].decode("utf-8") + " " + start.strftime("%d.%m %H:%M") + " - " + end.strftime("%H:%M") + " | " + programs["name"]
+		  else:
+		    nazev = start.strftime("%a").decode("utf-8") + " " + start.strftime("%d.%m %H:%M") + " - " + end.strftime("%H:%M") + " | " + programs["name"]
 		  if addon.getSetting("details") == "true":  
 			thumb = "https://www.o2tv.cz/" + img
 			infoLabels = {"title":programs["name"], "plot":plot}
@@ -349,9 +352,8 @@ def list_program(channelKey, day_min):
 		  else:
 			infoLabels = {"title":programs["name"]}
 	
-#		  list_item.addContextMenuItems([("Přidat nahrávku", "RunPlugin(plugin://plugin.video.archivo2tv?action=dd_recording&epgId=" + str(epgId) + ")",)])	   
 		  url = get_url(action='play_video', channelKey = channelKey, start = startts, end = endts, epgId = epgId)
-		  addDir(nazev, url, 1, thumb, infoLabels=infoLabels)
+		  addDir(nazev, url, 1, thumb, infoLabels=infoLabels, menuItems={'Nahrát pořad': {'action': 'add_recording', 'epgId': epgId}})
 	else:
 		showError("Problém s načtením programu")
 		return
@@ -391,7 +393,10 @@ def future_program(channelKey):
    
 		  infoLabels = {}
 		  thumb = None
-		  nazev = day_translation_short[start.strftime("%A")].decode("utf-8") + " " + start.strftime("%d.%m %H:%M") + " - " + end.strftime("%H:%M") + " | " + programs["name"]
+		  if start.strftime("%A") in day_translation_short:
+		    nazev = day_translation_short[start.strftime("%A")].decode("utf-8") + " " + start.strftime("%d.%m %H:%M") + " - " + end.strftime("%H:%M") + " | " + programs["name"]
+		  else:
+		    nazev = start.strftime("%a").decode("utf-8") + " " + start.strftime("%d.%m %H:%M") + " - " + end.strftime("%H:%M") + " | " + programs["name"]
 		  if addon.getSetting("details_future") == "true":  
 			thumb = "https://www.o2tv.cz/" + img
 			infoLabels = {"title":programs["name"], "plot":plot}
@@ -401,9 +406,8 @@ def future_program(channelKey):
 				infoLabels['rating'] = rating_value/10
 		  else:
 			infoLabels = {"title":programs["name"]}
-#		  list_item.addContextMenuItems([("Přidat nahrávku", "RunPlugin(plugin://plugin.video.archivo2tv?action=add_recording&epgId=" + str(epgId) + ")",)])	   
 		  url = get_url(action='add_recording', channelKey = channelKey, epgId = epgId)
-		  addDir(nazev, url, 1, thumb, infoLabels=infoLabels)
+		  addDir(nazev, url, 1, thumb, infoLabels=infoLabels, menuItems={'Nahrát pořad': {'action': 'add_recording', 'epgId': epgId}})
 	  else:
 		  showError("Problém s načtením programu")
 		  return
@@ -447,7 +451,7 @@ def list_recordings():
 			img = program["program"]["images"][0]["cover"]
 		  else:
 			img = ""
-		  recordings.update({program["program"]["start"]+random.randint(0,100) : {"pvrProgramId" : pvrProgramId, "name" : program["program"]["name"], "channelKey" : program["program"]["channelKey"], "start" : day_translation_short[datetime.fromtimestamp(program["program"]["start"]/1000).strftime("%A")].decode("utf-8") + " " + datetime.fromtimestamp(program["program"]["start"]/1000).strftime("%d.%m %H:%M"), "end" : datetime.fromtimestamp(program["program"]["end"]/1000).strftime("%H:%M"), "plot" : plot, "img" : img, "ratings" : ratings}}) 
+		  recordings.update({program["program"]["start"]+random.randint(0,100) : {"pvrProgramId" : pvrProgramId, "name" : program["program"]["name"], "channelKey" : program["program"]["channelKey"], "start" : datetime.fromtimestamp(program["program"]["start"]/1000).strftime("%d.%m %H:%M"), "end" : datetime.fromtimestamp(program["program"]["end"]/1000).strftime("%H:%M"), "plot" : plot, "img" : img, "ratings" : ratings}}) 
 
 	  for recording in sorted(recordings.keys(), reverse = True):
 		infoLabels = {}
@@ -460,9 +464,8 @@ def list_recordings():
 			infoLabels['rating'] = rating_value/10
 		else:
 		  infoLabels = {"title":recordings[recording]["name"]}
-#		list_item.addContextMenuItems([("Smazat nahrávku", "RunPlugin(plugin://plugin.video.archivo2tv?action=delete_recording&pvrProgramId=" + str(recordings[recording]["pvrProgramId"]) + ")",)])	   
 		url = get_url(action='play_recording', pvrProgramId = recordings[recording]["pvrProgramId"], title = recordings[recording]["name"].encode("utf-8"))
-		addDir(nazev, url, 1, thumb, infoLabels=infoLabels)
+		addDir(nazev, url, 1, thumb, infoLabels=infoLabels, menuItems={'Smazat nahrávku': {'action': 'delete_recording', 'pvrProgramId': str(recordings[recording]["pvrProgramId"])}})
 	else:
 		showInfo("Nenalezena žádná nahrávka")
 		return
@@ -502,7 +505,7 @@ def list_future_recordings():
 		  else:
 			img = ""
 
-		  recordings.update({program["program"]["start"]+random.randint(0,100) : {"pvrProgramId" : pvrProgramId, "name" : program["program"]["name"], "channelKey" : program["program"]["channelKey"], "start" : day_translation_short[datetime.fromtimestamp(program["program"]["start"]/1000).strftime("%A")].decode("utf-8") + " " + datetime.fromtimestamp(program["program"]["start"]/1000).strftime("%d.%m %H:%M"), "end" : datetime.fromtimestamp(program["program"]["end"]/1000).strftime("%H:%M"), "plot" : plot, "img" : img, "ratings" : ratings}}) 
+		  recordings.update({program["program"]["start"]+random.randint(0,100) : {"pvrProgramId" : pvrProgramId, "name" : program["program"]["name"], "channelKey" : program["program"]["channelKey"], "start" : datetime.fromtimestamp(program["program"]["start"]/1000).strftime("%d.%m %H:%M"), "end" : datetime.fromtimestamp(program["program"]["end"]/1000).strftime("%H:%M"), "plot" : plot, "img" : img, "ratings" : ratings}}) 
 
 	  for recording in sorted(recordings.keys(), reverse = True):
 		nazev = recordings[recording]["name"] + " (" + recordings[recording]["channelKey"] + " | " + recordings[recording]["start"] + " - " + recordings[recording]["end"] + ")"
@@ -513,9 +516,8 @@ def list_future_recordings():
 			infoLabels['rating']=rating_value/10
 		else:
 		  infoLabels = {"title":recordings[recording]["name"]}
-#		list_item.addContextMenuItems([("Smazat nahrávku", "RunPlugin(plugin://plugin.video.archivo2tv?action=delete_recording&pvrProgramId=" + str(recordings[recording]["pvrProgramId"]) + ")",)])	   
 		url = get_url(action='delete_recording',pvrProgramId=str(recordings[recording]["pvrProgramId"]))  
-		addDir(nazev, url, 1, thumb, infoLabels=infoLabels)
+		addDir(nazev, url, 1, thumb, infoLabels=infoLabels, menuItems={'Smazat nahrávku': {'action': 'delete_recording', 'pvrProgramId': str(recordings[recording]["pvrProgramId"])}})
 	else:
 		showinfo("Nenalezena žádná nahrávka")
 		return
@@ -682,7 +684,10 @@ def program_search(query):
 			 img = epgdata["images"][0]["cover"]
 
 		if programs["channelKey"] not in kanaly: continue # nezobrazovat nezakoupene kanaly
-		nazev = programs["name"] + " (" + programs["channelKey"] + " | " + day_translation_short[start.strftime("%A")].decode("utf-8") + " " + start.strftime("%d.%m %H:%M") + " - " + end.strftime("%H:%M") + ")"
+		if start.strftime("%A") in day_translation_short:
+			nazev = programs["name"] + " (" + programs["channelKey"] + " | " + day_translation_short[start.strftime("%A")].decode("utf-8") + " " + start.strftime("%d.%m %H:%M") + " - " + end.strftime("%H:%M") + ")"
+		else:
+			nazev = programs["name"] + " (" + programs["channelKey"] + " | " + start.strftime("%a").decode("utf-8") + " " + start.strftime("%d.%m %H:%M") + " - " + end.strftime("%H:%M") + ")"
 		thumb = None
 		infoLabels = {}
 		if addon.getSetting("details") == "true":  
@@ -852,10 +857,10 @@ def edit_channel(channelName):
 		channels.update({channel[1] : channel[0]})
 	  
 	query = client.getTextInput(session, "Číslo kanálu", str(num)) ### dodelat ziskani jen cisla
-	new_num = int('%s'%query)
-	if int(new_num) > 0:
-	  if int(new_num) in channels.keys():
-		showError("Číslo kanálu " + new_num + " je už použité u kanálu " + channels[int(new_num)])
+	new_num = int(query)
+	if new_num > 0:
+	  if new_num in channels.keys():
+		showError("Číslo kanálu " + str(new_num) + " je už použité u kanálu " + channels[int(new_num)])
 	  else:  
 		channels[int(new_num)] = channelName
 		channels.update({ int(new_num) : channelName})
@@ -961,12 +966,6 @@ def get_stream_url(channelKey):
 
 ############### main ################
 
-check_settings() 
-if "@" in addon.getSetting("username"):
-  access_token, subscription, isp, locality, offers, tariff = get_auth_token()
-else:
-  access_token, subscription, isp, locality, offers, tariff = get_auth_password()
-
 day_translation = {"Monday" : "Pondělí", "Tuesday" : "Úterý", "Wednesday" : "Středa", "Thursday" : "Čtvrtek", "Friday" : "Pátek", "Saturday" : "Sobota", "Sunday" : "Neděle"}  
 day_translation_short = {"Monday" : "Po", "Tuesday" : "Út", "Wednesday" : "St", "Thursday" : "Čt", "Friday" : "Pá", "Saturday" : "So", "Sunday" : "Ne"}  
 
@@ -1020,8 +1019,14 @@ def router(paramstring):
 	else:
 		list_menu()
 
-url=unquote_plus(params['url']) if 'url' in params else ""
-writeLog("URL: "+url[1:])
-router(url[1:])
+url=params['url'][1:] if 'url' in params else urlencode(params)
+writeLog("URL: "+url)
+
+if check_settings():
+	if "@" in addon.getSetting("username"):
+		access_token, subscription, isp, locality, offers, tariff = get_auth_token()
+	else:
+		access_token, subscription, isp, locality, offers, tariff = get_auth_password()
+	router(url)
 
 if len(client.GItem_lst[0]) == 0: addDir(None,'',1,None)

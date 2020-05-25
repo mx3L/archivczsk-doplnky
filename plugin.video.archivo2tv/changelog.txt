@@ -1,3 +1,8 @@
+v1.4.3 (2020-05-25)
+- oprava chyby dnu v tydnu pri ceskem rozhrani
+- oprava chybejicich prihlasovacich udaju
+- pridano do kontextoveho menu pridavani a mazani nahravek
+
 v1.4.2 (2020-05-20)
 - u datumů se zobrazuje den v týdnu 
 - oprava načítání uživatelského seznamu kanálů, pokud obsahuje diakritiku
