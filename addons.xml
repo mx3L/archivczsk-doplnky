@@ -404,7 +404,7 @@
 
 <addon id="plugin.video.sc2"
        name="Stream Cinema 2.0 CZ/SK"
-       version="2.1.0"
+       version="2.1.1"
        provider-name="hotshot.sk">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
