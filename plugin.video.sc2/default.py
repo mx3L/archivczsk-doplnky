@@ -411,7 +411,7 @@ except:
 	pass
 
 #writeLog('PAGE: '+str(page))
-writeLog('URL: '+str(url))
+#writeLog('URL: '+str(url))
 #writeLog('NAME: '+str(name))
 #writeLog('ACT: '+str(action))
 #writeLog('ACTVAL: '+str(action_value))
@@ -515,7 +515,6 @@ elif action[0] == 'movies' or action[0] == 'series':
 		data = get_media_data('/api/media/filter/genre?sort=year&type='+mos+'&order=desc&value=%s&limit=%s&page=%s'%(g,limitRec,page),'')
 	else:
 		data = get_media_data('/api/media/filter/startsWithSimple?type='+mos+'&value=%s&limit=%s&page=%s'%(action_value[0],limitRec,page),'')
-	writeLog(json.dumps(data))
 	if action[0] == 'movies' and 'data' in data: process_movies(data['data'])
 	if action[0] == 'series' and 'data' in data: process_series(data['data'])
 	if 'pagination' in data and 'pageCount' in data['pagination'] and 'page' in data['pagination'] and data['pagination']['pageCount']>1:
