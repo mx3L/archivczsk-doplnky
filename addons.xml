@@ -38,7 +38,7 @@
 
 <addon id="plugin.video.novaplus"
        name="Nova Plus TV Archiv"
-       version="2.2.7"
+       version="2.2.8"
        provider-name="Michal Novotny, Jiri Vyhnalek">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
@@ -166,7 +166,7 @@
   </extension>
 </addon>
 
-<addon id="plugin.video.archivo2tv" name="Sledování O2TV" provider-name="misanov,waladir" version="1.4.3">
+<addon id="plugin.video.archivo2tv" name="Sledování O2TV" provider-name="misanov,waladir" version="1.4.4">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
     <import addon="script.module.stream.resolver" version="1.6.25" />
@@ -404,7 +404,7 @@
 
 <addon id="plugin.video.sc2"
        name="Stream Cinema 2.0 CZ/SK"
-       version="2.0.0-beta"
+       version="2.1.0"
        provider-name="hotshot.sk">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
@@ -416,9 +416,9 @@
   <extension point="xbmc.addon.metadata">
     <platform>all</platform>
     <summary>Stream Cinema 2.0 CZ/SK</summary>
-    <description>Plugin to play video archive. Beta version!!!</description>
-    <description lang="cs">Plugin pro přehrávání videí. Beta verze!!!</description>
-    <description lang="sk">Plugin pre prehravanie videí. Beta verze!!!</description>
+    <description>Plugin to play video archive. First pre-final release.</description>
+    <description lang="cs">Plugin pro přehrávání videí. První před-finální verze.</description>
+    <description lang="sk">Plugin pre prehravanie videí. Prvá pred-finálna verzia.</description>
   </extension>
 </addon>
 
@@ -499,7 +499,7 @@
     </extension>
 </addon>
 
-<addon id="plugin.video.primaplay" name="iPrima" version="0.4.8" provider-name="Michal Novotny, Ladislav Dokulil">
+<addon id="plugin.video.primaplay" name="iPrima" version="0.4.9" provider-name="Michal Novotny, Ladislav Dokulil">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
     <import addon="script.module.stream.resolver" version="1.6.24" />
