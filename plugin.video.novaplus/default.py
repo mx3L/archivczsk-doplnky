@@ -147,6 +147,9 @@ def EPISODES(url,name): # rewrite by MN
                         addDir('[COLOR yellow]' + title.group(1).replace('&nbsp;', ' ') + '[/COLOR]',url2.group(1),2,None,1)
 
     # dalsi dily poradu
+    prodId = re.search('<button data-href=.*?content=(.*?)&', html, re.S)
+    if prodId and prodId.group(1):
+        html = get_url('https://novaplus.nova.cz/api/v1/mixed/more?page=1&offset=0&content='+prodId.group(1)+'&limit=80')
     articles = re.findall("<article class=\"b-article-news m-layout-playlist\">(.*?)</article>", html, re.S)
     if articles != None:
         for article in articles:
@@ -223,7 +226,7 @@ def VIDEOLINK(url,name):    # rewrite by MN
     else:   # jeste zkusim najit mpd (MN)
         urls = re.search("\"src\":\"(.*?)\.m3u8\"",httpdata,re.M)
         if urls != None:
-            addLink('[B] DRM! - ' + name.replace('&nbsp;', ' ') + '[/B]',urls.group(1).replace("\\","")+".m3u8",thumb,desc.replace('&nbsp;', ' '))
+            addLink('[B]' + name.replace('&nbsp;', ' ') + '[/B]',urls.group(1).replace("\\","")+".m3u8",thumb,desc.replace('&nbsp;', ' '))
         else:
             print 'Chyba: Video nelze přehrát'
             addLink("[COLOR red]Chyba: Video nelze přehrát[/COLOR]","#",None,"")

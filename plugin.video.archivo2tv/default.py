@@ -14,6 +14,7 @@ from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
 from Plugins.Extensions.archivCZSK.engine.client import add_dir, add_video
 from Plugins.Extensions.archivCZSK.engine import client
 from Components.config import config
+from Plugins.Extensions.archivCZSK.engine.tools.util import toString
 
 ############### init ################
 addon = ArchivCZSK.get_xbmc_addon('plugin.video.archivo2tv')
@@ -126,7 +127,7 @@ def get_auth_token():
 	post = {"username" : addon.getSetting("username"), "password" : addon.getSetting("password")} 
 	data = call_o2_api(url = "https://ottmediator.o2tv.cz:4443/ottmediator-war/login", data = urlencode(post), header = header)
 	if "err" in data:
-		showError("Problém při přihlášení")
+		showError("Problém při přihlášení: %s"%toString(data['err']))
 		return
 
 	if "services" in data and "remote_access_token" in data and len(data["remote_access_token"]) > 0 and "service_id" in data["services"][0] and len(data["services"][0]["service_id"]) > 0:
@@ -142,7 +143,7 @@ def get_auth_token():
 		post = {"grant_type" : "remote_access_token", "client_id" : "tef-web-portal-etnetera", "client_secret" : "2b16ac9984cd60dd0154f779ef200679", "platform_id" : "231a7d6678d00c65f6f3b2aaa699a0d0", "language" : "cs", "remote_access_token" : str(remote_access_token), "authority" :  "tef-sso", "isp_id" : "1"}
 		data = call_o2_api(url = "https://oauth.o2tv.cz/oauth/token", data = urlencode(post), header = header)
 		if "err" in data:
-			showError("Problém při přihlášení")
+			showError("Problém při přihlášení: %s"%toString(data['err']))
 			return
 
 		if "access_token" in data and len(data["access_token"]) > 0:
@@ -150,7 +151,7 @@ def get_auth_token():
 			header.update({"X-NanguTv-Access-Token" : str(access_token), "X-NanguTv-Device-Id" : addon.getSetting("deviceid")})
 			data = call_o2_api(url = "https://app.o2tv.cz/sws/subscription/settings/subscription-configuration.json", data = None, header = header)
 			if "err" in data:
-				showError("Problém při přihlášení")
+				showError("Problém při přihlášení: %s"%toString(data['err']))
 				return
 			if "isp" in data and len(data["isp"]) > 0 and "locality" in data and len(data["locality"]) > 0 and "billingParams" in data and len(data["billingParams"]) > 0 and "offers" in data["billingParams"] and len(data["billingParams"]["offers"]) > 0 and "tariff" in data["billingParams"] and len(data["billingParams"]["tariff"]) > 0:
 				subscription = data["subscription"]
@@ -174,7 +175,7 @@ def get_auth_password():
 	post = {"grant_type" : "password", "client_id" : "tef-web-portal-etnetera", "client_secret" : "2b16ac9984cd60dd0154f779ef200679", "platform_id" : "231a7d6678d00c65f6f3b2aaa699a0d0", "language" : "cs", "username" : addon.getSetting("username"), "password" : addon.getSetting("password")}
 	data = call_o2_api(url = "https://oauth.o2tv.cz/oauth/token", data = urlencode(post), header = header)
 	if "err" in data:
-	  showError("Problém při přihlášení")
+	  showError("Problém při přihlášení: %s"%toString(data['err']))
 	  return
 
 	if "access_token" in data and len(data["access_token"]) > 0:
@@ -182,7 +183,7 @@ def get_auth_password():
 	  header.update({"X-NanguTv-Access-Token" : str(access_token), "X-NanguTv-Device-Id" : addon.getSetting("deviceid")})
 	  data = call_o2_api(url = "https://app.o2tv.cz/sws/subscription/settings/subscription-configuration.json", data = None, header = header)
 	  if "err" in data:
-		showError("Problém při přihlášení")
+		showError("Problém při přihlášení: %s"%toString(data['err']))
 		return
 		 
 	  if "isp" in data and len(data["isp"]) > 0 and "locality" in data and len(data["locality"]) > 0 and "billingParams" in data and len(data["billingParams"]) > 0 and "offers" in data["billingParams"] and len(data["billingParams"]["offers"]) > 0 and "tariff" in data["billingParams"] and len(data["billingParams"]["tariff"]) > 0:
@@ -220,7 +221,7 @@ def list_channels():
 		post = {"locality" : locality, "tariff" : tariff, "isp" : isp, "language" : "ces", "deviceType" : addon.getSetting("devicetype"), "liveTvStreamingProtocol" : "HLS", "offer" : offer}
 		data = call_o2_api(url = "https://app.o2tv.cz/sws/server/tv/channels.json", data = urlencode(post), header = header)															   
 		if "err" in data:
-			showError("Problém s načtením kanálů")
+			showError("Problém s načtením kanálů: %s"%toString(data['err']))
 			return
 
 		if "channels" in data and len(data["channels"]) > 0:
@@ -234,7 +235,7 @@ def list_channels():
 	if addon.getSetting("details") == "true":
 		data = call_o2_api(url = "https://www.o2tv.cz/unity/api/v1/channels/", data = None, header = header_unity)															   
 		if "err" in data:
-			showError("Problém s načtením kanálů")
+			showError("Problém s načtením kanálů: %s"%toString(data['err']))
 			return
 		if "result" in data and len(data["result"]) > 0:
 			for channel in data["result"]:
@@ -248,7 +249,7 @@ def list_days(channelKey):
 	epgId = 0
 	data = call_o2_api(url = "https://www.o2tv.cz/unity/api/v1/channels/", data = None, header = header_unity)
 	if "err" in data:
-	  showError("Problém s načtením programu")
+	  showError("Problém s načtením programu: %s"%toString(data['err']))
 	  return
 
 	if "result" in data and len(data["result"]) > 0:
@@ -257,21 +258,21 @@ def list_days(channelKey):
 		  epgId = channel["live"]["epgId"]
 
 	if epgId <> 0:
-	  data = call_o2_api(url = "https://www.o2tv.cz/unity/api/v1/programs/" + str(epgId) + "/", data = None, header = header_unity)
-	  if "err" in data:
-		showError("Problém s načtením programu")
+	  epgdata = call_o2_api(url = "https://www.o2tv.cz/unity/api/v1/programs/" + str(epgId) + "/", data = None, header = header_unity)
+	  if "err" in epgdata:
+		showError("Problém s načtením programu: %s"%toString(epgdata['err']))
 		return
 
 	  img = "";
 	  plot = "";
-	  if "images" in data and len(data["images"]) > 0:
-		 plot = data["longDescription"]
-		 img = data["images"][0]["cover"]
+	  if "images" in epgdata and len(epgdata["images"]) > 0:
+		 plot = epgdata["longDescription"]
+		 img = epgdata["images"][0]["cover"]
  
 	if epgId <> 0:
-	  start = datetime.fromtimestamp(data["start"]/1000)
-	  end = datetime.fromtimestamp(data["end"]/1000)
-	  nazev = "Živě: " + data["name"].encode("utf-8") + " (" + start.strftime("%H:%M") + " - " + end.strftime("%H:%M") + ")"
+	  start = datetime.fromtimestamp(epgdata["start"]/1000)
+	  end = datetime.fromtimestamp(epgdata["end"]/1000)
+	  nazev = "Živě: " + epgdata["name"].encode("utf-8") + " (" + start.strftime("%H:%M") + " - " + end.strftime("%H:%M") + ")"
 	else:
 	  nazev = "Živě"
 
@@ -279,12 +280,12 @@ def list_days(channelKey):
 	thumb = None
 	if addon.getSetting("details") == "true" and epgId <> 0:  
 	  thumb = "https://www.o2tv.cz/" + img
-	  infoLabels = {"title":data["name"], "plot":plot}
-	  if "ratings" in data and len(data["ratings"]) > 0:
-		for rating, rating_value in data["ratings"].items():
+	  infoLabels = {"title":epgdata["name"], "plot":plot}
+	  if "ratings" in epgdata and len(epgdata["ratings"]) > 0:
+		for rating, rating_value in epgdata["ratings"].items():
 		  infoLabels['rating'] = rating_value/10
 
-	url = get_url(action='play_live', channelKey = channelKey, title = data["name"].encode("utf-8") + " (" + start.strftime("%H:%M") + " - " + end.strftime("%H:%M") + ")") 
+	url = get_url(action='play_live', channelKey = channelKey, title = epgdata["name"].encode("utf-8") + " (" + start.strftime("%H:%M") + " - " + end.strftime("%H:%M") + ")") 
 	addDir(nazev, url, 1, thumb, infoLabels=infoLabels)
 
 	url = get_url(action='future_program', channelKey = channelKey)
@@ -313,7 +314,7 @@ def list_program(channelKey, day_min):
 
 	data = call_o2_api(url = "https://www.o2tv.cz/unity/api/v1/epg/depr/?channelKey=" + quote(channelKey) + "&from=" + str(from_ts*1000) + "&to=" + str(to_ts*1000) + "&forceLimit=true&limit=500", data = None, header = header_unity)
 	if "err" in data:
-	  showError("Problém s načtením programu")
+	  showError("Problém s načtením programu: %s"%toString(data['err']))
 	  return
 
 	if "epg" in data and len(data["epg"]) > 0 and len(data["epg"]["items"]) > 0 and len(data["epg"]["items"][0]["programs"]) > 0:
@@ -328,7 +329,7 @@ def list_program(channelKey, day_min):
 		  if addon.getSetting("details") == "true":  
 			data = call_o2_api(url = "https://www.o2tv.cz/unity/api/v1/programs/" + str(epgId) + "/", data = None, header = header_unity)
 			if "err" in data:
-			  showError("Problém s načtením programu")
+			  showError("Problém s načtením programu: %s"%toString(data['err']))
 			  return
   
 			img = "";
@@ -368,7 +369,7 @@ def future_program(channelKey):
 	  to_ts = from_ts + 24*60*60
 	  data = call_o2_api(url = "https://www.o2tv.cz/unity/api/v1/epg/depr/?channelKey=" + quote(channelKey) + "&from=" + str(from_ts*1000) + "&to=" + str(to_ts*1000) + "&forceLimit=true&limit=500", data = None, header = header_unity)
 	  if "err" in data:
-		showError("Problém s načtením programu")
+		showError("Problém s načtením programu: %s"%toString(data['err']))
 		return
 
 	  if "epg" in data and len(data["epg"]) > 0 and len(data["epg"]["items"]) > 0 and len(data["epg"]["items"][0]["programs"]) > 0:
@@ -382,7 +383,7 @@ def future_program(channelKey):
 		  if addon.getSetting("details_future") == "true":  
 			data = call_o2_api(url = "https://www.o2tv.cz/unity/api/v1/programs/" + str(epgId) + "/", data = None, header = header_unity)
 			if "err" in data:
-			  showError("Problém s načtením programu")
+			  showError("Problém s načtením programu: %s"%toString(data['err']))
 			  return
   
 			img = "";
@@ -423,7 +424,7 @@ def list_recordings():
 	header_unity2 = {"User-Agent" : "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:75.0) Gecko/20100101 Firefox/75.0", "Content-Type" : "application/json", "x-o2tv-access-token" : str(access_token), "x-o2tv-device-id" : addon.getSetting("deviceid"), "x-o2tv-device-name" : addon.getSetting("devicename")}
 	data = call_o2_api(url = "https://www.o2tv.cz/unity/api/v1/user/profile/", data = None, header = header_unity2)
 	if "err" in data:
-	  showError("Problém s načtením nahrávek")
+	  showError("Problém s načtením nahrávek: %s"%toString(data['err']))
 	  return
 	sdata = data["sdata"]
 	
@@ -431,7 +432,7 @@ def list_recordings():
 
 	data_pvr = call_o2_api(url = "https://www.o2tv.cz/unity/api/v1/recordings/", data = None, header = header_unity2)
 	if "err" in data_pvr:
-	  showError("Problém s načtením nahrávek")
+	  showError("Problém s načtením nahrávek: %s"%toString(data_pvr['err']))
 #	 return
  
 	if "result" in data_pvr and len(data_pvr["result"]) > 0:
@@ -476,7 +477,7 @@ def list_future_recordings():
 	header_unity2 = {"User-Agent" : "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:75.0) Gecko/20100101 Firefox/75.0", "Content-Type" : "application/json", "x-o2tv-access-token" : str(access_token), "x-o2tv-device-id" : addon.getSetting("deviceid"), "x-o2tv-device-name" : addon.getSetting("devicename")}
 	data = call_o2_api(url = "https://www.o2tv.cz/unity/api/v1/user/profile/", data = None, header = header_unity2)
 	if "err" in data:
-	  showError("Problém s načtením nahrávek")
+	  showError("Problém s načtením nahrávek: %s"%toString(data['err']))
 	  return
 	sdata = data["sdata"]
 	
@@ -484,7 +485,7 @@ def list_future_recordings():
 
 	data_pvr = call_o2_api(url = "https://www.o2tv.cz/unity/api/v1/recordings/", data = None, header = header_unity2)
 	if "err" in data_pvr:
-	  showError("Problém s načtením nahrávek")
+	  showError("Problém s načtením nahrávek: %s"%toString(data_pvr['err']))
   #	return
 	
 	if "result" in data_pvr and len(data_pvr["result"]) > 0:
@@ -519,22 +520,25 @@ def list_future_recordings():
 		url = get_url(action='delete_recording',pvrProgramId=str(recordings[recording]["pvrProgramId"]))  
 		addDir(nazev, url, 1, thumb, infoLabels=infoLabels, menuItems={'Smazat nahrávku': {'action': 'delete_recording', 'pvrProgramId': str(recordings[recording]["pvrProgramId"])}})
 	else:
-		showinfo("Nenalezena žádná nahrávka")
+		showInfo("Nenalezena žádná nahrávka")
 		return
 
 def delete_recording(pvrProgramId):
 	post = {"pvrProgramId" : int(pvrProgramId)}
 	data = call_o2_api(url = "https://app.o2tv.cz/sws/subscription/vod/pvr-remove-program.json", data = urlencode(post), header = header)
 	showInfo("Nahrávka odstraněna")
-#	xbmc.executebuiltin('Container.Refresh')
+#	client.set_command('updatelist')
+#	client.refresh_screen(restoreLastPosition=False)
 
 def add_recording(epgId):
 	post = {"epgId" : int(epgId)}
 	data = call_o2_api(url = "https://app.o2tv.cz/sws/subscription/vod/pvr-add-program.json", data = urlencode(post), header = header)
 	if "err" in data:
-	  showError("Problém s přidáním nahrávky")
+	  showError("Problém s přidáním nahrávky: %s"%toString(data['err']))
 	  return
 	showInfo("Nahrávka přidána")
+#	client.set_command('updatelist')
+#	client.refresh_screen(restoreLastPosition=True)
 
 ############### prehravani ################
 
@@ -741,7 +745,7 @@ def load_o2_channel_list(list):
 			for key in sorted(channels.keys()):
 			  line = channels[key].encode("utf-8")+";"+str(key)
 			  file.write('%s\n' % line)
-	  showInfo("Seznam kanálů byl načtený")
+	  showInfo("Seznam kanálů byl načten")
 	else:
 	  showError("Nanalezen žádný seznam v O2")
 	  return
@@ -751,7 +755,7 @@ def reset_channel_list():
 	if os.path.exists(filename):
 	  os.remove(filename) 
 	channels = load_channels()
-	showInfo("Seznam kanálů byl resetovaný")
+	showInfo("Seznam kanálů byl resetován")
 	
 def list_channels_edit():
 	channels = load_channels()
@@ -856,14 +860,13 @@ def edit_channel(channelName):
 	  else:
 		channels.update({channel[1] : channel[0]})
 	  
-	query = client.getTextInput(session, "Číslo kanálu", str(num)) ### dodelat ziskani jen cisla
-	new_num = int(query)
-	if new_num > 0:
-	  if new_num in channels.keys():
+	new_num = client.getTextInput(session, "Číslo kanálu", str(num)) ### dodelat ziskani jen cisla
+	if new_num and int(new_num) > 0:
+	  if int(new_num) in channels.keys():
 		showError("Číslo kanálu " + str(new_num) + " je už použité u kanálu " + channels[int(new_num)])
 	  else:  
 		channels[int(new_num)] = channelName
-		channels.update({ int(new_num) : channelName})
+		channels.update({int(new_num) : channelName})
 		with open(filename, "w") as file:
 		  for key in sorted(channels.keys()):
 			line = channels[key]+";"+str(key)
@@ -914,7 +917,7 @@ def generate_playlist():
 		line = "?action=get_stream_url&channelKey=" + channels[channel]["channelKey"].encode("utf-8")
 		file.write('%s\n' % line)
 		  
-	showInfo("Playlist byl uložený")
+	showInfo("Playlist byl uložen")
 
 def get_stream_url(channelKey):
 	post = {"serviceType" : "LIVE_TV", "deviceType" : addon.getSetting("devicetype"), "streamingProtocol" : "HLS", "subscriptionCode" : subscription, "channelKey" : channelKey, "encryptionType" : "NONE"}
@@ -1022,11 +1025,18 @@ def router(paramstring):
 url=params['url'][1:] if 'url' in params else urlencode(params)
 writeLog("URL: "+url)
 
+chk = False
 if check_settings():
 	if "@" in addon.getSetting("username"):
-		access_token, subscription, isp, locality, offers, tariff = get_auth_token()
+		gat = get_auth_token()
+		if gat:
+			access_token, subscription, isp, locality, offers, tariff = gat
+			chk = True
 	else:
-		access_token, subscription, isp, locality, offers, tariff = get_auth_password()
-	router(url)
+		gap = get_auth_password()
+		if gap:
+			access_token, subscription, isp, locality, offers, tariff = gap
+			chk = True
+	if chk: router(url)
 
 if len(client.GItem_lst[0]) == 0: addDir(None,'',1,None)

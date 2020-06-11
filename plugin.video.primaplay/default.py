@@ -64,6 +64,7 @@ def shows_menu(pageurl, list_only=False):
     add_dir("ŽIVĚ - Prima ZOOM", {'action': 'PLAY', 'linkurl': 'https://zoom.iprima.cz'}, None, video_item=True)
     add_dir("ŽIVĚ - CNN Prima News", {'action': 'PLAY', 'linkurl': 'https://cnn.iprima.cz/vysilani'}, None, video_item=True)
     add_dir("VŠECHNY POŘADY", {'action': 'CATEGORIES', 'linkurl': pageurl}, None)
+    add_dir("HLAVNÍ ZPRÁVY", {'action': 'SHOW-NAV', 'linkurl': '//cnn.iprima.cz/porady/hlavni-zpravy'}, None)
 #    add_search_menu()
 #    add_account_menu()
 
@@ -183,10 +184,10 @@ def add_player(player):
 
 def get_cnn_videos(link):
     content = _play_parser.get_data_cached("https:"+link, _play_parser.useCache, 3)
-    prodId = re.search("/_snippet/videos-detail/limit/offset/([0-9]*?)'", content, re.S)
+    prodId = re.search("/_snippet/videos-episode/limit/offset/([0-9]*?)'", content, re.S)
     if prodId:
         primalog.logDebug(str(prodId.group(1)))
-        content = _play_parser.get_data_cached("https://cnn.iprima.cz/_snippet/videos-detail/60/0/"+prodId.group(1), _play_parser.useCache, 3)
+        content = _play_parser.get_data_cached("https://cnn.iprima.cz/_snippet/videos-episode/60/0/"+prodId.group(1), _play_parser.useCache, 3)
         articles = re.findall('<article .*?<a href="(.*?)".*?<img.*?data-src="(.*?)".*?alt="(.*?)".*?</article>', content, re.S)
         if articles:
             for article in articles:

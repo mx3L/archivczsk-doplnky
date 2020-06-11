@@ -1,0 +1,18 @@
+22c22
+< from util import addDir, addLink, addSearch, getSearch
+---
+> from util import addDir, addSearch, getSearch
+24a25
+> from Plugins.Extensions.archivCZSK.engine.client import add_video
+197c198
+<         image = re.search('<meta property=og:image content="(.*?)"', html, re.S).group(1)
+---
+>         image = re.search('<meta property=og:image content=(.*?)>', html, re.S).group(1)
+206c207
+<         addLink(title,src,image,descr)
+---
+>         add_video(title,src.replace('https','http'),None,image.replace('https','http'),infoLabels={'plot':descr})
+208c209
+<         addLink("[COLOR red]Video nelze načíst[/COLOR]","#",None,None)
+---
+>         add_video("[COLOR red]Video nelze načíst[/COLOR]","#",None,None)
