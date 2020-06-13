@@ -50,12 +50,15 @@ def Guide():
 	if data.status_code != 200:
 		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
 		return False
+	jso = json.loads(data.content)
+	if 'data' not in jso or 'inGuideTags' not in jso['data'] or jso['data']['inGuideTags'] == None:
+		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru, zkuste to za chvilku', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
+		return False
 	addDir('[COLOR yellow]HLEDAT[/COLOR]', 'search', 9, None, 1)
 	addDir('[COLOR yellow]ŽIVĚ[/COLOR]', 'live', 8, None, 1)
-	jso = json.loads(data.content)
 	if 'data' in jso and 'inGuideTags' in jso['data']:
 		guides = {}
-		for article in jso['data']['inGuideTags']:
+		for article in jso['data']['inGuideTags'] or []:
 			poster = None
 			for image in article['images']:
 				if image['usage'] == 'square': poster = 'https:'+image['url']
