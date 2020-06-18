@@ -1,3 +1,13 @@
+2020-06-18
+ * uprava Novinky a Novinky dabovane za 365 dni
+ * oprava Jazykoveho filtru
+ * predelane A-Z do stromu max 50 filmu, pak zobrazi seznam
+ * A-Z trideni a zobrazeni nazvu pod priority cs, sk, en
+ * pridano Studio (max 200 zaznamu)
+ * vyhledavani vcetne historie
+ * trideni zanru a studii dle poctu
+ * uprava kvality streamu
+
 2020-06-11
  * prvni pred-finalni verze, jeste bude hodne ladeni
 

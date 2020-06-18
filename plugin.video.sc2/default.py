@@ -14,10 +14,12 @@ from Plugins.Extensions.archivCZSK.engine.tools.util import unescapeHTML
 from Plugins.Extensions.archivCZSK.engine.client import add_dir, add_video
 from Plugins.Extensions.archivCZSK.engine import client
 from Components.config import config
-import re, datetime, util, json, search, math, uuid
+import re, datetime, util, json, search, math, uuid, unicodedata
 from md5crypt import md5crypt
+from bisect import bisect
 
 addon = ArchivCZSK.get_xbmc_addon('plugin.video.sc2')
+addon_userdata_dir = addon.getAddonInfo('profile')
 home = addon.getAddonInfo('path')
 icon = os.path.join(home, 'icon.png')
 hotshot_url = 'https://plugin.sc2.zone'
@@ -27,8 +29,10 @@ UA2 = 'Kodi/18.6 (Windows NT 10.0.18363; Win64; x64) App_Bitness/64 Version/18.6
 realm = ':Webshare:'
 base_url = ""
 LOG_FILE = os.path.join(config.plugins.archivCZSK.logPath.getValue(),'sc2.log')
-CACHE_FILE = os.path.join(config.plugins.archivCZSK.logPath.getValue(),'sc2.')
 langFilter = addon.getSetting('item_filter_lang')
+langs_pref = ['cs','sk','en']
+quality_map = {144: '144p',240: '240p',360: '360p',480: '480p',720: '720p',1080: '1080p',2160: '2160p',4320: '4320p'}
+max_studios = 200
 
 def writeLog(msg, type='INFO'):
 	try:
@@ -39,19 +43,8 @@ def writeLog(msg, type='INFO'):
 	except:
 		pass
 
-def set_cache(key, value):
-	try:
-		with open(CACHE_FILE+key, 'w') as outfile:
-			json.dump(value, outfile)
-	except:
-		pass
-
-def get_cache(key):
-	try:
-		with open(CACHE_FILE+key) as json_file:
-			return json.load(json_file)
-	except:
-		return None
+def strip_accents(s):
+	return ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
 
 def ws_api_request(url, data):
 	return requests.post(ws_api + url, data=data)
@@ -97,17 +90,13 @@ def get_stream_url(ident):
 
 def api_request(url,post_data=''):
 	url = hotshot_url + url
-#	tout = addon.getSetting('loading_timeout')
-#	if not tout: tout = 15
 	try:
-#		data = requests.post(url=url, data=post_data, headers={'User-Agent': UA2, 'X-Uuid': xuuid, 'Content-Type': 'application/json'}, timeout=15)
 		data = requests.get(url=url, data=post_data, headers={'User-Agent': UA2, 'X-Uuid': xuuid, 'Content-Type': 'application/json'}, timeout=15)
 		if data.status_code != 200:
 			client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
 			return {'data': "" }
 		else:
 			return json.loads(data.content)
-#			return data.json()
 	except Exception as e:
 		client.add_operation("SHOW_MSG", {'msg': 'Nepodařilo se stáhnout data ze serveru v časovém limitu', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
 		pass
@@ -115,14 +104,7 @@ def api_request(url,post_data=''):
 
 def get_media_data(url,post_data=''):
 	data = api_request(url,post_data)
-#	set_cache('media', data)
 	return data
-
-def get_media_from_cache(mediaId):
-	mediaList = get_cache('media')
-	for media in mediaList['data']:
-		if media['_id'] == mediaId:
-			return media['_source']
 
 def addDir(name, url, mode, image, page=None, kanal=None, infoLabels={}, menuItems={}):
 	params = {'name':name, 'url':url, 'mode':mode, 'page':page, 'kanal':kanal}
@@ -145,6 +127,18 @@ def add_translations(s):
 	regex = re.compile(r'\$(\d+)', re.S)
 	return regex.sub(lambda m: m.group().replace(m.group(),addon.getLocalizedString(int(m.group()[1:])),1), s)
 
+def find_closest_resolution(height):
+	keys = sorted(quality_map.keys())
+	index = bisect(keys, height)
+	return quality_map[keys[index]]
+
+def resolution_to_quality(video, with_3d=True):
+	height = video.get('height')
+	quality = quality_map.get(height) or find_closest_resolution(height)
+	if with_3d and video['3d']:
+		quality += ' 3D'
+	return quality
+
 def convert_size(size_bytes):
 	if size_bytes == 0 or size_bytes is None:
 		return "0 B"
@@ -161,24 +155,24 @@ def convert_bitrate(mbit):
 	s = round(mbit / p, 2)
 	return "%s %s" % (s, "Mbit/s")
 
-def stream_title(title,stream):
-	lang = []
-	if 'audio' in stream:
-		for temp in stream['audio']:
-			if 'language' in temp: lang.append(temp['language'])
-	if lang:
-		langset = set(lang)
-		lang = list(langset)
-		lang.sort()
-	return title + " - " + ', '.join(lang) + ' (' + stream['quality'] + ', ' + convert_size(stream['size']) + ', ' + stream['codec'] + ', '+ convert_bitrate(stream['bitrate']) + ')'
-
 def get_info(media,st=False):
 	year = media['info_labels']['year'] if 'info_labels' in media and 'year' in media['info_labels'] else 0
 	if year == 0 and 'aired' in media['info_labels'] and media['info_labels']['aired']: year = media['info_labels']['aired'][0:4]
 	langs = (', '.join(media['available_streams']['audio_languages'])).upper() if 'available_streams' in media and 'audio_languages' in media['available_streams'] else ''
-	title = media['i18n_info_labels'][0]['title'] if 'i18n_info_labels' in media and 'title' in media['i18n_info_labels'][0] else ""
-	title = ' ' + media['info_labels']['originaltitle'] + langs if 'info_labels' in media and 'originaltitle' in media['info_labels'] and title == "" else title
-#	title = media['info_labels']['originaltitle'] if 'info_labels' in media and 'originaltitle' in media['info_labels'] else ''
+	if abc:
+		(m,v) = action_value[0].split(',')
+		tmp = {}
+		title = ''
+		if 'i18n_info_labels' in media:
+			for label in media['i18n_info_labels']:
+				tmp[label['lang']] = label
+			for lang in langs_pref:
+				if title == '' and lang in tmp and 'title' in tmp[lang] and re.sub(r'[^a-z0-9]','',strip_accents(tmp[lang]['title'].lower()))[:len(v)] == v.lower():
+					title = tmp[lang]['title']
+		title = media['info_labels']['originaltitle'] if title == '' and 'info_labels' in media and 'originaltitle' in media['info_labels'] else title
+	else:
+		title = media['i18n_info_labels'][0]['title'] if 'i18n_info_labels' in media and 'title' in media['i18n_info_labels'][0] else ""
+		title = ' ' + media['info_labels']['originaltitle'] + langs if 'info_labels' in media and 'originaltitle' in media['info_labels'] and title == "" else title
 	if not st: title += ' - ' + langs + ' (' + str(year) + ')'
 	genres = ""
 	if 'info_labels' in media and 'genre' in media['info_labels']:
@@ -191,6 +185,7 @@ def get_info(media,st=False):
 	rating = media['i18n_info_labels'][0]['rating'] if 'i18n_info_labels' in media and 'rating' in media['i18n_info_labels'][0] else 0
 	duration = media['info_labels']['duration'] if 'info_labels' in media and 'duration' in media['info_labels'] else 0
 	if duration == 0 and 'streams' in media and len(media['streams'])>0 and 'duration' in media['streams'][0]: duration = media['streams'][0]['duration']
+	if duration == 0 and 'stream_info' in media and 'video' in media['stream_info'] and 'duration' in media['stream_info']['video']: duration = media['stream_info']['video']['duration']
 	poster = media['i18n_info_labels'][0]['art']['poster'] if 'i18n_info_labels' in media and 'art' in media['i18n_info_labels'][0] and 'poster' in media['i18n_info_labels'][0]['art'] and media['i18n_info_labels'][0]['art']['poster'] != "" else None
 	return {'title': title, 'plot': plot, 'rating': rating, 'duration': duration, 'poster': poster, 'year': year, 'genres': genres, 'langs': langs}
 
@@ -198,74 +193,160 @@ def add_paging(page, pageCount):
 	if page <= pageCount:
 		addDir(add_translations(addon.getLocalizedString(30203) + ' ('+ str(page) + '/' + str(pageCount) +') '), build_plugin_url({ 'action': action[0], 'action_value': action_value[0], 'page': page }), 1, None)
 
+def save_search_history(query):
+	max_history = 20
+	cnt = 0
+	history = []
+	filename = addon_userdata_dir + "search_history.txt"
+	try:
+		with open(filename, "r") as file:
+			for line in file:
+				item = line[:-1]
+				history.append(item)
+	except IOError:
+		history = []
+	history.insert(0,query)
+	with open(filename, "w") as file:
+		for item  in history:
+			cnt = cnt + 1
+			if cnt <= max_history:
+				file.write('%s\n' % item)
+
+def load_search_history():
+	history = []
+	filename = addon_userdata_dir + "search_history.txt"
+	try:
+		with open(filename, "r") as file:
+			for line in file:
+				item = line[:-1]
+				history.append(item)
+	except IOError:
+		history = []
+	return history
+
+def list_search():
+	addDir("Nové hledání", build_plugin_url({'action': 'search', 'action_value': '-----'}), 1, None)
+	history = load_search_history()
+	for item in history:
+		addDir(item, build_plugin_url({'action': 'search', 'action_value': item}), 1, None)
+
+def search():
+	query = action_value[0]
+	if query == "-----":
+		query = client.getTextInput(session, addon.getLocalizedString(30207))
+		if len(query) == 0:
+			client.add_operation("SHOW_MSG", {'msg': 'Je potřeba zadat hledaný řetězec', 'msgType': 'error', 'msgTimeout': 5, 'canClose': True })
+			return
+		else:
+			save_search_history(query)
+	if query is not "":
+		mediaList = get_media_data('/api/media/filter/search?sort=score&type=%%2A&order=desc&value=%s'%query,'')
+		if 'data' in mediaList:
+			for media in mediaList['data']:
+				if isExplicit(media['_source']): continue
+				if isFilterLang(media['_source']): continue
+				info = get_info(media['_source'])
+				if 'i18n_info_labels' in media['_source'] and 'parent_titles' in media['_source']['i18n_info_labels'][0] and len(media['_source']['i18n_info_labels'][0]['parent_titles'])>0:
+					info['title'] = ' - '.join(media['_source']['i18n_info_labels'][0]['parent_titles'])+' - '+info['title']
+				if 'info_labels' in media['_source'] and 'mediatype' in media['_source']['info_labels'] and media['_source']['info_labels']['mediatype'] == 'tvshow':
+					addDir(info['title'], build_plugin_url({ 'action': 'seasons', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year'], 'genre': info['genres']})
+				else:
+					addDir(info['title'], build_plugin_url({ 'action': 'movies.streams', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year'], 'genre': info['genres']})
+
+
 def isExplicit(media):
 	if addon.getSetting('explicit_content') == 'false':
-		if 'info_labels' in media and 'genre' in media['info_labels']: return bool(set(media['info_labels']['genre']).intersection(explicit_genres))
+		if 'adult' in media and media['adult'] == True: print(1)
+		if 'adult' in media and media['adult'] == True: return True
 	return False
 
 def isFilterLangStream(stream):
 	# 0 all, 1-CZ&SK, 2-CZ 3-SK, 4-EN
-	if langFilter != 0:
+	if langFilter != '0':
 		lang = []
 		if 'audio' in stream:
 			for temp in stream['audio']:
 				if 'language' in temp: lang.append(temp['language'].lower())
-			if len(lang)>0 and langFilter is 1 and 'cz' in lang or 'sk' in lang: return False
-			if len(lang)>0 and langFilter is 2 and 'cz' in lang: return False
-			if len(lang)>0 and langFilter is 3 and 'sk' in lang: return False
-			if len(lang)>0 and langFilter is 4 and 'en' in lang: return False
-	return True
+			if len(lang)>0 and '' in lang: return False # neuvedeny jazyk vzdy zobrazit
+			if len(lang)>0 and langFilter is '1' and 'cs' in lang or 'sk' in lang: return False
+			if len(lang)>0 and langFilter is '2' and 'cs' in lang: return False
+			if len(lang)>0 and langFilter is '3' and 'sk' in lang: return False
+			if len(lang)>0 and langFilter is '4' and 'en' in lang: return False
+		return True
+	return False
 
 def isFilterLang(media):
-	if langFilter != 0:
-		if 'streams' in media:
-			for stream in media['streams']:
-				return isFilterLangStream(stream)
-	return True
+	# 0 all, 1-CZ&SK, 2-CZ 3-SK, 4-EN
+	if langFilter != '0' and 'available_streams' in media and 'audio_languages' in media['available_streams'] and len(media['available_streams']['audio_languages'])>0:
+		if '' in media['available_streams']['audio_languages']: return False # neuvedeny jazyk vzdy zobrazit
+		if langFilter == '1' and 'cs' in media['available_streams']['audio_languages'] or 'sk' in media['available_streams']['audio_languages']: return False
+		if langFilter == '2' and 'cs' in media['available_streams']['audio_languages']: return False
+		if langFilter == '3' and 'sk' in media['available_streams']['audio_languages']: return False
+		if langFilter == '4' and 'en' in media['available_streams']['audio_languages']: return False
+		return True
+	return False
 
 def process_episodes(mediaList):
 	for media in mediaList:
 		if isExplicit(media): continue
-		if not isFilterLang(media['_source']): continue
+		if isFilterLang(media['_source']): continue
 		info = get_info(media['_source'])
 		title = ""
 		if 'info_labels' in media['_source'] and 'episode' in media['_source']['info_labels']:
-			title = str(int(media['_source']['info_labels']['season'])).zfill(2)+'x'+str(int(media['_source']['info_labels']['episode'])).zfill(2)+' '
+			if int(media['_source']['info_labels']['season']) == 0: title = str(int(media['_source']['info_labels']['episode'])).zfill(2)+' '
+			elif int(media['_source']['info_labels']['season']) != 0: title = str(int(media['_source']['info_labels']['season'])).zfill(2)+'x'+str(int(media['_source']['info_labels']['episode'])).zfill(2)+' '
 		addDir(title+info['title'], build_plugin_url({ 'action': 'series.streams', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year']})
 
 def process_seasons(mediaList):
 	for media in mediaList:
-		if isExplicit(media): continue
-		if not isFilterLang(media['_source']): continue
+		if isExplicit(media['_source']): continue
+		if isFilterLang(media['_source']): continue
 		info = get_info(media['_source'])
 		if 'info_labels' in media['_source'] and 'episode' in media['_source']['info_labels']:
 			title = str(int(media['_source']['info_labels']['season'])).zfill(2)+'x'+str(int(media['_source']['info_labels']['episode'])).zfill(2)+' '
 		if 'info_labels' in media['_source'] and 'episode' in media['_source']['info_labels'] and media['_source']['info_labels']['episode'] == 0:
-			addDir(info['title'], build_plugin_url({ 'action': 'episodes', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year']})
+			addDir(info['title'], build_plugin_url({ 'action': 'episodes', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year'], 'genre': info['genres']})
 		else:
-			addDir(title+info['title'], build_plugin_url({ 'action': 'series.streams', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year']})
+			addDir(title+info['title'], build_plugin_url({ 'action': 'series.streams', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year'], 'genre': info['genres']})
 
 def process_series(mediaList):
 	for media in mediaList:
-		if isExplicit(media): continue
-		if not isFilterLang(media['_source']): continue
+		if isExplicit(media['_source']): continue
+		if isFilterLang(media['_source']): continue
 		info = get_info(media['_source'])
-		addDir(info['title'], build_plugin_url({ 'action': 'seasons', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year']})
+		addDir(info['title'], build_plugin_url({ 'action': 'seasons', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year'], 'genre': info['genres']})
+	if abc: client.GItem_lst[0].sort(key=lambda x:strip_accents(x.name))
 
 def process_movies(mediaList):
 	for media in mediaList:
 		if isExplicit(media['_source']): continue
-		if not isFilterLang(media['_source']): continue
+		if isFilterLang(media['_source']): continue
 		info = get_info(media['_source'])
-		addDir(info['title'], build_plugin_url({ 'action': 'movies.streams', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year']})
+		addDir(info['title'], build_plugin_url({ 'action': 'movies.streams', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year'], 'genre': info['genres']})
+	if abc: client.GItem_lst[0].sort(key=lambda x:strip_accents(x.name))
 
 def process_genres(mediaList):
 	genres = {}
 	for genre in mediaList:
-		genres[genre['key']] = genre['doc_count']
-	for c,d in api_genres_langs_items:
-		if c in genres: addDir(d+' ('+str(genres[c])+')', build_plugin_url({ 'action': action_value[0], 'action_value': 'genre,'+c }), 1, None, None, None)
-#		else: addDir(d+' ()', build_plugin_url({ 'action': action_value[0], 'action_value': 'genre,'+c }), 1, None, None, None)
+		title = api_genres_langs[genre['key']] if genre['key'] in api_genres_langs else genre['key']
+		addDir(title+' ('+str(genre['doc_count'])+')', build_plugin_url({ 'action': action_value[0], 'action_value': 'genre,'+genre['key'] }), 1, None, None, None)
+#	client.GItem_lst[0].sort(key=lambda x:strip_accents(x.name))
+
+def process_studios(mediaList):
+	cnt = 0
+	for studio in mediaList:
+		cnt+=1
+		if cnt > max_studios: break
+		addDir(studio['key']+' ('+str(studio['doc_count'])+')', build_plugin_url({ 'action': action_value[0], 'action_value': 'studio,'+studio['key'] }), 1, None, None, None)
+#	client.GItem_lst[0].sort(key=lambda x:x.name)
+
+def process_az(mediaList):
+	(m,v) = action_value[0].split(',')
+	for az in mediaList:
+		if az['doc_count'] < 50:
+			addDir(az['key']+' ('+str(az['doc_count'])+')', build_plugin_url({ 'action': m, 'action_value': 'a-z,'+az['key'] }), 1, None, None, None)
+		else:
+			addDir(az['key']+' ('+str(az['doc_count'])+')', build_plugin_url({ 'action': action[0], 'action_value': m+','+az['key'] }), 1, None, None, None)
 
 def show_stream_dialog(id,ss=None,ep=None):
 	media = get_media_data('/api/media/filter/ids?id='+id,'')
@@ -276,9 +357,8 @@ def show_stream_dialog(id,ss=None,ep=None):
 		title = ""
 		if 'info_labels' in media['data'][0]['_source'] and 'episode' in media['data'][0]['_source']['info_labels'] and media['data'][0]['_source']['info_labels']['episode'] != 0:
 			title += str(int(media['data'][0]['_source']['info_labels']['season'])).zfill(2)+'x'+str(int(media['data'][0]['_source']['info_labels']['episode'])).zfill(2)+' '
-		if addon.getSetting('filter_hevc') == 'true' and stream['video'][0]['codec'].upper() == 'HEVC': continue
-#		if not isFilterLangStream(stream): continue
-#		title += stream_title(info['title'],stream)
+		if addon.getSetting('filter_hevc') == 'true' and 'video' in stream and 'codec' in stream['video'][0] and stream['video'][0]['codec'].upper() == 'HEVC': continue
+		if isFilterLangStream(stream): continue
 		auds = []
 		for audio in stream['audio']:
 			if 'language' in audio:
@@ -287,14 +367,17 @@ def show_stream_dialog(id,ss=None,ep=None):
 		audset = set(auds)
 		auds = list(audset)
 		auds.sort()
-		title += '['+str(stream['video'][0]['height'])+'p] ' if 'video' in stream and 'height' in stream['video'][0] else ''
+		bit_rate = ' - '+convert_bitrate(stream['size'] / stream['video'][0]['duration'] * 8) if 'size' in stream and 'video' in stream and 'duration' in stream['video'][0] else ''
+#		title += '['+str(stream['video'][0]['height'])+'p] ' if 'video' in stream and 'height' in stream['video'][0] else ''
+		title += '['+resolution_to_quality(stream['video'][0])+'] ' if 'video' in stream and 'height' in stream['video'][0] else ''
 		title += '['+str(stream['video'][0]['codec'])+'] ' if 'video' in stream and 'codec' in stream['video'][0] else ''
 		title += '[3D] ' if 'video' in stream and '3d' in stream['video'][0] and stream['video'][0]['3d']=='true' else ''
 		title += info['title']
 		title += ' - '+(', '.join(auds)).upper() if len(auds)>0 else ''
-		title += ' ('+convert_size(stream['size'])+')' if 'size' in stream else ''
-		duration = stream['duration'] if 'duration' in stream else 0
+		title += ' ('+convert_size(stream['size'])+bit_rate+')' if 'size' in stream else ''
+		duration = stream['video'][0]['duration'] if 'video' in stream and 'duration' in stream['video'][0] else 0
 		addDir(title,build_plugin_url({ 'action': 'play', 'action_value': stream['ident'], 'name': title.encode('utf-8') }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': duration, 'year': info['year']})
+#	client.GItem_lst[0].sort(key=lambda x:x.name)
 
 def play(ident,title):
 	gurl = get_stream_url(ident)
@@ -362,32 +445,24 @@ api_genres_langs = {
  'Talk-Show': addon.getLocalizedString(30530),
  'Telenovela': addon.getLocalizedString(30531),
  'Thriller': addon.getLocalizedString(30532),
-# 'Travel': addon.getLocalizedString(30533),
+ 'Travel': addon.getLocalizedString(30533),
  'Western':addon.getLocalizedString(30534),
- 'War':addon.getLocalizedString(30535)
+ 'War':addon.getLocalizedString(30535),
+ 'Erotic': addon.getLocalizedString(30551),
+ 'Pornographic': addon.getLocalizedString(30552)
 }
-explicit_genres_langs = {'Erotic': addon.getLocalizedString(30551), 'Pornographic': addon.getLocalizedString(30552)}
-api_genres = list(api_genres_langs.keys())
-explicit_genres = list(explicit_genres_langs.keys())
-if addon.getSetting('explicit_content') == 'true': api_genres += explicit_genres
-api_genres.sort()
-# Python 3.x
-#api_genres_langs_items = sorted(api_genres_langs.items(), key=lambda x: x[1])
-# Python 2.x
-api_genres_langs_items = sorted(api_genres_langs.iteritems(), key=lambda x: x[1])
 
 xuuid = addon.getSetting('uuid')
 if xuuid == "":
 	xuuid = str(uuid.uuid4())
 	addon.setSetting('uuid',xuuid)
 
-limitMovies=100
-limitSeries=50
 page=1
 name=None
 url=None
 action=None
 action_value=None
+abc=False
 
 try:
 	url=urllib.unquote_plus(params["url"])
@@ -418,77 +493,30 @@ except:
 
 menu = {
 	'root': [
+		build_item(addon.getLocalizedString(30204), 'listsearch', ''),
 		build_item(addon.getLocalizedString(30200), 'folder','movies'),
 		build_item(addon.getLocalizedString(30201), 'folder', 'series'),
 #		build_item('CSFD TIPS', 'csfd', 'tips')
 	],
 	'movies': [
-		build_item(addon.getLocalizedString(30204), 'search', 'movies'),
 		build_item(addon.getLocalizedString(30211), 'movies','popular'),
 		build_item('Novinky', 'movies','aired'),
 		build_item('Novinky dabované', 'movies','dubbed'),
 		build_item('Naposledy přidané', 'movies','dateadded'),
-		build_item(addon.getLocalizedString(30206), 'folder','movies.a-z'),
-		build_item(addon.getLocalizedString(30205), 'genres','movies')
+		build_item(addon.getLocalizedString(30206), 'a-z','movies,'),
+		build_item(addon.getLocalizedString(30205), 'genres','movies'),
+		build_item('Studio', 'studios','movies')
 	],
 	'series': [
-		build_item(addon.getLocalizedString(30204), 'search', 'tvshows'),
 		build_item(addon.getLocalizedString(30211), 'series','popular'),
 		build_item('Novinky', 'series','aired'),
 		build_item('Novinky dabované', 'series','dubbed'),
 		build_item('Naposledy přidané', 'series','dateadded'),
-		build_item(addon.getLocalizedString(30206), 'folder','series.a-z'),
-		build_item(addon.getLocalizedString(30205), 'genres','series')
-	],
-	'series.genre': [build_item(d, 'series', 'genre,'+c) for c,d in api_genres_langs_items],
-	'movies.genre': [build_item(d, 'movies', 'genre,'+c) for c,d in api_genres_langs_items]
+		build_item(addon.getLocalizedString(30206), 'a-z','series,'),
+		build_item(addon.getLocalizedString(30205), 'genres','series'),
+		build_item('Studio', 'studios','series')
+	]
 }
-
-if action_value and 'movies.a-z' in action_value[0]:
-	moviesCount = get_media_data('/api/media/filter/startsWithSimple/count/titles?type=movie&value=','')
-	moviesCountAZ = {}
-	if not 'data' in moviesCount:
-		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
-	else:
-		for count in moviesCount['data']:
-			moviesCountAZ[count['key']] = count['doc_count']
-		for c in digits:
-			if c in moviesCountAZ: moviesCountAZ['0-9']+=moviesCountAZ[c]
-		menu['movies.a-z']=[build_item(c+' ('+str(moviesCountAZ[c])+')', 'folder', 'movies.a-z.'+c) for c in ascii_uppercase]
-
-if action_value and 'series.a-z' in action_value[0]:
-	seriesCount = get_media_data('/api/media/filter/startsWithSimple/count/titles?type=tvshow&value=','')
-	seriesCountAZ = {}
-	if not 'data' in seriesCount:
-		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
-	else:
-		for count in seriesCount['data']:
-			seriesCountAZ[count['key']] = count['doc_count']
-		for c in digits:
-			if c in seriesCountAZ: seriesCountAZ['0-9']+=seriesCountAZ[c]
-		menu['series.a-z']=[build_item(c+' ('+str(seriesCountAZ[c])+')', 'folder', 'series.a-z.'+c) for c in ascii_uppercase]
-
-if action_value and 'movies.a-z.' in action_value[0]:
-	(mm,aa,cc) = action_value[0].split('.')
-	moviesCount = get_media_data('/api/media/filter/startsWithSimple/count/titles?type=movie&value='+cc,'')
-	moviesCountAZsec = {}
-	if not 'data' in moviesCount:
-		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
-	else:
-		for count in moviesCount['data']:
-			moviesCountAZsec[count['key']] = count['doc_count']
-	menu['movies.a-z.'+cc]=[build_item('Zobrazit vše od '+cc.upper()+' ('+str(moviesCountAZ[cc])+')', 'movies', cc)] + [build_item(cc+c+' ('+str(moviesCountAZsec[cc+c])+')', 'movies', cc+c) for c in ascii_uppercase if cc+c in moviesCountAZsec]
-
-if action_value and 'series.a-z.' in action_value[0]:
-	(mm,aa,cc) = action_value[0].split('.')
-	seriesCount = get_media_data('/api/media/filter/startsWithSimple/count/titles?type=tvshow&value='+cc,'')
-	seriesCountAZsec = {}
-	if not 'data' in seriesCount:
-		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
-	else:
-		for count in seriesCount['data']:
-			seriesCountAZsec[count['key']] = count['doc_count']
-	menu['series.a-z.'+cc]=[build_item('Zobrazit vše od '+cc.upper()+' ('+str(seriesCountAZ[cc])+')', 'series', cc)] + [build_item(cc+c+' ('+str(seriesCountAZsec[cc+c])+')', 'series', cc+c) for c in ascii_uppercase if cc+c in seriesCountAZsec]
 
 if action is None:
 	for c in menu['root']:
@@ -501,20 +529,27 @@ elif action[0] == 'folder':
 			render_item(c)
 elif action[0] == 'movies' or action[0] == 'series':
 	mos = 'movie' if action[0] == 'movies' else 'tvshow'
-	limitRec = limitMovies if action[0] == 'movies' else limitSeries
 	if action_value[0] == 'popular':
-		data = get_media_data('/api/media/filter/all?sort=playCount&type='+mos+'&order=desc&limit=%s&page=%s'%(limitRec,page),'')
+		data = get_media_data('/api/media/filter/all?sort=playCount&type=%s&order=desc&page=%s'%(mos,page),'')
 	elif action_value[0] == 'aired':
-		data = get_media_data('/api/media/filter/all?sort=premiered&type='+mos+'&order=desc&limit=%s&page=%s'%(limitRec,page),'')
+		data = get_media_data('/api/media/filter/news?sort=dateAdded&type=%s&order=desc&days=365&page=%s'%(mos,page),'')
 	elif action_value[0] == 'dateadded':
-		data = get_media_data('/api/media/filter/all?sort=dateAdded&type='+mos+'&order=desc&limit=%s&page=%s'%(limitRec,page),'')
+		data = get_media_data('/api/media/filter/all?sort=dateAdded&type=%s&order=desc&page=%s'%(mos,page),'')
 	elif action_value[0] == 'dubbed':
-		data = get_media_data('/api/media/filter/dubbed?lang=cs&lang=sk&sort=premiered&type='+mos+'&order=desc&limit=%s&page=%s'%(limitRec,page),'')
+		data = get_media_data('/api/media/filter/newsDubbed?lang=cs&lang=sk&sort=dateAdded&type=%s&order=desc&days=365&page=%s'%(mos,page),'')
 	elif 'genre' in action_value[0]:
 		(t,g) = action_value[0].split(',')
-		data = get_media_data('/api/media/filter/genre?sort=year&type='+mos+'&order=desc&value=%s&limit=%s&page=%s'%(g,limitRec,page),'')
+		data = get_media_data('/api/media/filter/genre?sort=year&type=%s&order=desc&value=%s&page=%s'%(mos,g,page),'')
+	elif 'studio' in action_value[0]:
+		(t,g) = action_value[0].split(',')
+		data = get_media_data('/api/media/filter/studio?sort=year&type=%s&order=desc&value=%s&page=%s'%(mos,g,page),'')
+	elif 'a-z' in action_value[0]:
+		(m,v) = action_value[0].split(',')
+		data = get_media_data('/api/media/filter/startsWithSimple?type=%s&value=%s'%(mos,v),'')
+		abc = True
 	else:
-		data = get_media_data('/api/media/filter/startsWithSimple?type='+mos+'&value=%s&limit=%s&page=%s'%(action_value[0],limitRec,page),'')
+		data = get_media_data('/api/media/filter/startsWithSimple?type=%s&value=%s&page=%s'%(mos,action_value[0],page),'')
+		abc = True
 	if action[0] == 'movies' and 'data' in data: process_movies(data['data'])
 	if action[0] == 'series' and 'data' in data: process_series(data['data'])
 	if 'pagination' in data and 'pageCount' in data['pagination'] and 'page' in data['pagination'] and data['pagination']['pageCount']>1:
@@ -533,19 +568,19 @@ elif action[0] == 'genres':
 	mos = 'movie' if action_value[0] == 'movies' else 'tvshow'
 	media = get_media_data('/api/media/filter/all/count/genres?type='+mos,'')
 	if 'data' in media: process_genres(media['data'])
+elif action[0] == 'studios':
+	mos = 'movie' if action_value[0] == 'movies' else 'tvshow'
+	media = get_media_data('/api/media/filter/all/count/studios?type='+mos,'')
+	if 'data' in media: process_studios(media['data'])
+elif action[0] == 'a-z':
+	(m,v) = action_value[0].split(',')
+	mos = 'movie' if m == 'movies' else 'tvshow'
+	media = get_media_data('/api/media/filter/startsWithSimple/count/titles?type=%s&value=%s'%(mos,v),'')
+	if 'data' in media: process_az(media['data'])
+elif action[0] == 'listsearch':
+	list_search()
 elif action[0] == 'search':
-	if action_value[0] in ['movies','tvshows']:
-		searchValue = client.getTextInput(session, addon.getLocalizedString(30207))
-	else:
-		searchValue = action_value[0]
-		action_value[0] = 'movies'
-	if searchValue is not "":
-		if action_value[0] == 'movies':
-			media = get_media_data('/api/media/filter/search?sort=score&type=movie&order=desc&value=%s&limit=%s&page=%s'%(searchValue,limitMovies,page),'')
-			if 'data' in media: process_movies(media['data'])
-		if action_value[0] == 'tvshows':
-			media = get_media_data('/api/media/filter/search?sort=score&type=tvshow&order=desc&value=%s&limit=%s&page=%s'%(searchValue,limitSeries,page),'')
-			if 'data' in media: process_series(media['data'])
+	search()
 elif action[0] == 'play' and action_value[0] != "" and name !="":
 	play(action_value[0],name)
 
