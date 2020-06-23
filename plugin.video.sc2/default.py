@@ -31,6 +31,9 @@ base_url = ""
 LOG_FILE = os.path.join(config.plugins.archivCZSK.logPath.getValue(),'sc2.log')
 langFilter = addon.getSetting('item_filter_lang')
 langs_pref = ['cs','sk','en']
+qualities = [0,144,240,360,480,720,1080,2160,4320]
+sizes = [0,1,2,3,4,5,10,15,20]
+bitrates = [0,1,2,3,4,5,10,15,20,30,40,50]
 quality_map = {144: '144p',240: '240p',360: '360p',480: '480p',720: '720p',1080: '1080p',2160: '2160p',4320: '4320p'}
 max_studios = 200
 
@@ -80,11 +83,13 @@ def login():
 def get_stream_url(ident):
 	token = login()
 	if token == "":
-		client.add_operation("SHOW_MSG", {'msg': 'Nelze se prihlasit na WS, pokracuji s uctem zdarma...', 'msgType': 'error', 'msgTimeout': 1, 'canClose': True })
+#		client.add_operation("SHOW_MSG", {'msg': 'Nelze se prihlasit na WS, pokracuji s uctem zdarma...', 'msgType': 'error', 'msgTimeout': 1, 'canClose': True })
+		client.showInfo('Nelze se prihlasit na WS, pokracuji s uctem zdarma...')
 	req = ws_api_request('/file_link/', { 'wst': token, 'ident': ident })
 	xml = ET.fromstring(req.text)
 	if not xml.find('status').text == 'OK':
-		client.add_operation("SHOW_MSG", {'msg': 'Nelze ziskat odkaz na video', 'msgType': 'error', 'msgTimeout': 20, 'canClose': True })
+#		client.add_operation("SHOW_MSG", {'msg': 'Nelze ziskat odkaz na video', 'msgType': 'error', 'msgTimeout': 20, 'canClose': True })
+		client.showInfo('Nelze ziskat odkaz na video')
 		return None
 	return xml.find('link').text
 
@@ -93,12 +98,14 @@ def api_request(url,post_data=''):
 	try:
 		data = requests.get(url=url, data=post_data, headers={'User-Agent': UA2, 'X-Uuid': xuuid, 'Content-Type': 'application/json'}, timeout=15)
 		if data.status_code != 200:
-			client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
+#			client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
+			client.showInfo('Chyba nacitani dat ze serveru')
 			return {'data': "" }
 		else:
 			return json.loads(data.content)
 	except Exception as e:
-		client.add_operation("SHOW_MSG", {'msg': 'Nepodařilo se stáhnout data ze serveru v časovém limitu', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
+#		client.add_operation("SHOW_MSG", {'msg': 'Nepodařilo se stáhnout data ze serveru v časovém limitu', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
+		client.showInfo('Nepodařilo se stáhnout data ze serveru v časovém limitu')
 		pass
 	return {'data': "" }
 
@@ -167,7 +174,7 @@ def get_info(media,st=False):
 			for label in media['i18n_info_labels']:
 				tmp[label['lang']] = label
 			for lang in langs_pref:
-				if title == '' and lang in tmp and 'title' in tmp[lang] and re.sub(r'[^a-z0-9]','',strip_accents(tmp[lang]['title'].lower()))[:len(v)] == v.lower():
+				if title == '' and lang in tmp and 'title' in tmp[lang] and re.sub(r'[^a-z0-9]','',strip_accents(tmp[lang]['title']).lower())[:len(v)] == v.lower():
 					title = tmp[lang]['title']
 		title = media['info_labels']['originaltitle'] if title == '' and 'info_labels' in media and 'originaltitle' in media['info_labels'] else title
 	else:
@@ -184,8 +191,12 @@ def get_info(media,st=False):
 	plot += media['i18n_info_labels'][0]['plot'] if 'i18n_info_labels' in media and 'plot' in media['i18n_info_labels'][0] else ""
 	rating = media['i18n_info_labels'][0]['rating'] if 'i18n_info_labels' in media and 'rating' in media['i18n_info_labels'][0] else 0
 	duration = media['info_labels']['duration'] if 'info_labels' in media and 'duration' in media['info_labels'] else 0
-	if duration == 0 and 'streams' in media and len(media['streams'])>0 and 'duration' in media['streams'][0]: duration = media['streams'][0]['duration']
-	if duration == 0 and 'stream_info' in media and 'video' in media['stream_info'] and 'duration' in media['stream_info']['video']: duration = media['stream_info']['video']['duration']
+	if duration == 0:
+		try: duration = media['streams'][0]['duration'] or 0
+		except:	pass
+	if duration == 0:
+		try: duration = media['stream_info']['video']['duration'] or 0
+		except:	pass
 	poster = media['i18n_info_labels'][0]['art']['poster'] if 'i18n_info_labels' in media and 'art' in media['i18n_info_labels'][0] and 'poster' in media['i18n_info_labels'][0]['art'] and media['i18n_info_labels'][0]['art']['poster'] != "" else None
 	return {'title': title, 'plot': plot, 'rating': rating, 'duration': duration, 'poster': poster, 'year': year, 'genres': genres, 'langs': langs}
 
@@ -194,7 +205,7 @@ def add_paging(page, pageCount):
 		addDir(add_translations(addon.getLocalizedString(30203) + ' ('+ str(page) + '/' + str(pageCount) +') '), build_plugin_url({ 'action': action[0], 'action_value': action_value[0], 'page': page }), 1, None)
 
 def save_search_history(query):
-	max_history = 20
+	max_history = 10
 	cnt = 0
 	history = []
 	filename = addon_userdata_dir + "search_history.txt"
@@ -235,10 +246,11 @@ def search():
 	if query == "-----":
 		query = client.getTextInput(session, addon.getLocalizedString(30207))
 		if len(query) == 0:
-			client.add_operation("SHOW_MSG", {'msg': 'Je potřeba zadat hledaný řetězec', 'msgType': 'error', 'msgTimeout': 5, 'canClose': True })
+			client.showInfo('Je potřeba zadat hledaný řetězec')
+			client.refresh_screen()
 			return
 		else:
-			save_search_history(query)
+			if history == 1: save_search_history(query)
 	if query is not "":
 		mediaList = get_media_data('/api/media/filter/search?sort=score&type=%%2A&order=desc&value=%s'%query,'')
 		if 'data' in mediaList:
@@ -295,7 +307,7 @@ def process_episodes(mediaList):
 		if 'info_labels' in media['_source'] and 'episode' in media['_source']['info_labels']:
 			if int(media['_source']['info_labels']['season']) == 0: title = str(int(media['_source']['info_labels']['episode'])).zfill(2)+' '
 			elif int(media['_source']['info_labels']['season']) != 0: title = str(int(media['_source']['info_labels']['season'])).zfill(2)+'x'+str(int(media['_source']['info_labels']['episode'])).zfill(2)+' '
-		addDir(title+info['title'], build_plugin_url({ 'action': 'series.streams', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year']})
+		addDir(title+info['title'], build_plugin_url({ 'action': 'series.streams', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year'], 'genre': info['genres']})
 
 def process_seasons(mediaList):
 	for media in mediaList:
@@ -359,6 +371,9 @@ def show_stream_dialog(id,ss=None,ep=None):
 			title += str(int(media['data'][0]['_source']['info_labels']['season'])).zfill(2)+'x'+str(int(media['data'][0]['_source']['info_labels']['episode'])).zfill(2)+' '
 		if addon.getSetting('filter_hevc') == 'true' and 'video' in stream and 'codec' in stream['video'][0] and stream['video'][0]['codec'].upper() == 'HEVC': continue
 		if isFilterLangStream(stream): continue
+		if addon.getSetting('max_size') != '0' and 'size' in stream and sizes[int(addon.getSetting('max_size'))]*1024*1024*1024 < stream['size']: continue
+		if addon.getSetting('max_bitrate') != '0' and 'size' in stream and 'video' in stream and 'duration' in stream['video'][0] and bitrates[int(addon.getSetting('max_bitrate'))]*1024*1024 < stream['size'] / stream['video'][0]['duration'] * 8: continue
+		if addon.getSetting('max_quality') != '0' and 'video' in stream and 'height' in stream['video'][0] and qualities[int(addon.getSetting('max_quality'))] < stream['video'][0]['height']: continue
 		auds = []
 		for audio in stream['audio']:
 			if 'language' in audio:
@@ -376,20 +391,28 @@ def show_stream_dialog(id,ss=None,ep=None):
 		title += ' - '+(', '.join(auds)).upper() if len(auds)>0 else ''
 		title += ' ('+convert_size(stream['size'])+bit_rate+')' if 'size' in stream else ''
 		duration = stream['video'][0]['duration'] if 'video' in stream and 'duration' in stream['video'][0] else 0
-		addDir(title,build_plugin_url({ 'action': 'play', 'action_value': stream['ident'], 'name': title.encode('utf-8') }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': duration, 'year': info['year']})
+		addDir(title,build_plugin_url({ 'action': 'play', 'action_value': stream['ident'], 'name': title.encode('utf-8') }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': duration, 'year': info['year'], 'genre': info['genres']})
 #	client.GItem_lst[0].sort(key=lambda x:x.name)
 
 def play(ident,title):
 	gurl = get_stream_url(ident)
 	if gurl is not None:
 		add_video(title,gurl,None,None)
+#		from Plugins.Extensions.archivCZSK.engine.player.player import Player
+#		from Plugins.Extensions.archivCZSK.engine.items import PVideo
+#		it = PVideo()
+#		it.name = title
+#		it.url = gurl
+#		Player(session).play_item(item = it)
+#		client.refresh_screen()
 
 def get_csfd_tips():
 	data_url = 'https://www.csfd.cz/televize/'
 	headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:75.0) Gecko/20100101 Firefox/75.0'}
 	result = requests.get(data_url, headers=headers, timeout=15, verify=False)
 	if result.status_code != 200:
-		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat z CSFD', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
+#		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat z CSFD', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
+		client.showInfo('Chyba nacitani dat z CSFD')
 		return
 	data = re.search('<ul class="content ui-image-list">(.*?)</ul>', result.content, re.S)
 	if data:
@@ -463,6 +486,7 @@ url=None
 action=None
 action_value=None
 abc=False
+history=1
 
 try:
 	url=urllib.unquote_plus(params["url"])
@@ -482,6 +506,10 @@ except:
 	pass
 try:
 	action_value=urlparse.parse_qs(urlparse.urlparse(url).query)['action_value']
+except:
+	pass
+try:
+	history=urlparse.parse_qs(urlparse.urlparse(url).query)['history']
 except:
 	pass
 

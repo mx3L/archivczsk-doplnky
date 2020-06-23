@@ -1,3 +1,10 @@
+2020-06-20
+ * pridano filtrovani dle bitrate, velikosti a kvality
+ * oprava trideni A-Z
+ * oprava chyby u duration
+ * zobrazeni zanru i u streamu
+ * uprava hledani pro seeker
+
 2020-06-18
  * uprava Novinky a Novinky dabovane za 365 dni
  * oprava Jazykoveho filtru
