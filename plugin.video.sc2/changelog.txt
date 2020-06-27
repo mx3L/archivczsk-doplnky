@@ -1,3 +1,6 @@
+2020-06-27
+ * oprava chyby filtru explicitniho obsahu
+
 2020-06-26
  * oprava pouziti free ws uctu (bez prihlaseni)
  * oprava logovani

@@ -269,7 +269,7 @@ def search():
 def isExplicit(media):
 	if addon.getSetting('explicit_content') == 'false':
 		if 'adult' in media and media['adult'] == True: return True
-		if 'genre' in media['info_labels'] and 'Pornographic' in media['info_labels']['genre'] or 'Erotic' in media['info_labels']['genre']: return True
+		if 'info_labels' in media and 'genre' in media['info_labels'] and ('Pornographic' in media['info_labels']['genre'] or 'Erotic' in media['info_labels']['genre']): return True
 	return False
 
 def isFilterLangStream(stream):
@@ -392,6 +392,9 @@ def show_stream_dialog(id,ss=None,ep=None):
 		title += ' ('+convert_size(stream['size'])+bit_rate+')' if 'size' in stream else ''
 		duration = stream['video'][0]['duration'] if 'video' in stream and 'duration' in stream['video'][0] else 0
 		addDir(title,build_plugin_url({ 'action': 'play', 'action_value': stream['ident'], 'name': title.encode('utf-8') }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': duration, 'year': info['year'], 'genre': info['genres']})
+#		gurl = get_stream_url(stream['ident'])
+#		if gurl is not None:
+#			add_video(title,gurl,None,info['poster'],infoLabels={ 'plot': info['plot'], 'rating': info['rating'], 'duration': duration, 'year': info['year'], 'genre': info['genres']})
 #	client.GItem_lst[0].sort(key=lambda x:x.name)
 
 def play(ident,title):
