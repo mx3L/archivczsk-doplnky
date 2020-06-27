@@ -83,13 +83,11 @@ def login():
 def get_stream_url(ident):
 	token = login()
 	if token == "":
-#		client.add_operation("SHOW_MSG", {'msg': 'Nelze se prihlasit na WS, pokracuji s uctem zdarma...', 'msgType': 'error', 'msgTimeout': 1, 'canClose': True })
-		client.showInfo('Nelze se prihlasit na WS, pokracuji s uctem zdarma...')
+		client.add_operation("SHOW_MSG", {'msg': 'Nelze se prihlasit na WS, pokracuji s uctem zdarma...', 'msgType': 'error', 'msgTimeout': 1, 'canClose': True })
 	req = ws_api_request('/file_link/', { 'wst': token, 'ident': ident })
 	xml = ET.fromstring(req.text)
 	if not xml.find('status').text == 'OK':
-#		client.add_operation("SHOW_MSG", {'msg': 'Nelze ziskat odkaz na video', 'msgType': 'error', 'msgTimeout': 20, 'canClose': True })
-		client.showInfo('Nelze ziskat odkaz na video')
+		client.add_operation("SHOW_MSG", {'msg': 'Nelze ziskat odkaz na video', 'msgType': 'error', 'msgTimeout': 20, 'canClose': True })
 		return None
 	return xml.find('link').text
 
@@ -98,14 +96,12 @@ def api_request(url,post_data=''):
 	try:
 		data = requests.get(url=url, data=post_data, headers={'User-Agent': UA2, 'X-Uuid': xuuid, 'Content-Type': 'application/json'}, timeout=15)
 		if data.status_code != 200:
-#			client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
-			client.showInfo('Chyba nacitani dat ze serveru')
+			client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
 			return {'data': "" }
 		else:
 			return json.loads(data.content)
 	except Exception as e:
-#		client.add_operation("SHOW_MSG", {'msg': 'Nepodařilo se stáhnout data ze serveru v časovém limitu', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
-		client.showInfo('Nepodařilo se stáhnout data ze serveru v časovém limitu')
+		client.add_operation("SHOW_MSG", {'msg': 'Nepodařilo se stáhnout data ze serveru v časovém limitu', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
 		pass
 	return {'data': "" }
 
@@ -163,6 +159,10 @@ def convert_bitrate(mbit):
 	return "%s %s" % (s, "Mbit/s")
 
 def get_info(media,st=False):
+	try:
+		dadded = " ["+datetime.datetime.strptime(media['info_labels']['dateadded'],'%Y-%m-%d %H:%M:%S').strftime("%d.%m.%Y %H:%M")+"]"
+	except:
+		dadded = ""
 	year = media['info_labels']['year'] if 'info_labels' in media and 'year' in media['info_labels'] else 0
 	if year == 0 and 'aired' in media['info_labels'] and media['info_labels']['aired']: year = media['info_labels']['aired'][0:4]
 	langs = (', '.join(media['available_streams']['audio_languages'])).upper() if 'available_streams' in media and 'audio_languages' in media['available_streams'] else ''
@@ -198,7 +198,7 @@ def get_info(media,st=False):
 		try: duration = media['stream_info']['video']['duration'] or 0
 		except:	pass
 	poster = media['i18n_info_labels'][0]['art']['poster'] if 'i18n_info_labels' in media and 'art' in media['i18n_info_labels'][0] and 'poster' in media['i18n_info_labels'][0]['art'] and media['i18n_info_labels'][0]['art']['poster'] != "" else None
-	return {'title': title, 'plot': plot, 'rating': rating, 'duration': duration, 'poster': poster, 'year': year, 'genres': genres, 'langs': langs}
+	return {'title': title, 'plot': plot+dadded, 'rating': rating, 'duration': duration, 'poster': poster, 'year': year, 'genres': genres, 'langs': langs}
 
 def add_paging(page, pageCount):
 	if page <= pageCount:
@@ -268,8 +268,8 @@ def search():
 
 def isExplicit(media):
 	if addon.getSetting('explicit_content') == 'false':
-		if 'adult' in media and media['adult'] == True: print(1)
 		if 'adult' in media and media['adult'] == True: return True
+		if 'genre' in media['info_labels'] and 'Pornographic' in media['info_labels']['genre'] or 'Erotic' in media['info_labels']['genre']: return True
 	return False
 
 def isFilterLangStream(stream):
@@ -411,8 +411,7 @@ def get_csfd_tips():
 	headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:75.0) Gecko/20100101 Firefox/75.0'}
 	result = requests.get(data_url, headers=headers, timeout=15, verify=False)
 	if result.status_code != 200:
-#		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat z CSFD', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
-		client.showInfo('Chyba nacitani dat z CSFD')
+		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat z CSFD', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
 		return
 	data = re.search('<ul class="content ui-image-list">(.*?)</ul>', result.content, re.S)
 	if data:

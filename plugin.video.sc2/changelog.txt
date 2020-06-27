@@ -1,3 +1,8 @@
+2020-06-26
+ * oprava pouziti free ws uctu (bez prihlaseni)
+ * oprava logovani
+ * oprava filtru explicitniho obsahu
+
 2020-06-20
  * pridano filtrovani dle bitrate, velikosti a kvality
  * oprava trideni A-Z
