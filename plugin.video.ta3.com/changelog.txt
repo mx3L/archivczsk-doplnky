@@ -1,3 +1,5 @@
+[B]1.1.8:[/B]
+- streams fix
 [B]1.1.6:[/B]
 - oprava live
 [B]1.1.4:[/B]

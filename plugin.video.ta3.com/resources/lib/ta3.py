@@ -208,7 +208,7 @@ class TA3ContentProvider(ContentProvider):
             item = self.video_item()
             item['surl'] = item['title']
             item['quality'] = m.group('bandwidth')
-            item['url'] = manifest_url[:manifest_url.rfind('/')+1] + m.group('chunklist')
+            item['url'] = urlparse.urljoin(manifest_url, m.group('chunklist'))
             resolved.append(item)
         resolved = sorted(resolved, key=lambda x:int(x['quality']), reverse=True)
         if len(resolved) == 3:
