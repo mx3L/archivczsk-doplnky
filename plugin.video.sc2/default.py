@@ -3,6 +3,7 @@
 # misanov version of SC2 for Enigma2 plugin archivczsk
 #
 import sys
+sys.path.append( os.path.dirname(__file__) )
 import requests
 import urllib
 import urlparse
@@ -17,6 +18,7 @@ from Components.config import config
 import re, datetime, util, json, search, math, uuid, unicodedata
 from md5crypt import md5crypt
 from bisect import bisect
+from const import country_lang, genre_lang, language_lang
 
 addon = ArchivCZSK.get_xbmc_addon('plugin.video.sc2')
 addon_userdata_dir = addon.getAddonInfo('profile')
@@ -47,7 +49,8 @@ def writeLog(msg, type='INFO'):
 		pass
 
 def strip_accents(s):
-	return ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+#	print s.decode('utf-8')
+	return ''.join(c for c in unicodedata.normalize('NFD', s.decode('utf-8')) if unicodedata.category(c) != 'Mn')
 
 def ws_api_request(url, data):
 	return requests.post(ws_api + url, data=data)
@@ -76,18 +79,17 @@ def login():
 		xml = ET.fromstring(req.text)
 		if xml.find('vip_days').text:
 			addon.setSetting('wsvipdays', xml.find('vip_days').text)
-#			client.add_operation("SHOW_MSG", {'msg': 'Mate jeste %s VIP dnu'%xml.find('vip_days').text, 'msgType': 'info', 'msgTimeout': 2, 'canClose': True })
 		return token
 	return ""
 
 def get_stream_url(ident):
 	token = login()
 	if token == "":
-		client.add_operation("SHOW_MSG", {'msg': 'Nelze se prihlasit na WS, pokracuji s uctem zdarma...', 'msgType': 'error', 'msgTimeout': 1, 'canClose': True })
+		client.add_operation("SHOW_MSG", {'msg': addon.getLocalizedString(40501), 'msgType': 'error', 'msgTimeout': 1, 'canClose': True })
 	req = ws_api_request('/file_link/', { 'wst': token, 'ident': ident })
 	xml = ET.fromstring(req.text)
 	if not xml.find('status').text == 'OK':
-		client.add_operation("SHOW_MSG", {'msg': 'Nelze ziskat odkaz na video', 'msgType': 'error', 'msgTimeout': 20, 'canClose': True })
+		client.add_operation("SHOW_MSG", {'msg': addon.getLocalizedString(40502), 'msgType': 'error', 'msgTimeout': 20, 'canClose': True })
 		return None
 	return xml.find('link').text
 
@@ -96,12 +98,12 @@ def api_request(url,post_data=''):
 	try:
 		data = requests.get(url=url, data=post_data, headers={'User-Agent': UA2, 'X-Uuid': xuuid, 'Content-Type': 'application/json'}, timeout=15)
 		if data.status_code != 200:
-			client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
+			client.add_operation("SHOW_MSG", {'msg': addon.getLocalizedString(30501), 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
 			return {'data': "" }
 		else:
 			return json.loads(data.content)
 	except Exception as e:
-		client.add_operation("SHOW_MSG", {'msg': 'Nepodařilo se stáhnout data ze serveru v časovém limitu', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
+		client.add_operation("SHOW_MSG", {'msg': addon.getLocalizedString(30501), 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
 		pass
 	return {'data': "" }
 
@@ -185,7 +187,7 @@ def get_info(media,st=False):
 	if 'info_labels' in media and 'genre' in media['info_labels']:
 		genreL = []
 		for genre in media['info_labels']['genre']:
-			if genre in api_genres_langs: genreL.append(api_genres_langs[genre])
+			if genre in genre_lang: genreL.append(addon.getLocalizedString(genre_lang[genre]))
 			genres = ', '.join(genreL)
 	plot = '[' + genres + '] ' if genres else ""
 	plot += media['i18n_info_labels'][0]['plot'] if 'i18n_info_labels' in media and 'plot' in media['i18n_info_labels'][0] else ""
@@ -246,7 +248,8 @@ def search():
 	if query == "-----":
 		query = client.getTextInput(session, addon.getLocalizedString(30207))
 		if len(query) == 0:
-			client.showInfo('Je potřeba zadat hledaný řetězec')
+#			client.add_operation("SHOW_MSG", {'msg': 'Je potřeba zadat hledaný řetězec', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
+#			client.showInfo('Je potřeba zadat hledaný řetězec')
 			client.refresh_screen()
 			return
 		else:
@@ -340,9 +343,9 @@ def process_movies(mediaList):
 def process_genres(mediaList):
 	genres = {}
 	for genre in mediaList:
-		title = api_genres_langs[genre['key']] if genre['key'] in api_genres_langs else genre['key']
+		title = addon.getLocalizedString(genre_lang[genre['key']]) if genre['key'] in genre_lang else genre['key']
 		addDir(title+' ('+str(genre['doc_count'])+')', build_plugin_url({ 'action': action_value[0], 'action_value': 'genre,'+genre['key'] }), 1, None, None, None)
-#	client.GItem_lst[0].sort(key=lambda x:strip_accents(x.name))
+	client.GItem_lst[0].sort(key=lambda x:strip_accents(x.name))
 
 def process_studios(mediaList):
 	cnt = 0
@@ -351,6 +354,44 @@ def process_studios(mediaList):
 		if cnt > max_studios: break
 		addDir(studio['key']+' ('+str(studio['doc_count'])+')', build_plugin_url({ 'action': action_value[0], 'action_value': 'studio,'+studio['key'] }), 1, None, None, None)
 #	client.GItem_lst[0].sort(key=lambda x:x.name)
+
+def process_years(mediaList):
+	years = {}
+	for year in mediaList:
+		years[year['key']]=year['doc_count']
+	yearss=sorted(years, key=lambda x:int(x), reverse=True)
+	for year in yearss:
+		addDir(year+' ('+str(years[year])+')', build_plugin_url({ 'action': action_value[0], 'action_value': 'year,'+year }), 1, None, None, None)
+#	client.GItem_lst[0].sort(key=lambda x:int(x.name), reverse=True)
+
+def process_languages(mediaList):
+	langs = {}
+	langkeys = {}
+	for lang in mediaList:
+		langs[addon.getLocalizedString(language_lang.get(lang['key'],lang['key']))]=lang['doc_count']
+		langkeys[addon.getLocalizedString(language_lang.get(lang['key'],lang['key']))]=lang['key']
+	addDir(addon.getLocalizedString(language_lang['cs'])+' ('+str(langs[addon.getLocalizedString(language_lang['cs'])])+')', build_plugin_url({ 'action': action_value[0], 'action_value': 'language,cs'}), 1, None, None, None)
+	addDir(addon.getLocalizedString(language_lang['sk'])+' ('+str(langs[addon.getLocalizedString(language_lang['sk'])])+')', build_plugin_url({ 'action': action_value[0], 'action_value': 'language,sk'}), 1, None, None, None)
+	addDir(addon.getLocalizedString(language_lang['en'])+' ('+str(langs[addon.getLocalizedString(language_lang['en'])])+')', build_plugin_url({ 'action': action_value[0], 'action_value': 'language,en'}), 1, None, None, None)
+	for lang in sorted(langs,key=strip_accents):
+		if addon.getLocalizedString(language_lang['cs']) in lang or addon.getLocalizedString(language_lang['sk']) in lang or addon.getLocalizedString(language_lang['en']) in lang: continue
+		addDir(lang+' ('+str(langs[lang])+')', build_plugin_url({ 'action': action_value[0], 'action_value': 'language,'+langkeys[lang] }), 1, None, None, None)
+#	client.GItem_lst[0].sort(key=lambda x:strip_accents(x.name))
+
+def process_countries(mediaList):
+	countries = {}
+	countriekeys = {}
+	for country in mediaList:
+		countries[addon.getLocalizedString(country_lang.get(country['key'],country['key']))]=country['doc_count']
+		countriekeys[addon.getLocalizedString(country_lang.get(country['key'],country['key']))]=country['key']
+	addDir(addon.getLocalizedString(country_lang['Czechia'])+' ('+str(countries[addon.getLocalizedString(country_lang['Czechia'])])+')', build_plugin_url({ 'action': action_value[0], 'action_value': 'country,Czechia'}), 1, None, None, None)
+	addDir(addon.getLocalizedString(country_lang['Czechoslovakia'])+' ('+str(countries[addon.getLocalizedString(country_lang['Czechoslovakia'])])+')', build_plugin_url({ 'action': action_value[0], 'action_value': 'country,Czechoslovakia'}), 1, None, None, None)
+	addDir(addon.getLocalizedString(country_lang['Slovakia'])+' ('+str(countries[addon.getLocalizedString(country_lang['Slovakia'])])+')', build_plugin_url({ 'action': action_value[0], 'action_value': 'country,Slovakia'}), 1, None, None, None)
+	addDir(addon.getLocalizedString(country_lang['United States of America'])+' ('+str(countries[addon.getLocalizedString(country_lang['United States of America'])])+')', build_plugin_url({ 'action': action_value[0], 'action_value': 'country,United States of America'}), 1, None, None, None)
+	for country in sorted(countries,key=strip_accents):
+		if addon.getLocalizedString(country_lang['Czechia']) in country or addon.getLocalizedString(country_lang['Czechoslovakia']) in country or addon.getLocalizedString(country_lang['Slovakia']) in country or addon.getLocalizedString(country_lang['United States of America']) in country: continue
+		addDir(country+' ('+str(countries[country])+')', build_plugin_url({ 'action': action_value[0], 'action_value': 'country,'+countriekeys[country]}), 1, None, None, None)
+#	client.GItem_lst[0].sort(key=lambda x:strip_accents(x.name))
 
 def process_az(mediaList):
 	(m,v) = action_value[0].split(',')
@@ -414,68 +455,16 @@ def get_csfd_tips():
 	headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:75.0) Gecko/20100101 Firefox/75.0'}
 	result = requests.get(data_url, headers=headers, timeout=15, verify=False)
 	if result.status_code != 200:
-		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat z CSFD', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
+		client.add_operation("SHOW_MSG", {'msg': addon.getLocalizedString(30500), 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
 		return
 	data = re.search('<ul class="content ui-image-list">(.*?)</ul>', result.content, re.S)
 	if data:
-		articles = re.findall('<img src="(.*?)\?.*?<a href.*?>(.*?)<.*?film-year.*?>\((.*?)\).*?<p>(.*?)<', data.group(1), re.S)
+		articles = re.findall('<img src="(.*?)\?.*?<a href="/film/([0-9]+?)-.*?>(.*?)<.*?film-year.*?>\((.*?)\).*?<p>(.*?)<', data.group(1), re.S)
+		vals=[]
 		for article in articles:
-			addDir(article[1]+' ('+article[2]+')',build_plugin_url({'action': 'search', 'action_value': article[1]}), 1, 'http:'+article[0], None, None, { 'plot': article[3]})
-
-api_genres_langs = {
- 'Action': addon.getLocalizedString(30501),
- 'Animated': addon.getLocalizedString(30502),
- 'Animation': 'Animation',
- 'Anime': 'Anime',
- 'Adventure': addon.getLocalizedString(30503),
- 'Biographical': addon.getLocalizedString(30504),
- 'Catastrophic': addon.getLocalizedString(30505),
- 'Comedy': addon.getLocalizedString(30506),
- 'Competition': addon.getLocalizedString(30507),
- 'Crime': addon.getLocalizedString(30508),
- 'Documentary': addon.getLocalizedString(30509),
- 'Fairy Tale': addon.getLocalizedString(30510),
- 'Drama': addon.getLocalizedString(30511),
- 'Family': addon.getLocalizedString(30512),
- 'Fantasy': addon.getLocalizedString(30513),
- 'History': addon.getLocalizedString(30514),
- 'Historic': 'Historic',
- 'Horror': addon.getLocalizedString(30515),
- 'Children': 'Children',
- 'IMAX': addon.getLocalizedString(30516),
- 'Educational': addon.getLocalizedString(30517),
- 'Music': addon.getLocalizedString(30518),
- 'Journalistic': addon.getLocalizedString(30519),
- 'Military': addon.getLocalizedString(30520),
- 'Musical': addon.getLocalizedString(30521),
- 'Mysterious': addon.getLocalizedString(30522),
- 'Mystery': 'Mystery',
- 'News': 'News',
- 'Psychological': addon.getLocalizedString(30523),
- 'Puppet': 'Puppet',
- 'Reality': addon.getLocalizedString(30524),
- 'Reality-TV': 'Reality-TV',
- 'Road movie': 'Road movie',
- 'Romance': 'Romance',
- 'Romantic': addon.getLocalizedString(30525),
- 'Sci-Fi': addon.getLocalizedString(30526),
- 'Short': addon.getLocalizedString(30527),
- 'Short story': 'Short story',
- 'Soap': 'Soap',
- 'Special-interest': 'Special-interest',
- 'Sports': addon.getLocalizedString(30528),
- 'Stand-Up': addon.getLocalizedString(30529),
- 'Superhero': 'Superhero',
- 'Suspense': 'Suspense',
- 'Talk-Show': addon.getLocalizedString(30530),
- 'Telenovela': addon.getLocalizedString(30531),
- 'Thriller': addon.getLocalizedString(30532),
- 'Travel': addon.getLocalizedString(30533),
- 'Western':addon.getLocalizedString(30534),
- 'War':addon.getLocalizedString(30535),
- 'Erotic': addon.getLocalizedString(30551),
- 'Pornographic': addon.getLocalizedString(30552)
-}
+			vals.append("value="+article[1])
+		data = get_media_data('/api/media/filter/service?type=movie&'+'&'.join(vals)+'&service=csfd','')
+		if 'data' in data: process_movies(data['data'])
 
 xuuid = addon.getSetting('uuid')
 if xuuid == "":
@@ -526,25 +515,32 @@ menu = {
 		build_item(addon.getLocalizedString(30204), 'listsearch', ''),
 		build_item(addon.getLocalizedString(30200), 'folder','movies'),
 		build_item(addon.getLocalizedString(30201), 'folder', 'series'),
-#		build_item('CSFD TIPS', 'csfd', 'tips')
+		build_item(addon.getLocalizedString(30309), 'csfd', 'tips'),
+#		build_item(addon.getLocalizedString(30254), 'seen', 'seen'),
 	],
 	'movies': [
 		build_item(addon.getLocalizedString(30211), 'movies','popular'),
-		build_item('Novinky', 'movies','aired'),
-		build_item('Novinky dabované', 'movies','dubbed'),
-		build_item('Naposledy přidané', 'movies','dateadded'),
-		build_item(addon.getLocalizedString(30206), 'a-z','movies,'),
-		build_item(addon.getLocalizedString(30205), 'genres','movies'),
-		build_item('Studio', 'studios','movies')
+		build_item(addon.getLocalizedString(30136), 'movies','aired'),
+		build_item(addon.getLocalizedString(30139), 'movies','dubbed'),
+		build_item(addon.getLocalizedString(30137), 'movies','dateadded'),
+		build_item(addon.getLocalizedString(30210), 'a-z','movies,'),
+		build_item(addon.getLocalizedString(30209), 'genres','movies'),
+		build_item(addon.getLocalizedString(30257), 'countries','movies'),
+		build_item(addon.getLocalizedString(30259), 'languages','movies'),
+		build_item(addon.getLocalizedString(30256), 'years','movies'),
+		build_item(addon.getLocalizedString(30255), 'studios','movies')
 	],
 	'series': [
 		build_item(addon.getLocalizedString(30211), 'series','popular'),
-		build_item('Novinky', 'series','aired'),
-		build_item('Novinky dabované', 'series','dubbed'),
-		build_item('Naposledy přidané', 'series','dateadded'),
-		build_item(addon.getLocalizedString(30206), 'a-z','series,'),
-		build_item(addon.getLocalizedString(30205), 'genres','series'),
-		build_item('Studio', 'studios','series')
+		build_item(addon.getLocalizedString(30136), 'series','aired'),
+		build_item(addon.getLocalizedString(30139), 'series','dubbed'),
+		build_item(addon.getLocalizedString(30137), 'series','dateadded'),
+		build_item(addon.getLocalizedString(30210), 'a-z','series,'),
+		build_item(addon.getLocalizedString(30209), 'genres','series'),
+		build_item(addon.getLocalizedString(30257), 'countries','series'),
+		build_item(addon.getLocalizedString(30259), 'languages','series'),
+		build_item(addon.getLocalizedString(30256), 'years','series'),
+		build_item(addon.getLocalizedString(30255), 'studios','series')
 	]
 }
 
@@ -573,6 +569,15 @@ elif action[0] == 'movies' or action[0] == 'series':
 	elif 'studio' in action_value[0]:
 		(t,g) = action_value[0].split(',')
 		data = get_media_data('/api/media/filter/studio?sort=year&type=%s&order=desc&value=%s&page=%s'%(mos,g,page),'')
+	elif 'year' in action_value[0]:
+		(t,g) = action_value[0].split(',')
+		data = get_media_data('/api/media/filter/year?sort=year&type=%s&order=desc&value=%s&page=%s'%(mos,g,page),'')
+	elif 'country' in action_value[0]:
+		(t,g) = action_value[0].split(',')
+		data = get_media_data('/api/media/filter/country?sort=year&type=%s&order=desc&value=%s&page=%s'%(mos,g,page),'')
+	elif 'language' in action_value[0]:
+		(t,g) = action_value[0].split(',')
+		data = get_media_data('/api/media/filter/language?sort=year&type=%s&order=desc&value=%s&page=%s'%(mos,g,page),'')
 	elif 'a-z' in action_value[0]:
 		(m,v) = action_value[0].split(',')
 		data = get_media_data('/api/media/filter/startsWithSimple?type=%s&value=%s'%(mos,v),'')
@@ -602,6 +607,18 @@ elif action[0] == 'studios':
 	mos = 'movie' if action_value[0] == 'movies' else 'tvshow'
 	media = get_media_data('/api/media/filter/all/count/studios?type='+mos,'')
 	if 'data' in media: process_studios(media['data'])
+elif action[0] == 'years':
+	mos = 'movie' if action_value[0] == 'movies' else 'tvshow'
+	media = get_media_data('/api/media/filter/all/count/years?type='+mos,'')
+	if 'data' in media: process_years(media['data'])
+elif action[0] == 'languages':
+	mos = 'movie' if action_value[0] == 'movies' else 'tvshow'
+	media = get_media_data('/api/media/filter/all/count/languages?type='+mos,'')
+	if 'data' in media: process_languages(media['data'])
+elif action[0] == 'countries':
+	mos = 'movie' if action_value[0] == 'movies' else 'tvshow'
+	media = get_media_data('/api/media/filter/all/count/countries?type='+mos,'')
+	if 'data' in media: process_countries(media['data'])
 elif action[0] == 'a-z':
 	(m,v) = action_value[0].split(',')
 	mos = 'movie' if m == 'movies' else 'tvshow'
