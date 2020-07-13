@@ -27,7 +27,8 @@ icon = os.path.join(home, 'icon.png')
 hotshot_url = 'https://plugin.sc2.zone'
 ws_api = 'https://webshare.cz/api'
 UA = "KODI/18.6 (Windows; U; Windows NT; en) ver1.3.26"
-UA2 = 'Kodi/18.6 (Windows NT 10.0.18363; Win64; x64) App_Bitness/64 Version/18.6-Git:20200229-8e967df921'
+UA2 = 'SCC Enigma2'
+AU2 = 'Basic asb6mnn72mqruo4v81tn'
 realm = ':Webshare:'
 base_url = ""
 LOG_FILE = os.path.join(config.plugins.archivCZSK.logPath.getValue(),'sc2.log')
@@ -53,7 +54,7 @@ def strip_accents(s):
 	return ''.join(c for c in unicodedata.normalize('NFD', s.decode('utf-8')) if unicodedata.category(c) != 'Mn')
 
 def ws_api_request(url, data):
-	return requests.post(ws_api + url, data=data)
+	return requests.post(ws_api + url, data=data, headers={'User-Agent': UA2, 'X-Uuid': xuuid}, timeout=15)
 
 def login():
 	username = addon.getSetting('wsuser')
@@ -96,7 +97,7 @@ def get_stream_url(ident):
 def api_request(url,post_data=''):
 	url = hotshot_url + url
 	try:
-		data = requests.get(url=url, data=post_data, headers={'User-Agent': UA2, 'X-Uuid': xuuid, 'Content-Type': 'application/json'}, timeout=15)
+		data = requests.get(url=url, data=post_data, headers={'User-Agent': UA2, 'Authorization': AU2, 'X-Uuid': xuuid, 'Content-Type': 'application/json'}, timeout=15)
 		if data.status_code != 200:
 			client.add_operation("SHOW_MSG", {'msg': addon.getLocalizedString(30501), 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
 			return {'data': "" }
