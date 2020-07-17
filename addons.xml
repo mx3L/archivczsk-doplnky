@@ -423,7 +423,7 @@
 
 <addon id="plugin.video.sc2"
        name="Stream Cinema Community"
-       version="2.1.7"
+       version="2.1.8"
        provider-name="hotshot.sk">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
@@ -518,7 +518,7 @@
     </extension>
 </addon>
 
-<addon id="plugin.video.primaplay" name="iPrima" version="0.4.9" provider-name="Michal Novotny, Ladislav Dokulil">
+<addon id="plugin.video.primaplay" name="iPrima" version="0.4.10" provider-name="Michal Novotny, Ladislav Dokulil">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
     <import addon="script.module.stream.resolver" version="1.6.24" />
