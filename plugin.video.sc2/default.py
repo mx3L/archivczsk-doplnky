@@ -1,21 +1,15 @@
 # -*- coding: utf-8 -*-
-#
-# misanov version of SC2 for Enigma2 plugin archivczsk
-#
-import sys
-sys.path.append( os.path.dirname(__file__) )
-import requests
-import urllib
-import urlparse
+
+sys.path.append(os.path.dirname(__file__))
+import requests, urllib, urlparse, hashlib, re, datetime, util, json, search, math, uuid, unicodedata
 from xml.etree import ElementTree as ET
-import hashlib
 from string import ascii_uppercase, ascii_lowercase, digits
+from Screens.MessageBox import MessageBox
 from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
 from Plugins.Extensions.archivCZSK.engine.tools.util import unescapeHTML
 from Plugins.Extensions.archivCZSK.engine.client import add_dir, add_video
 from Plugins.Extensions.archivCZSK.engine import client
 from Components.config import config
-import re, datetime, util, json, search, math, uuid, unicodedata
 from md5crypt import md5crypt
 from bisect import bisect
 from const import country_lang, genre_lang, language_lang
