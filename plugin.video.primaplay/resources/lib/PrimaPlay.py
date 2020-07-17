@@ -267,7 +267,7 @@ class Parser:
         wrapper_items = re.split('<div class="component--scope--cinematography ', content_unescaped)
 
         title_re = re.compile('<div class="component--scope--cinematography--details--title">(.*?)</div>', re.S)
-        link_re = re.compile('<a href="([^\s"]*)', re.S)
+        link_re = re.compile('<a href="(.*?)"', re.S)
         thumb_re = re.compile('<picture.*?data-srcset="(.*?)\?', re.S)
 
         for wrapper_item in wrapper_items:
@@ -331,14 +331,11 @@ class Parser:
     def get_seasons(self, content, src_link):
         list = []
 
-        seasons_re = re.compile('<div class="section--view--program-videos-section--seasons">(.*?)</a>[\s\n]*?</div>',
-                                re.S)
+        seasons_re = re.compile('<div class="section--view--program-videos-section--seasons">(.*?)</a>[\s\n]*?</div>', re.S)
         seasons_result = seasons_re.search(content)
         if seasons_result is None: return None
 
-        seasons_items = re.findall(
-            '<a class="season(.*?)" href="//(.*?)">[\s\n]*?<div class="title">(.*?)</div>[\s\n]*?<div class="description">(.*?)</div>',
-            seasons_result.group(0), re.S)
+        seasons_items = re.findall('<a class="season(.*?)" href="//(.*?)".*?<div class="title">(.*?)</div>.*?<div class="description">(.*?)</div>', seasons_result.group(0), re.S)
 
         for item in seasons_items:
             if 'active' in item[0]: return None
@@ -357,9 +354,7 @@ class Parser:
         html_items = re.findall('<div class="component--scope--episode-latest program">(.*?)</a>', content, re.S)
 
         item_link_re = re.compile('<a href="(.*?)"', re.S)
-        item_img_re = re.compile('<div class="component--scope--episode-latest--picture.*?<img class="lazyload" data-srcset="(.*?)\?'
-                                 ,
-                                 re.S)
+        item_img_re = re.compile('<div class="component--scope--episode-latest--picture.*?<img class="lazyload" data-srcset="(.*?)\?', re.S)
         item_title_re = re.compile('<div class="component--scope--episode-latest--details--title">(.*?)</div>', re.S)
         item_description_re = re.compile('<div class="component--scope--episode-latest--details--episode">(.*?)</div>',re.S)
 
