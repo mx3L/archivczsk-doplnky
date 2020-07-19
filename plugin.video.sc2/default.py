@@ -319,20 +319,19 @@ def process_seasons(mediaList):
 		else:
 			addDir(title+info['title'], build_plugin_url({ 'action': 'series.streams', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year'], 'genre': info['genres']})
 
-def process_series(mediaList):
+def process_movies_series(mediaList):
 	for media in mediaList:
 		if isExplicit(media['_source']): continue
 		if isFilterLang(media['_source']): continue
 		info = get_info(media['_source'])
-		addDir(info['title'], build_plugin_url({ 'action': 'seasons', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year'], 'genre': info['genres']})
-	if abc: client.GItem_lst[0].sort(key=lambda x:strip_accents(x.name))
-
-def process_movies(mediaList):
-	for media in mediaList:
-		if isExplicit(media['_source']): continue
-		if isFilterLang(media['_source']): continue
-		info = get_info(media['_source'])
-		addDir(info['title'], build_plugin_url({ 'action': 'movies.streams', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year'], 'genre': info['genres']})
+		try:
+			cmenuItems = {addon.getLocalizedString(40503): {'action': 'related', 'id': media['_source']['services']['csfd']}, addon.getLocalizedString(40504): {'action': 'similar', 'id': media['_source']['services']['csfd']}}
+		except:
+			cmenuItems = {}
+		if media['_source']['info_labels']['mediatype'] == 'tvshow':
+			addDir(info['title'], build_plugin_url({ 'action': 'seasons', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year'], 'genre': info['genres']}, menuItems=cmenuItems)
+		else:
+			addDir(info['title'], build_plugin_url({ 'action': 'movies.streams', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year'], 'genre': info['genres']}, menuItems=cmenuItems)
 	if abc: client.GItem_lst[0].sort(key=lambda x:strip_accents(x.name))
 
 def process_genres(mediaList):
@@ -445,26 +444,60 @@ def play(ident,title):
 #		Player(session).play_item(item = it)
 #		client.refresh_screen()
 
-def get_csfd_tips():
-	data_url = 'https://www.csfd.cz/televize/'
+def get_csfd_api(url):
 	headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:75.0) Gecko/20100101 Firefox/75.0'}
-	result = requests.get(data_url, headers=headers, timeout=15, verify=False)
+	result = requests.get('https://www.csfd.cz'+url, headers=headers, timeout=15, verify=False)
 	if result.status_code != 200:
 		client.add_operation("SHOW_MSG", {'msg': addon.getLocalizedString(30500), 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
-		return
-	data = re.search('<ul class="content ui-image-list">(.*?)</ul>', result.content, re.S)
-	if data:
-		articles = re.findall('<img src="(.*?)\?.*?<a href="/film/([0-9]+?)-.*?>(.*?)<.*?film-year.*?>\((.*?)\).*?<p>(.*?)<', data.group(1), re.S)
-		vals=[]
-		for article in articles:
-			vals.append("value="+article[1])
-		data = get_media_data('/api/media/filter/service?type=movie&'+'&'.join(vals)+'&service=csfd','')
-		if 'data' in data: process_movies(data['data'])
+		return None
+	return result.content
+
+def get_csfd_tips():
+	html = get_csfd_api('/televize/')
+	if html:
+		data = re.search('<ul class="content ui-image-list">(.*?)</ul>', html, re.S)
+		if data:
+			articles = re.findall('<img src="(.*?)\?.*?<a href="/film/([0-9]+?)-.*?>(.*?)<.*?film-year.*?>\((.*?)\).*?<p>(.*?)<', data.group(1), re.S)
+			vals=[]
+			for article in articles:
+				vals.append("value="+article[1])
+			data = get_media_data('/api/media/filter/service?type=movie&'+'&'.join(vals)+'&service=csfd','')
+			if 'data' in data: process_movies_series(data['data'])
+
+def get_related(cid):
+	html = get_csfd_api('/film/'+str(cid))
+	if html:
+		data = re.search('<div class="ct-related related">(.*?)</div>', html, re.S)
+		if data:
+			articles = re.findall('<a href="/film/([0-9]+?)\-.*?"', data.group(1), re.S)
+			vals=[]
+			for article in articles:
+				vals.append("value="+article)
+			data = get_media_data('/api/media/filter/service?type=movie&'+'&'.join(vals)+'&service=csfd','')
+			if 'data' in data: process_movies_series(data['data'])
+
+def get_similar(cid):
+	html = get_csfd_api('/film/'+str(cid))
+	if html:
+		data = re.search('<div class="ct-related similar">(.*?)</div>', html, re.S)
+		if data:
+			articles = re.findall('<a href="/film/([0-9]+?)\-.*?"', data.group(1), re.S)
+			vals=[]
+			for article in articles:
+				vals.append("value="+article)
+			data = get_media_data('/api/media/filter/service?type=movie&'+'&'.join(vals)+'&service=csfd','')
+			if 'data' in data: process_movies_series(data['data'])
+
 
 xuuid = addon.getSetting('uuid')
 if xuuid == "":
 	xuuid = str(uuid.uuid4())
 	addon.setSetting('uuid',xuuid)
+
+from urlparse import parse_qsl
+from urllib import urlencode
+nurl=params['url'][1:] if 'url' in params else urlencode(params)
+nparams = dict(parse_qsl(nurl))
 
 page=1
 name=None
@@ -499,6 +532,7 @@ try:
 except:
 	pass
 
+#writeLog('NP: '+str(nparams))
 #writeLog('PAGE: '+str(page))
 #writeLog('URL: '+str(url))
 #writeLog('NAME: '+str(name))
@@ -539,7 +573,11 @@ menu = {
 	]
 }
 
-if action is None:
+if 'action' in nparams and nparams['action'] == 'related' and 'id' in nparams:
+	get_related(nparams['id'])
+elif 'action' in nparams and nparams['action'] == 'similar' and 'id' in nparams:
+	get_similar(nparams['id'])
+elif action is None:
 	for c in menu['root']:
 		render_item(c)
 elif action[0] == 'csfd':
@@ -580,8 +618,8 @@ elif action[0] == 'movies' or action[0] == 'series':
 	else:
 		data = get_media_data('/api/media/filter/startsWithSimple?type=%s&value=%s&page=%s'%(mos,action_value[0],page),'')
 		abc = True
-	if action[0] == 'movies' and 'data' in data: process_movies(data['data'])
-	if action[0] == 'series' and 'data' in data: process_series(data['data'])
+	if action[0] == 'movies' and 'data' in data: process_movies_series(data['data'])
+	if action[0] == 'series' and 'data' in data: process_movies_series(data['data'])
 	if 'pagination' in data and 'pageCount' in data['pagination'] and 'page' in data['pagination'] and data['pagination']['pageCount']>1:
 		add_paging(int(data['pagination']['page'])+1, data['pagination']['pageCount'])
 elif action[0] == 'movies.streams':

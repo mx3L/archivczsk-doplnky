@@ -12,6 +12,8 @@
 	<string id="40111">Maximal bitrate (Mbit/s)</string>
 	<string id="40501">Cannot login into WS, continuing with free account...</string>
 	<string id="40502">Cannot get link to video</string>
+	<string id="40503">Related</string>
+	<string id="40504">Similar</string>
 
 	<string id="30000"></string>
 	<string id="30010">General</string>

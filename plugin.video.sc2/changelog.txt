@@ -1,3 +1,7 @@
+2020-07-19
+ * Menu na polozce filmu ci serialu nabidne Souvisejici nebo Podobne filmy a serialy
+ * uprava parsovani vstupu
+
 2020-07-17
  * oprava cesty importu
 
