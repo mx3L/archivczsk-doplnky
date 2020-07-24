@@ -274,20 +274,13 @@ class iVysilaniContentProvider(ContentProvider):
             l = programme.episodes(page)
         elif what == "bonuses":
             l = programme.bonuses(page)
-        if page > 1:
-            item = self.dir_item()
-            item['title'] = '[B]<< ' + _lang_(30007) + '[/B]'
-            item['url'] = _baseurl_ + "?" + what + "=" + ID + "&page=" + str(page - 1)
-            #item['img'] = _previous_
-            result.append(item)
-            #addDirectoryItem('[B]<< ' + _lang_(30007) + '[/B]', _baseurl_ + "?" + what + "=" + ID + "&page=" + str(page - 1), image=_previous_)
         for item in l:
             plot = None
             if hasattr(item, "synopsis") and item.synopsis:
                 plot = item.synopsis
             itm = self.video_item()
             itm['title'] = item.title
-            itm['url'] =  _baseurl_ + "?play=" + item.ID
+            itm['url'] =  _baseurl_ + "?play=" + str(item.ID)
             itm['plot'] = plot
             itm['img'] = item.imageURL
             # cm.append((_lang_(30003), "XBMC.Container.Update(" + _baseurl_ + "?related=" + ID + ")"))
@@ -302,7 +295,7 @@ class iVysilaniContentProvider(ContentProvider):
         if len(l) == ivysilani.PAGE_SIZE:
             item = self.dir_item()
             item['title'] = '[B]' + _lang_(30006) + ' >>[/B]'
-            item['url'] = _baseurl_ + "?" + what + "=" + ID + "&page=" + str(page + 1)
+            item['url'] = _baseurl_ + "?" + what + "=" + str(ID) + "&page=" + str(int(page)+1)
             #item['img'] =  _next_
             result.append(item)
            # addDirectoryItem('[B]' + _lang_(30006) + ' >>[/B]', _baseurl_ + "?" + what + "=" + ID + "&page=" + str(page + 1), image=_next_)
