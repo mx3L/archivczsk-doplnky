@@ -45,6 +45,51 @@ def getUrl(url, post_data=''):
 	else:
 		return requests.post(url=url, data=post_data, headers={'User-Agent': 'okhttp/3.12.2', 'Content-Type': 'application/json; charset=utf-8'}, timeout=15)
 
+def Most():
+	data = getUrl('https://api.televizeseznam.cz/graphql','{"operationName":"TagEpisodes","variables":{"id":"VGFnOjEyNDk1OTY","cursor":null,"limit":20},"query":"query TagEpisodes($id: ID, $cursor: String, $limit: Int = 20) {  tag(id: $id) {    __typename    episodesConnection(after: $cursor, first: $limit) {      __typename      ...EpisodeConnector    }  }}fragment EpisodeConnector on EpisodeItemConnection {  __typename  pageInfo {    __typename    hasNextPage    endCursor  }  edges {    __typename    cursor    node {      __typename      ...EpisodeDetail    }  }}fragment EpisodeDetail on Episode {  __typename  id  dotId  name  duration  perex  publishTime {    __typename    timestamp  }  spl  isLive  originTag {    __typename    ...OriginTag  }  images {    __typename    ...Img  }  views  urlName  originUrl  commentsDisabled  downloadable  contextualFields {    __typename    lastVideoPositionSec  }  expirationTime {    __typename    timestamp  }}fragment OriginTag on Tag {  __typename  id  dotId  category  name  favouritesCount  urlName  originTag {    __typename    name  }  images {    __typename    ...Img  }}fragment Img on Image {  __typename  url  usage}"}')
+	if data.status_code != 200:
+		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
+		return False
+	jso = json.loads(data.content)
+	if 'data' not in jso or 'tag' not in jso['data'] or 'episodesConnection' not in jso['data']['tag'] or 'edges' not in jso['data']['tag']['episodesConnection']:
+		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru, zkuste to za chvilku', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
+		return False
+	for edge in jso['data']['tag']['episodesConnection']['edges']:
+		if edge['node']:
+			poster = 'https:'+edge['node']['images'][0]['url'] if 'images' in edge['node'] and 'url' in edge['node']['images'][0] else None
+			datum = datetime.datetime.utcfromtimestamp(edge['node']['publishTime']['timestamp']).strftime('%d.%m.%y %H:%M')+' - ' if 'publishTime' in edge['node'] and 'timestamp' in edge['node']['publishTime'] else ''
+			addDir(edge['node']['name'], edge['node']['id'], 4, poster, None, None, infoLabels={'plot':'['+edge['node']['originTag']['name']+'] '+datum+edge['node']['perex'],'duration':edge['node']['duration'], 'rating': edge['node']['views']})
+
+def Latests():
+	data = getUrl('https://api.televizeseznam.cz/graphql','{"operationName":"TagEpisodes","variables":{"id":"VGFnOjEyNDM2OTc","cursor":null,"limit":50},"query":"query TagEpisodes($id: ID, $cursor: String, $limit: Int = 20) {  tag(id: $id) {    __typename    episodesConnection(after: $cursor, first: $limit) {      __typename      ...EpisodeConnector    }  }}fragment EpisodeConnector on EpisodeItemConnection {  __typename  pageInfo {    __typename    hasNextPage    endCursor  }  edges {    __typename    cursor    node {      __typename      ...EpisodeDetail    }  }}fragment EpisodeDetail on Episode {  __typename  id  dotId  name  duration  perex  publishTime {    __typename    timestamp  }  spl  isLive  originTag {    __typename    ...OriginTag  }  images {    __typename    ...Img  }  views  urlName  originUrl  commentsDisabled  downloadable  contextualFields {    __typename    lastVideoPositionSec  }  expirationTime {    __typename    timestamp  }}fragment OriginTag on Tag {  __typename  id  dotId  category  name  favouritesCount  urlName  originTag {    __typename    name  }  images {    __typename    ...Img  }}fragment Img on Image {  __typename  url  usage}"}')
+	if data.status_code != 200:
+		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
+		return False
+	jso = json.loads(data.content)
+	if 'data' not in jso or 'tag' not in jso['data'] or 'episodesConnection' not in jso['data']['tag'] or 'edges' not in jso['data']['tag']['episodesConnection']:
+		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru, zkuste to za chvilku', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
+		return False
+	for edge in jso['data']['tag']['episodesConnection']['edges']:
+		if edge['node']:
+			poster = 'https:'+edge['node']['images'][0]['url'] if 'images' in edge['node'] and 'url' in edge['node']['images'][0] else None
+			datum = datetime.datetime.utcfromtimestamp(edge['node']['publishTime']['timestamp']).strftime('%d.%m.%y %H:%M')+' - ' if 'publishTime' in edge['node'] and 'timestamp' in edge['node']['publishTime'] else ''
+			addDir(edge['node']['name'], edge['node']['id'], 4, poster, None, None, infoLabels={'plot':'['+edge['node']['originTag']['name']+'] '+datum+edge['node']['perex'],'duration':edge['node']['duration'], 'rating': edge['node']['views']})
+
+def detailEpisode(id):
+	data = getUrl('https://api.televizeseznam.cz/graphql','{"operationName":"DetailEpisodeRequest","variables":{"id":"'+id+'"},"query":"query DetailEpisodeRequest($id: ID) {  episode(id: $id) {    __typename    ...EpisodeDetail  }}fragment EpisodeDetail on Episode {  __typename  id  dotId  name  duration  perex  publishTime {    __typename    timestamp  }  spl  isLive  originTag {    __typename    ...OriginTag  }  images {    __typename    ...Img  }  views  urlName  originUrl  commentsDisabled  downloadable  contextualFields {    __typename    lastVideoPositionSec  }  expirationTime {    __typename    timestamp  }}fragment OriginTag on Tag {  __typename  id  dotId  category  name  favouritesCount  urlName  originTag {    __typename    name  }  images {    __typename    ...Img  }}fragment Img on Image {  __typename  url  usage}"}')
+	if data.status_code != 200:
+		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
+		return False
+	jso = json.loads(data.content)
+	if 'data' in jso and 'episode' in jso['data']:
+		poster = 'https:'+jso['data']['episode']['images'][0]['url'] if 'images' in jso['data']['episode'] and 'url' in jso['data']['episode']['images'][0] else None
+		datum = datetime.datetime.utcfromtimestamp(jso['data']['episode']['publishTime']['timestamp']).strftime('%d.%m.%y %H:%M')+' - ' if 'publishTime' in jso['data']['episode'] and 'timestamp' in jso['data']['episode']['publishTime'] else ''
+		addDir(jso['data']['episode']['name'], jso['data']['episode']['spl'], 5, poster, None, None, { 'plot': '['+jso['data']['episode']['originTag']['name']+'] '+datum+jso['data']['episode']['perex'], 'duration': jso['data']['episode']['duration'], 'rating': jso['data']['episode']['views']})
+		posterCat = None
+		for image in jso['data']['episode']['originTag']['images']:
+			if image['usage'] == 'square': posterCat = 'https:'+image['url']
+		addDir('Více z kategorie [COLOR yellow]'+jso['data']['episode']['originTag']['name']+'[/COLOR]', jso['data']['episode']['originTag']['id'], 3, posterCat, None, None)
+
 def Guide():
 	data = getUrl('https://api.televizeseznam.cz/graphql','{"operationName":"Guide","variables":{},"query":"query Guide {  inGuideTags: tags(orderType: guide, inGuide: true, limit: 30) {    __typename    ...TagPlaylist  }}fragment TagPlaylist on Tag {  __typename  id  dotId  name  episodes {    __typename    name    id    originUrl    commentsDisabled    duration    images {      __typename      ...Img    }  }  images {    __typename    ...Img  }  originTag {    __typename    ...OriginTag  }  category  episodesCount}fragment Img on Image {  __typename  url  usage}fragment OriginTag on Tag {  __typename  id  dotId  category  name  favouritesCount  urlName  originTag {    __typename    name  }  images {    __typename    ...Img  }}"}')
 	if data.status_code != 200:
@@ -56,6 +101,8 @@ def Guide():
 		return False
 	addDir('[COLOR yellow]HLEDAT[/COLOR]', 'search', 9, None, 1)
 	addDir('[COLOR yellow]ŽIVĚ[/COLOR]', 'live', 8, None, 1)
+	addDir('[COLOR yellow]NEJNOVĚJŠÍ[/COLOR]', 'last', 7, None, 1)
+	addDir('[COLOR yellow]NEJSLEDOVANĚJŠÍ[/COLOR]', 'most', 10, None, 1)
 	if 'data' in jso and 'inGuideTags' in jso['data']:
 		guides = {}
 		for article in jso['data']['inGuideTags'] or []:
@@ -92,7 +139,7 @@ def Episodes(id,cursor='null'):
 		for episode in jso['data']['tag']['episodesConnection']['edges']:
 			poster = 'https:'+episode['node']['images'][0]['url'] if 'images' in episode['node'] and 'url' in episode['node']['images'][0] else None
 			datum = datetime.datetime.utcfromtimestamp(episode['node']['publishTime']['timestamp']).strftime('%d.%m.%y %H:%M')+' - ' if 'publishTime' in episode['node'] and 'timestamp' in episode['node']['publishTime'] else ''
-			addDir(episode['node']['name'], episode['node']['spl'], 5, poster, None, None, { 'plot': '['+episode['node']['originTag']['name']+'] '+datum+episode['node']['perex'], 'duration': episode['node']['duration']})
+			addDir(episode['node']['name'], episode['node']['spl'], 5, poster, None, None, { 'plot': '['+episode['node']['originTag']['name']+'] '+datum+episode['node']['perex'], 'duration': episode['node']['duration'], 'rating': episode['node']['views']})
 		if jso['data']['tag']['episodesConnection']['pageInfo']['hasNextPage']:
 			addDir('Další strana >>',id,3,nexticon,jso['data']['tag']['episodesConnection']['pageInfo']['endCursor'])
 
@@ -209,13 +256,19 @@ elif mode==2:
 		Playlists(url)
 elif mode==3:
 		Episodes(url,'"'+page+'"')
+elif mode==4:
+		detailEpisode(url)
 elif mode==5:
 		videoLink(url)
 elif mode==6:
 		playLive(url)
+elif mode==7:
+		Latests()
 elif mode==8:
 		Live()
 elif mode==9:
 		Search()
+elif mode==10:
+		Most()
 
 if len(client.GItem_lst[0]) == 0: addDir(None, '', 1, None)
