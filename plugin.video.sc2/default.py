@@ -15,7 +15,7 @@ from bisect import bisect
 from const import country_lang, genre_lang, language_lang
 
 addon = ArchivCZSK.get_xbmc_addon('plugin.video.sc2')
-addon_userdata_dir = addon.getAddonInfo('profile')
+addon_userdata_dir = addon.getAddonInfo('profile')+'/'
 home = addon.getAddonInfo('path')
 icon = os.path.join(home, 'icon.png')
 hotshot_url = 'https://plugin.sc2.zone'
@@ -32,7 +32,8 @@ qualities = [0,144,240,360,480,720,1080,2160,4320]
 sizes = [0,1,2,3,4,5,10,15,20]
 bitrates = [0,1,2,3,4,5,10,15,20,30,40,50]
 quality_map = {144: '144p',240: '240p',360: '360p',480: '480p',720: '720p',1080: '1080p',2160: '2160p',4320: '4320p'}
-max_studios = 200
+max_studios = 500
+loading_timeout = int(addon.getSetting('loading_timeout')) if addon.getSetting('loading_timeout') else 15
 
 def writeLog(msg, type='INFO'):
 	try:
@@ -48,7 +49,7 @@ def strip_accents(s):
 	return ''.join(c for c in unicodedata.normalize('NFD', s.decode('utf-8')) if unicodedata.category(c) != 'Mn')
 
 def ws_api_request(url, data):
-	return requests.post(ws_api + url, data=data, headers={'User-Agent': UA2, 'X-Uuid': xuuid}, timeout=15)
+	return requests.post(ws_api + url, data=data, headers={'User-Agent': UA2, 'X-Uuid': xuuid}, timeout=loading_timeout)
 
 def login():
 	username = addon.getSetting('wsuser')
@@ -91,7 +92,7 @@ def get_stream_url(ident):
 def api_request(url,post_data=''):
 	url = hotshot_url + url
 	try:
-		data = requests.get(url=url, data=post_data, headers={'User-Agent': UA2, 'Authorization': AU2, 'X-Uuid': xuuid, 'Content-Type': 'application/json'}, timeout=15)
+		data = requests.get(url=url, data=post_data, headers={'User-Agent': UA2, 'Authorization': AU2, 'X-Uuid': xuuid, 'Content-Type': 'application/json'}, timeout=loading_timeout)
 		if data.status_code != 200:
 			client.add_operation("SHOW_MSG", {'msg': addon.getLocalizedString(30501), 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
 			return {'data': "" }
@@ -195,6 +196,7 @@ def get_info(media,st=False):
 		try: duration = media['stream_info']['video']['duration'] or 0
 		except:	pass
 	poster = media['i18n_info_labels'][0]['art']['poster'] if 'i18n_info_labels' in media and 'art' in media['i18n_info_labels'][0] and 'poster' in media['i18n_info_labels'][0]['art'] and media['i18n_info_labels'][0]['art']['poster'] != "" else None
+	if 'play_count' in media: plot += "{"+str(media['play_count'])+"}"
 	return {'title': title, 'plot': plot+dadded, 'rating': rating, 'duration': duration, 'poster': poster, 'year': year, 'genres': genres, 'langs': langs}
 
 def add_paging(page, pageCount):
@@ -243,9 +245,9 @@ def search():
 	if query == "-----":
 		query = client.getTextInput(session, addon.getLocalizedString(30207))
 		if len(query) == 0:
-#			client.add_operation("SHOW_MSG", {'msg': 'Je potřeba zadat hledaný řetězec', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
-#			client.showInfo('Je potřeba zadat hledaný řetězec')
-			client.refresh_screen()
+#			client.add_operation("SHOW_MSG", {'msg': 'Je potřeba zadat hledaný řetězec', 'msgType': 'error', 'msgTimeout': 1, 'canClose': True })
+			client.showInfo('Je potřeba zadat hledaný řetězec')
+#			client.refresh_screen()
 			return
 		else:
 			if history == 1: save_search_history(query)
@@ -324,10 +326,16 @@ def process_movies_series(mediaList):
 		if isExplicit(media['_source']): continue
 		if isFilterLang(media['_source']): continue
 		info = get_info(media['_source'])
+		cmenuItems = {}
 		try:
-			cmenuItems = {addon.getLocalizedString(40503): {'action': 'related', 'id': media['_source']['services']['csfd']}, addon.getLocalizedString(40504): {'action': 'similar', 'id': media['_source']['services']['csfd']}}
+			cmenuItems['Přehrát trailer']={'action': 'trailer', 'id': media['_source']['info_labels']['trailer']}
 		except:
-			cmenuItems = {}
+			pass
+		try:
+			cmenuItems[addon.getLocalizedString(40503)]={'action': 'related', 'id': media['_source']['services']['csfd']}
+			cmenuItems[addon.getLocalizedString(40504)]={'action': 'similar', 'id': media['_source']['services']['csfd']}
+		except:
+			pass
 		if media['_source']['info_labels']['mediatype'] == 'tvshow':
 			addDir(info['title'], build_plugin_url({ 'action': 'seasons', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year'], 'genre': info['genres']}, menuItems=cmenuItems)
 		else:
@@ -343,10 +351,14 @@ def process_genres(mediaList):
 
 def process_studios(mediaList):
 	cnt = 0
-	for studio in mediaList:
+	studios = {}
+	for p in mediaList:
+		studios[p['key'].encode('utf-8')] = p['doc_count']
+	studioss = sorted(studios.items(), key=lambda x: x[1], reverse=True)
+	for studio in studioss:
 		cnt+=1
 		if cnt > max_studios: break
-		addDir(studio['key']+' ('+str(studio['doc_count'])+')', build_plugin_url({ 'action': action_value[0], 'action_value': 'studio,'+studio['key'] }), 1, None, None, None)
+		addDir(studio[0]+' ('+str(studio[1])+')', build_plugin_url({ 'action': action_value[0], 'action_value': 'studio,'+studio[0] }), 1, None, None, None)
 #	client.GItem_lst[0].sort(key=lambda x:x.name)
 
 def process_years(mediaList):
@@ -417,10 +429,10 @@ def show_stream_dialog(id,ss=None,ep=None):
 		audset = set(auds)
 		auds = list(audset)
 		auds.sort()
-		bit_rate = ' - '+convert_bitrate(stream['size'] / stream['video'][0]['duration'] * 8) if 'size' in stream and 'video' in stream and 'duration' in stream['video'][0] else ''
+		bit_rate = ' - '+convert_bitrate(stream['size'] / stream['video'][0]['duration'] * 8) if addon.getSetting('show_bitrate')=='true' and 'size' in stream and 'video' in stream and 'duration' in stream['video'][0] else ''
 #		title += '['+str(stream['video'][0]['height'])+'p] ' if 'video' in stream and 'height' in stream['video'][0] else ''
 		title += '['+resolution_to_quality(stream['video'][0])+'] ' if 'video' in stream and 'height' in stream['video'][0] else ''
-		title += '['+str(stream['video'][0]['codec'])+'] ' if 'video' in stream and 'codec' in stream['video'][0] else ''
+		title += '['+str(stream['video'][0]['codec'])+'] ' if addon.getSetting('show_codec')=='true' and 'video' in stream and 'codec' in stream['video'][0] else ''
 		title += '[3D] ' if 'video' in stream and '3d' in stream['video'][0] and stream['video'][0]['3d']=='true' else ''
 		title += info['title']
 		title += ' - '+(', '.join(auds)).upper() if len(auds)>0 else ''
@@ -444,9 +456,22 @@ def play(ident,title):
 #		Player(session).play_item(item = it)
 #		client.refresh_screen()
 
+def play_trailer(turl):
+	video_formats = client.getVideoFormats(turl)
+	video_url = [video_formats[-1]]
+	if video_url[0]['url']:
+		add_video('Trailer',video_url[0]['url'],None,None)
+#		from Plugins.Extensions.archivCZSK.engine.player.player import Player
+#		from Plugins.Extensions.archivCZSK.engine.items import PVideo
+#		it = PVideo()
+#		it.name = 'Trailer'
+#		it.url = video_url[0]['url']
+#		Player(session).play_item(item = it)
+#		client.refresh_screen()
+
 def get_csfd_api(url):
 	headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:75.0) Gecko/20100101 Firefox/75.0'}
-	result = requests.get('https://www.csfd.cz'+url, headers=headers, timeout=15, verify=False)
+	result = requests.get('https://www.csfd.cz'+url, headers=headers, timeout=loading_timeout, verify=False)
 	if result.status_code != 200:
 		client.add_operation("SHOW_MSG", {'msg': addon.getLocalizedString(30500), 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
 		return None
@@ -486,6 +511,7 @@ def get_similar(cid):
 			for article in articles:
 				vals.append("value="+article)
 			data = get_media_data('/api/media/filter/service?type=movie&'+'&'.join(vals)+'&service=csfd','')
+#			writeLog(json.dumps(data))
 			if 'data' in data: process_movies_series(data['data'])
 
 
@@ -577,6 +603,8 @@ if 'action' in nparams and nparams['action'] == 'related' and 'id' in nparams:
 	get_related(nparams['id'])
 elif 'action' in nparams and nparams['action'] == 'similar' and 'id' in nparams:
 	get_similar(nparams['id'])
+elif 'action' in nparams and nparams['action'] == 'trailer' and 'id' in nparams:
+	play_trailer(nparams['id'])
 elif action is None:
 	for c in menu['root']:
 		render_item(c)
@@ -664,4 +692,7 @@ elif action[0] == 'search':
 elif action[0] == 'play' and action_value[0] != "" and name !="":
 	play(action_value[0],name)
 
-if len(client.GItem_lst[0]) == 0: render_item(build_item(None, ''))
+if len(client.GItem_lst[0]) == 0:
+	render_item(build_item(None, ''))
+#	client.showInfo('Nic nenalezeno')
+

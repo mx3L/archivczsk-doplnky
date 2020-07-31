@@ -9,6 +9,8 @@
 	<setting label="40109" id="max_quality" type="enum" lvalues="401071|144p|240p|360p|480p|720p|1080p|2160p|4320p" default="0" />
 	<setting label="40110" id="max_size" type="enum" lvalues="401071|1|2|3|4|5|10|15|20" default="0" />
 	<setting label="40111" id="max_bitrate" type="enum" lvalues="401071|1|2|3|4|5|10|15|20|30|40|50" default="0" />
+	<setting label="30115" id="show_codec" type="bool" default="true" />
+	<setting label="30116" id="show_bitrate" type="bool" default="true" />
 	<setting label="30107" id="uuid" type="text" default="" visible="false" />
 	<setting label="30121" id="token" type="text" default="" visible="false" />
 </settings>

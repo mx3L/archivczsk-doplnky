@@ -75,6 +75,21 @@ def Latests():
 			datum = datetime.datetime.utcfromtimestamp(edge['node']['publishTime']['timestamp']).strftime('%d.%m.%y %H:%M')+' - ' if 'publishTime' in edge['node'] and 'timestamp' in edge['node']['publishTime'] else ''
 			addDir(edge['node']['name'], edge['node']['id'], 4, poster, None, None, infoLabels={'plot':'['+edge['node']['originTag']['name']+'] '+datum+edge['node']['perex'],'duration':edge['node']['duration'], 'rating': edge['node']['views']})
 
+def LatestsStream():
+	data = getUrl('https://api.televizeseznam.cz/graphql','{"operationName":"TagEpisodes","variables":{"id":"VGFnOjI","cursor":null,"limit":20},"query":"query TagEpisodes($id: ID, $cursor: String, $limit: Int = 20) {  tag(id: $id) {    __typename    episodesConnection(after: $cursor, first: $limit) {      __typename      ...EpisodeConnector    }  }}fragment EpisodeConnector on EpisodeItemConnection {  __typename  pageInfo {    __typename    hasNextPage    endCursor  }  edges {    __typename    cursor    node {      __typename      ...EpisodeDetail    }  }}fragment EpisodeDetail on Episode {  __typename  id  dotId  name  duration  perex  publishTime {    __typename    timestamp  }  spl  isLive  originTag {    __typename    ...OriginTag  }  images {    __typename    ...Img  }  views  urlName  originUrl  commentsDisabled  downloadable  contextualFields {    __typename    lastVideoPositionSec  }  expirationTime {    __typename    timestamp  }}fragment OriginTag on Tag {  __typename  id  dotId  category  name  favouritesCount  urlName  originTag {    __typename    name  }  images {    __typename    ...Img  }}fragment Img on Image {  __typename  url  usage}"}')
+	if data.status_code != 200:
+		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
+		return False
+	jso = json.loads(data.content)
+	if 'data' not in jso or 'tag' not in jso['data'] or 'episodesConnection' not in jso['data']['tag'] or 'edges' not in jso['data']['tag']['episodesConnection']:
+		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru, zkuste to za chvilku', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
+		return False
+	for edge in jso['data']['tag']['episodesConnection']['edges']:
+		if edge['node']:
+			poster = 'https:'+edge['node']['images'][0]['url'] if 'images' in edge['node'] and 'url' in edge['node']['images'][0] else None
+			datum = datetime.datetime.utcfromtimestamp(edge['node']['publishTime']['timestamp']).strftime('%d.%m.%y %H:%M')+' - ' if 'publishTime' in edge['node'] and 'timestamp' in edge['node']['publishTime'] else ''
+			addDir(edge['node']['name'], edge['node']['id'], 4, poster, None, None, infoLabels={'plot':'['+edge['node']['originTag']['name']+'] '+datum+edge['node']['perex'],'duration':edge['node']['duration'], 'rating': edge['node']['views']})
+
 def detailEpisode(id):
 	data = getUrl('https://api.televizeseznam.cz/graphql','{"operationName":"DetailEpisodeRequest","variables":{"id":"'+id+'"},"query":"query DetailEpisodeRequest($id: ID) {  episode(id: $id) {    __typename    ...EpisodeDetail  }}fragment EpisodeDetail on Episode {  __typename  id  dotId  name  duration  perex  publishTime {    __typename    timestamp  }  spl  isLive  originTag {    __typename    ...OriginTag  }  images {    __typename    ...Img  }  views  urlName  originUrl  commentsDisabled  downloadable  contextualFields {    __typename    lastVideoPositionSec  }  expirationTime {    __typename    timestamp  }}fragment OriginTag on Tag {  __typename  id  dotId  category  name  favouritesCount  urlName  originTag {    __typename    name  }  images {    __typename    ...Img  }}fragment Img on Image {  __typename  url  usage}"}')
 	if data.status_code != 200:
@@ -99,10 +114,11 @@ def Guide():
 	if 'data' not in jso or 'inGuideTags' not in jso['data'] or jso['data']['inGuideTags'] == None:
 		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru, zkuste to za chvilku', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
 		return False
-	addDir('[COLOR yellow]HLEDAT[/COLOR]', 'search', 9, None, 1)
-	addDir('[COLOR yellow]ŽIVĚ[/COLOR]', 'live', 8, None, 1)
-	addDir('[COLOR yellow]NEJNOVĚJŠÍ[/COLOR]', 'last', 7, None, 1)
-	addDir('[COLOR yellow]NEJSLEDOVANĚJŠÍ[/COLOR]', 'most', 10, None, 1)
+	addDir('[COLOR yellow]Hledat[/COLOR]', 'search', 9, None, 1)
+	addDir('[COLOR yellow]Živě[/COLOR]', 'live', 8, None, 1)
+	addDir('[COLOR yellow]Nejnovější[/COLOR]', 'last', 7, None, 1)
+	addDir('[COLOR yellow]Nejnovější Stream[/COLOR]', 'laststream', 11, None, 1)
+	addDir('[COLOR yellow]Nejsledovanější[/COLOR]', 'most', 10, None, 1)
 	if 'data' in jso and 'inGuideTags' in jso['data']:
 		guides = {}
 		for article in jso['data']['inGuideTags'] or []:
@@ -165,11 +181,14 @@ def videoLink(url):
 
 def Search():
 	query = client.getTextInput(session, 'Hledat')
-	if query is "": return False
+	if len(query) == 0:
+#		client.refresh_screen()
+		return
 	data = getUrl('https://api.televizeseznam.cz/graphql','{"operationName":"Search","variables":{"query":"'+query+'"},"query":"query Search($query: String) {  searchEpisode(query: $query, originalTagEpisodeLimit: 20) {    __typename    ...EpisodeDetail  }  searchTag(query: $query, originalTagEpisodeLimit: 20) {    __typename    ...OriginTag  }}fragment EpisodeDetail on Episode {  __typename  id  dotId  name  duration  perex  publishTime {    __typename    timestamp  }  spl  isLive  originTag {    __typename    ...OriginTag  }  images {    __typename    ...Img  }  views  urlName  originUrl  commentsDisabled  downloadable  contextualFields {    __typename    lastVideoPositionSec  }  expirationTime {    __typename    timestamp  }}fragment OriginTag on Tag {  __typename  id  dotId  category  name  favouritesCount  urlName  originTag {    __typename    name  }  images {    __typename    ...Img  }}fragment Img on Image {  __typename  url  usage}"}')
 	if data.status_code != 200:
-		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
-		return False
+#		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
+		client.showInfo('Chyba načítání dat ze serveru')
+		return
 	jso = json.loads(data.content)
 	if 'data' in jso and 'searchTag' in jso['data']:
 		for tag in jso['data']['searchTag']:
@@ -182,14 +201,16 @@ def Search():
 			poster = 'https:'+episode['images'][0]['url'] if 'images' in episode and 'url' in episode['images'][0] else None
 			datum = datetime.datetime.utcfromtimestamp(episode['publishTime']['timestamp']).strftime('%d.%m.%y %H:%M')+' - ' if 'publishTime' in episode and 'timestamp' in episode['publishTime'] else ''
 			addDir(episode['name'], episode['spl'], 5, poster, None, None, { 'plot': '['+episode['originTag']['name']+'] '+datum+episode['perex'], 'duration': episode['duration']})
-	else:
-		client.add_operation("SHOW_MSG", {'msg': 'Nic nenalezeno', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
-		return False
+#	else:
+#		client.add_operation("SHOW_MSG", {'msg': 'Nic nenalezeno', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
+	if len(client.GItem_lst[0]) == 0:
+		client.showInfo('Nic nenalezeno')
 
 def Live():
 	tcur = int(time.time())
-	tfrom = tcur-45000
-	tto = tcur+45000
+	tfrom = tcur-90000
+#	tto = tcur+45000
+	tto = tcur
 	data = getUrl('https://api.televizeseznam.cz/graphql','{"operationName":"Playout","variables":{"timeFrom":'+str(tfrom)+',"timeTo":'+str(tto)+'},"query":"query Playout($timeFrom: Int, $timeTo: Int) {  playout(timeFrom: $timeFrom, timeTo: $timeTo) {    __typename    ...Playout  }  playoutConfig {    __typename    status    selfPromo  }}fragment Playout on Playout {  __typename  id  dotId  start  end  epgStart  title  description  link  profile  internetExpiration  ads {    __typename    start    end  }  selfs {    __typename    start    end  }  jingles {    __typename    start    end  }  isRunning  vrplMode  noInternetAds  program  assetId  segB}"}')
 	if data.status_code != 200:
 		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat ze serveru', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
@@ -204,6 +225,7 @@ def Live():
 				addDir('[COLOR yellow]'+timestart+'-'+timeend+' ŽIVĚ - '+playout['title']+'[/COLOR]',playout['link']+'bw|',6,None,None,None,{'plot': epgstart+' - '+playout['description']})
 			else:
 				addDir(timestart+'-'+timeend+' '+playout['title'],playout['link'],6,None,None,None,{'plot': epgstart+' - '+playout['description']})
+	client.GItem_lst[0].reverse()
 
 def playLive(url):
 	data = getUrl(url+'spl2,4,EVENT')
@@ -270,5 +292,9 @@ elif mode==9:
 		Search()
 elif mode==10:
 		Most()
+elif mode==11:
+		LatestsStream()
 
-if len(client.GItem_lst[0]) == 0: addDir(None, '', 1, None)
+if len(client.GItem_lst[0]) == 0:
+#	addDir(None, '', 1, None)
+	client.showInfo('Nic nenalezeno')

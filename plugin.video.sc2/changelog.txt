@@ -1,4 +1,11 @@
-2020-07-19
+2020-07-31 [2.1.10]
+ * Menu na polozce filmu ci serialu nabidne prehrani Traileru
+ * V Nastaveni lze nastavit delsi timeout pokud server neodpovida vcas
+ * V Nastaveni lze vypnout zobrazeni Kodeku a Bitrate
+ * Zmena zobrazeni Studii, podle poctu videi sestupne, max. 500
+ * Opravy drobnych chyb
+
+2020-07-19 [2.1.9]
  * Menu na polozce filmu ci serialu nabidne Souvisejici nebo Podobne filmy a serialy
  * uprava parsovani vstupu
 
