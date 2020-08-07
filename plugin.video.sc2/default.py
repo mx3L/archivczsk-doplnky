@@ -163,7 +163,10 @@ def get_info(media,st=False):
 		dadded = ""
 	year = media['info_labels']['year'] if 'info_labels' in media and 'year' in media['info_labels'] else 0
 	if year == 0 and 'aired' in media['info_labels'] and media['info_labels']['aired']: year = media['info_labels']['aired'][0:4]
-	langs = (', '.join(media['available_streams']['audio_languages'])).upper() if 'available_streams' in media and 'audio_languages' in media['available_streams'] else ''
+	try:
+	    langs = (', '.join(media['available_streams']['audio_languages'])).upper()
+	except:
+	    langs = ''
 	if abc:
 		(m,v) = action_value[0].split(',')
 		tmp = {}

@@ -1,3 +1,6 @@
+2020-08-07 [2.1.11]
+ * Docasne reseni chyby po zmene na serveru
+
 2020-07-31 [2.1.10]
  * Menu na polozce filmu ci serialu nabidne prehrani Traileru
  * V Nastaveni lze nastavit delsi timeout pokud server neodpovida vcas
