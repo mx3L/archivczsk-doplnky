@@ -135,6 +135,8 @@
 	<string id="30258">By duration</string>
 	<string id="30259">By language</string>
 	<string id="30260">#</string>
+	<string id="30261">Trending</string>
+	<string id="30262">Most Watched</string>
 	<string id="30920">Season</string>
 	<string id="30921">Episode</string>
 	<string id="30300">Missing provider credentials</string>

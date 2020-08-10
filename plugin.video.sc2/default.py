@@ -10,6 +10,7 @@ from Plugins.Extensions.archivCZSK.engine.tools.util import unescapeHTML
 from Plugins.Extensions.archivCZSK.engine.client import add_dir, add_video
 from Plugins.Extensions.archivCZSK.engine import client
 from Components.config import config
+from Components.Language import language
 from md5crypt import md5crypt
 from bisect import bisect
 from const import country_lang, genre_lang, language_lang
@@ -25,6 +26,7 @@ UA2 = 'SCC Enigma2'
 AU2 = 'Basic asb6mnn72mqruo4v81tn'
 realm = ':Webshare:'
 base_url = ""
+lang_id=language.getLanguage()[:2]
 LOG_FILE = os.path.join(config.plugins.archivCZSK.logPath.getValue(),'sc2.log')
 langFilter = addon.getSetting('item_filter_lang')
 langs_pref = ['cs','sk','en']
@@ -164,18 +166,23 @@ def get_info(media,st=False):
 	year = media['info_labels']['year'] if 'info_labels' in media and 'year' in media['info_labels'] else 0
 	if year == 0 and 'aired' in media['info_labels'] and media['info_labels']['aired']: year = media['info_labels']['aired'][0:4]
 	try:
-	    langs = (', '.join(media['available_streams']['audio_languages'])).upper()
+		alangs = []
+		for lst in media['available_streams']['audio_languages']:
+			alangs.append(lst['lang'])
+		langs = (', '.join(alangs)).upper()
 	except:
-	    langs = ''
+		langs = ''
+	labels = {}
+	if 'i18n_info_labels' in media:
+		for label in media['i18n_info_labels']:
+			labels[label['lang']] = label
 	if abc:
 		(m,v) = action_value[0].split(',')
 		tmp = {}
 		title = ''
 		if 'i18n_info_labels' in media:
-			for label in media['i18n_info_labels']:
-				tmp[label['lang']] = label
 			for lang in langs_pref:
-				if title == '' and lang in tmp and 'title' in tmp[lang] and re.sub(r'[^a-z0-9]','',strip_accents(tmp[lang]['title']).lower())[:len(v)] == v.lower():
+				if title == '' and lang in labels and 'title' in labels[lang] and re.sub(r'[^a-z0-9]','',strip_accents(labels[lang]['title']).lower())[:len(v)] == v.lower():
 					title = tmp[lang]['title']
 		title = media['info_labels']['originaltitle'] if title == '' and 'info_labels' in media and 'originaltitle' in media['info_labels'] else title
 	else:
@@ -189,8 +196,13 @@ def get_info(media,st=False):
 			if genre in genre_lang: genreL.append(addon.getLocalizedString(genre_lang[genre]))
 			genres = ', '.join(genreL)
 	plot = '[' + genres + '] ' if genres else ""
-	plot += media['i18n_info_labels'][0]['plot'] if 'i18n_info_labels' in media and 'plot' in media['i18n_info_labels'][0] else ""
-	rating = media['i18n_info_labels'][0]['rating'] if 'i18n_info_labels' in media and 'rating' in media['i18n_info_labels'][0] else 0
+	rating = 0
+	poster = None
+	if lang_id in labels:
+		if 'plot' in labels[lang_id]: plot += labels[lang_id]['plot']
+		if 'rating' in labels[lang_id]: rating = labels[lang_id]['rating']
+		if 'art' in labels[lang_id] and 'poster' in labels[lang_id]['art'] and labels[lang_id]['art']['poster'] != "": poster = labels[lang_id]['art']['poster']
+	if poster is None and 'art' in labels['en'] and 'poster' in labels['en']['art'] and labels['en']['art']['poster'] != "": poster = labels['en']['art']['poster']
 	duration = media['info_labels']['duration'] if 'info_labels' in media and 'duration' in media['info_labels'] else 0
 	if duration == 0:
 		try: duration = media['streams'][0]['duration'] or 0
@@ -198,7 +210,6 @@ def get_info(media,st=False):
 	if duration == 0:
 		try: duration = media['stream_info']['video']['duration'] or 0
 		except:	pass
-	poster = media['i18n_info_labels'][0]['art']['poster'] if 'i18n_info_labels' in media and 'art' in media['i18n_info_labels'][0] and 'poster' in media['i18n_info_labels'][0]['art'] and media['i18n_info_labels'][0]['art']['poster'] != "" else None
 	if 'play_count' in media: plot += "{"+str(media['play_count'])+"}"
 	return {'title': title, 'plot': plot+dadded, 'rating': rating, 'duration': duration, 'poster': poster, 'year': year, 'genres': genres, 'langs': langs}
 
@@ -577,7 +588,9 @@ menu = {
 #		build_item(addon.getLocalizedString(30254), 'seen', 'seen'),
 	],
 	'movies': [
-		build_item(addon.getLocalizedString(30211), 'movies','popular'),
+		build_item(addon.getLocalizedString(30261), 'movies','trending'),
+		build_item(addon.getLocalizedString(30211), 'movies','popularity'),
+		build_item(addon.getLocalizedString(30262), 'movies','popular'),
 		build_item(addon.getLocalizedString(30136), 'movies','aired'),
 		build_item(addon.getLocalizedString(30139), 'movies','dubbed'),
 		build_item(addon.getLocalizedString(30137), 'movies','dateadded'),
@@ -589,7 +602,9 @@ menu = {
 		build_item(addon.getLocalizedString(30255), 'studios','movies')
 	],
 	'series': [
-		build_item(addon.getLocalizedString(30211), 'series','popular'),
+		build_item(addon.getLocalizedString(30261), 'series','trending'),
+		build_item(addon.getLocalizedString(30211), 'series','popularity'),
+		build_item(addon.getLocalizedString(30262), 'series','popular'),
 		build_item(addon.getLocalizedString(30136), 'series','aired'),
 		build_item(addon.getLocalizedString(30139), 'series','dubbed'),
 		build_item(addon.getLocalizedString(30137), 'series','dateadded'),
@@ -621,6 +636,10 @@ elif action[0] == 'movies' or action[0] == 'series':
 	mos = 'movie' if action[0] == 'movies' else 'tvshow'
 	if action_value[0] == 'popular':
 		data = get_media_data('/api/media/filter/all?sort=playCount&type=%s&order=desc&page=%s'%(mos,page),'')
+	elif action_value[0] == 'popularity':
+		data = get_media_data('/api/media/filter/all?sort=popularity&type=%s&order=desc&page=%s'%(mos,page),'')
+	elif action_value[0] == 'trending':
+		data = get_media_data('/api/media/filter/all?sort=trending&type=%s&order=desc&page=%s'%(mos,page),'')
 	elif action_value[0] == 'aired':
 		data = get_media_data('/api/media/filter/news?sort=dateAdded&type=%s&order=desc&days=365&page=%s'%(mos,page),'')
 	elif action_value[0] == 'dateadded':

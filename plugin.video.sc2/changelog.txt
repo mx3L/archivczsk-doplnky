@@ -1,3 +1,8 @@
+2020-08-10 [2.1.12]
+ * Oprava chyby nacitani jazyku
+ * Plakaty, popis a titulek se nyni nacita dle jazyka boxu (pokud neni, tak zkusi anglicky)
+ * Pridany Trendy a Nejsledovanejsi
+
 2020-08-07 [2.1.11]
  * Docasne reseni chyby po zmene na serveru
 
