@@ -1,6 +1,3 @@
 [submodule "plugin.video.joj.sk"]
 	path = plugin.video.joj.sk
 	url = https://github.com/mx3L/plugin.video.joj.sk.git
-[submodule "plugin.video.videacesky.cz"]
-	path = plugin.video.videacesky.cz
-	url = https://github.com/mx3L/plugin.video.videacesky.cz
