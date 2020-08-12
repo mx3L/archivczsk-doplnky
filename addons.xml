@@ -56,8 +56,8 @@
 </addon>
 
 <addon id="plugin.video.novaplus"
-       name="Nova Plus TV Archiv"
-       version="2.2.8"
+       name="Nova Plus TV"
+       version="2.2.9"
        provider-name="Michal Novotny, Jiri Vyhnalek">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
@@ -423,7 +423,7 @@
 
 <addon id="plugin.video.sc2"
        name="Stream Cinema Community"
-       version="2.1.12"
+       version="2.1.13"
        provider-name="hotshot.sk">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
