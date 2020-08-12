@@ -10,6 +10,7 @@ except ImportError:
 from parseutils import *
 from util import addDir, addLink, addSearch, getSearch
 from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
+from Plugins.Extensions.archivCZSK.engine.client import add_video
 
 __baseurl__ = 'http://novaplus.nova.cz'
 __dmdbase__ = 'http://iamm.uvadi.cz/xbmc/voyo/'
@@ -68,6 +69,11 @@ class loguj(object):
             print "####NOVAPLUS#### [" + type + "] " + msg
 
 def OBSAH():
+    addDir('ŽIVĚ - Nova','nova_avod',7,'https://upload.wikimedia.org/wikipedia/commons/2/2f/TV_Nova_logo_2017.png',1)
+    addDir('ŽIVĚ - Nova Cinema','nova_cinema_avod',7,'https://upload.wikimedia.org/wikipedia/commons/c/cd/Nova_Cinema_logo.png',1)
+    addDir('ŽIVĚ - Nova Action','nova_action_avod',7,'https://upload.wikimedia.org/wikipedia/commons/d/d2/Nova-action-logo-2017.png',1)
+    addDir('ŽIVĚ - Nova Gold','nova_gold_avod',7,'https://upload.wikimedia.org/wikipedia/commons/7/7f/Nova_Gold_logo.png',1)
+    addDir('ŽIVĚ - Nova 2','nova_2_avod',7,'https://upload.wikimedia.org/wikipedia/commons/3/34/Nova_2_logo-600x207.png',1)
     addDir('Úvodní stránka','http://novaplus.nova.cz/',6,icon,1)
     addDir('Seriály a pořady','http://novaplus.nova.cz/porady/',5,icon,1)
     addDir('Televizní noviny','http://novaplus.nova.cz/porad/televizni-noviny',2,icon,1)
@@ -247,6 +253,9 @@ def VIDEOLINK(url,name):    # rewrite by MN
         thumb = None
         addDir(title.replace('&nbsp;', ' '),url,2,thumb,1)
 
+def LIVE(url):
+    add_video(name,'https://nova-live.ssl.cdn.cra.cz/channels/'+url+'/playlist/cze.m3u8',live=True)
+
 url=None
 name=None
 thumb=None
@@ -283,3 +292,5 @@ elif mode==2:
         #VIDEOLINK(url, page)
 elif mode==3:
         VIDEOLINK(url,page)
+elif mode==7:
+        LIVE(url)

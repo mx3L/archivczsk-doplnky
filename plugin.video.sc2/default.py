@@ -23,7 +23,8 @@ hotshot_url = 'https://plugin.sc2.zone'
 ws_api = 'https://webshare.cz/api'
 UA = "KODI/18.6 (Windows; U; Windows NT; en) ver1.3.26"
 UA2 = 'SCC Enigma2'
-AU2 = 'Basic asb6mnn72mqruo4v81tn'
+TK = 'asb6mnn72mqruo4v81tn'
+AU2 = 'Basic '+TK
 realm = ':Webshare:'
 base_url = ""
 lang_id=language.getLanguage()[:2]
@@ -93,6 +94,8 @@ def get_stream_url(ident):
 
 def api_request(url,post_data=''):
 	url = hotshot_url + url
+	if '?' in url: url = url + '&access_token=' + TK
+	else: url = url + '?access_token=' + TK
 	try:
 		data = requests.get(url=url, data=post_data, headers={'User-Agent': UA2, 'Authorization': AU2, 'X-Uuid': xuuid, 'Content-Type': 'application/json'}, timeout=loading_timeout)
 		if data.status_code != 200:
@@ -178,12 +181,11 @@ def get_info(media,st=False):
 			labels[label['lang']] = label
 	if abc:
 		(m,v) = action_value[0].split(',')
-		tmp = {}
 		title = ''
 		if 'i18n_info_labels' in media:
 			for lang in langs_pref:
 				if title == '' and lang in labels and 'title' in labels[lang] and re.sub(r'[^a-z0-9]','',strip_accents(labels[lang]['title']).lower())[:len(v)] == v.lower():
-					title = tmp[lang]['title']
+					title = labels[lang]['title']
 		title = media['info_labels']['originaltitle'] if title == '' and 'info_labels' in media and 'originaltitle' in media['info_labels'] else title
 	else:
 		title = media['i18n_info_labels'][0]['title'] if 'i18n_info_labels' in media and 'title' in media['i18n_info_labels'][0] else ""
@@ -335,7 +337,7 @@ def process_seasons(mediaList):
 		else:
 			addDir(title+info['title'], build_plugin_url({ 'action': 'series.streams', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year'], 'genre': info['genres']})
 
-def process_movies_series(mediaList):
+def process_movies_series(mediaList,sort=0):
 	for media in mediaList:
 		if isExplicit(media['_source']): continue
 		if isFilterLang(media['_source']): continue
@@ -354,7 +356,7 @@ def process_movies_series(mediaList):
 			addDir(info['title'], build_plugin_url({ 'action': 'seasons', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year'], 'genre': info['genres']}, menuItems=cmenuItems)
 		else:
 			addDir(info['title'], build_plugin_url({ 'action': 'movies.streams', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year'], 'genre': info['genres']}, menuItems=cmenuItems)
-	if abc: client.GItem_lst[0].sort(key=lambda x:strip_accents(x.name))
+	if abc or sort==1: client.GItem_lst[0].sort(key=lambda x:strip_accents(x.name))
 
 def process_genres(mediaList):
 	genres = {}
@@ -484,8 +486,9 @@ def play_trailer(turl):
 #		client.refresh_screen()
 
 def get_csfd_api(url):
+	cookies = {'tv_stations':'2%2C3%2C4%2C5%2C24%2C19%2C26%2C33%2C16%2C78%2C1%2C8%2C93%2C13%2C22%2C14%2C41%2C88','tv_tips_order':'rating'}
 	headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:75.0) Gecko/20100101 Firefox/75.0'}
-	result = requests.get('https://www.csfd.cz'+url, headers=headers, timeout=loading_timeout, verify=False)
+	result = requests.get('https://www.csfd.cz'+url, headers=headers, cookies=cookies, timeout=loading_timeout, verify=False)
 	if result.status_code != 200:
 		client.add_operation("SHOW_MSG", {'msg': addon.getLocalizedString(30500), 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
 		return None
@@ -495,13 +498,15 @@ def get_csfd_tips():
 	html = get_csfd_api('/televize/')
 	if html:
 		data = re.search('<ul class="content ui-image-list">(.*?)</ul>', html, re.S)
-		if data:
+		try:
 			articles = re.findall('<img src="(.*?)\?.*?<a href="/film/([0-9]+?)-.*?>(.*?)<.*?film-year.*?>\((.*?)\).*?<p>(.*?)<', data.group(1), re.S)
 			vals=[]
 			for article in articles:
 				vals.append("value="+article[1])
 			data = get_media_data('/api/media/filter/service?type=movie&'+'&'.join(vals)+'&service=csfd','')
 			if 'data' in data: process_movies_series(data['data'])
+		except:
+			pass
 
 def get_related(cid):
 	html = get_csfd_api('/film/'+str(cid))
@@ -525,7 +530,6 @@ def get_similar(cid):
 			for article in articles:
 				vals.append("value="+article)
 			data = get_media_data('/api/media/filter/service?type=movie&'+'&'.join(vals)+'&service=csfd','')
-#			writeLog(json.dumps(data))
 			if 'data' in data: process_movies_series(data['data'])
 
 
