@@ -1,3 +1,5 @@
+[B]1.3.14:[/B]
+- listing fix
 [B]1.3.4a:[/B]
 - prevod na Enigmu (misanov)
 [B]1.3.4:[/B]

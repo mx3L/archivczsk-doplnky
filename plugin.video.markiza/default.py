@@ -64,7 +64,7 @@ class loguj(object):
             print "####MARKIZA#### [" + type + "] " + msg
 
 def fetchUrl(url):
-#    loguj.logInfo("fetchUrl " + url)
+    loguj.logInfo("fetchUrl " + url)
     httpdata = ''	
     req = urllib2.Request(url)
     req.add_header('User-Agent', _UserAgent_)
@@ -116,7 +116,7 @@ def HOME_POSLEDNI(url):
     doc = read_page(url)
 
     for section in doc.findAll('section', 'b-main-section'):
-        if section.div.h3 and section.div.h3.getText(" ").encode('utf-8') == 'Najnovšie epizódy':
+        if section.div.h3 and section.div.h3.getText(" ").encode('utf-8') == 'NAJNOVŠIE EPIZÓDY':
             for article in section.findAll('article'):
                 url = article.a['href'].encode('utf-8')
                 title = article.a.find('div', {'class': 'e-info'}).getText(" ").encode('utf-8')
@@ -127,7 +127,7 @@ def HOME_TOPPORADY(url):
     doc = read_page(url)
 
     for section in doc.findAll('section', 'b-main-section my-5'):
-        if section.div.h3.getText(" ").encode('utf-8') == 'TOP relácie':
+        if section.div.h3.getText(" ").encode('utf-8') == 'TOP RELÁCIE':
             for article in section.findAll('article'):
                 url = article.a['href'].encode('utf-8')
                 title = article.a['title'].encode('utf-8')
