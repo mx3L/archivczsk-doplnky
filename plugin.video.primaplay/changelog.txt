@@ -1,3 +1,6 @@
+2020-08-31 [0.4.11] (misanov)
+ * Uprava zmen na CNN webu
+
 2020-07-17 [0.4.10] (misanov)
  * Fix parse seasons
 

@@ -196,9 +196,9 @@ def get_cnn_videos(link):
 def resolve_videos(link):
     if 'cnn' in link and '/vysilani' not in link:
         content = _play_parser.get_data_cached(link, _play_parser.useCache, 1)
-        prodId = re.search("playerId: 'player-(.*?)'", content, re.S)
+        prodId = re.search("\"embedUrl\":\".*?/([0-9]+)\"", content, re.S)
         if prodId:
-            product_id = prodId.group(1)
+            product_id = "p"+prodId.group(1)
         else:
             return None
     else:
