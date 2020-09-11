@@ -1,10 +1,16 @@
-2019-03-06 verzia 1.3.9
-	- fix by @hansolo
-
+[B]1.3.11[/B]
+- some fixes (misanov)
+[B]1.3.10[/B]
+- fix images
+[B]1.3.9[/B]
+- drop doublequotes from quality selection
+- fix joj archive
 [B]1.3.8[/B]
-- fixed video resolving
+- fix episodes listing (i.e. Za sklom 1.season)
 [B]1.3.7[/B]
-- zobrazovanie datummu vysielania
+- fix video listing
+[B]1.3.6[/B]
+- fix subtitle parsing
 [B]1.3.5[/B]
 - fix listing, thanks to @petzah
 [B]1.3.4[/B]
