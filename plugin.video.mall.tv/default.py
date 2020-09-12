@@ -19,9 +19,10 @@ except ImportError:
     import md5
 
 from parseutils import *
-from util import addDir, addLink, addSearch, getSearch
+from util import addDir, addSearch, getSearch
 from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
 from Plugins.Extensions.archivCZSK.engine.tools.util import unescapeHTML
+from Plugins.Extensions.archivCZSK.engine.client import add_video
 
 _UserAgent_ = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:60.0) Gecko/20100101 Firefox/60.0'
 addon =  ArchivCZSK.get_xbmc_addon('plugin.video.mall.tv')
@@ -68,15 +69,15 @@ class loguj(object):
             pass
 
 def get_url(url):
-    req = urllib2.Request(url)
-    req.add_header('User-Agent', _UserAgent_)
-    req.add_header('Set-Cookie', '_selectedLanguage='+lang)
-    response = urllib2.urlopen(req)
-    data=response.read()
-    response.close()
-    return data
+	headers = {'User-Agent': _UserAgent_, 'Set-Cookie': '_selectedLanguage='+lang}
+	result = requests.get(url, headers=headers, timeout=15, verify=False)
+	if result.status_code != 200:
+		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
+		return ""
+	return result.content
 
 def OBSAH():
+    addDir('Živá vysílání',"#",7,icon,2)
     addDir('SlowTV - Nonstop živě',"#",7,icon,4)
     addDir('Odvysílaná živá vysílání',"#",7,icon,3)
     addDir('Připravovaná živá vysílání',"#",7,icon,1)
@@ -190,22 +191,25 @@ def VIDEOLINK(url):
     html = get_url(url)
 
     try:
-        title = re.search('<meta property=og:title content="(.*?)"', html, re.S).group(1)
+        title = re.search('<meta property=og:title content=["]*(.*?)["]*>', html, re.S).group(1)
     except:
         title = ""
     try:
-        image = re.search('<meta property=og:image content="(.*?)"', html, re.S).group(1)
+        image = re.search('<meta property=og:image content=["]*(.*?)["]*>', html, re.S).group(1)
     except:
         image = None
     try:
-        descr = re.search('<meta property=og:description content="(.*?)"', html, re.S).group(1)
+        descr = re.search('<meta property=og:description content=["]*(.*?)["]*>', html, re.S).group(1)
     except:
         descr = ""
     try:
         src = re.search('source src=(.*?) ', html, re.S).group(1)+'.m3u8'
-        addLink(title,src,image,descr)
+        if src[0:2] == '//':
+            src = 'http:'+src
+#        add_video(title,src.replace('https','http'),None,image.replace('https','http'),infoLabels={'plot':descr})
+        add_video(title,src,None,image,infoLabels={'plot':descr})
     except:
-        addLink("[COLOR red]Video nelze načíst[/COLOR]","#",None,None)
+        add_video("[COLOR red]Video nelze načíst[/COLOR]","#",None,None)
 
 
 name=None
