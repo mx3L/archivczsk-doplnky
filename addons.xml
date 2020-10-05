@@ -46,7 +46,7 @@
 
 <addon id="plugin.video.orangetv"
        name="OrangeTV"
-       version="1.0"
+       version="1.1"
        provider-name="Michal Novotný, Štěpán Ort">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
@@ -397,6 +397,25 @@
     <description>Plugin to play video archive.</description>
     <description lang="cs">Plugin pro přehrávání videí.</description>
     <description lang="sk">Plugin pre prehravanie videí.</description>
+  </extension>
+</addon>
+
+<addon id="plugin.video.sledovanitv"
+       name="Sledovani.tv"
+       version="1.0"
+       provider-name="misanov">
+  <requires>
+    <import addon="xbmc.python" version="2.1.0"/>
+    <import addon="script.module.stream.resolver" version="1.6.25" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <summary>Sledovani.tv</summary>
+    <description>Plugin to play from sledovani.tv</description>
+    <description lang="cs">Plugin pro přehrávání videí ze sledovani.tv</description>
   </extension>
 </addon>
 
