@@ -1,219 +1,197 @@
-# -*- coding: utf-8 -*-
-import urllib2,urllib,re,os
-
-__baseurl__ = 'http://tv.sme.sk'
-_UserAgent_ = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'
-
+# -*- coding: UTF-8 -*-
+# /*
+# *  Copyright (C) 2020 Michal Novotny https://github.com/misanov
+# *
+# *
+# *  This Program is free software; you can redistribute it and/or modify
+# *  it under the terms of the GNU General Public License as published by
+# *  the Free Software Foundation; either version 2, or (at your option)
+# *  any later version.
+# *
+# *  This Program is distributed in the hope that it will be useful,
+# *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+# *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# *  GNU General Public License for more details.
+# *
+# *  You should have received a copy of the GNU General Public License
+# *  along with this program; see the file COPYING.  If not, write to
+# *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+# *  http://www.gnu.org/copyleft/gpl.html
+# *
+# */
 from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
-from Plugins.Extensions.archivCZSK.engine.client import add_dir, add_video
-from Plugins.Extensions.archivCZSK.engine.client import log as ACZSKLog
+from Plugins.Extensions.archivCZSK.engine.tools.util import toString
+from Plugins.Extensions.archivCZSK.engine import client
 
-def addDir(name, url, mode, image, page=None, kanal=None, infoLabels={}, menuItems={}, video_item=False):
-    params = {'name':name, 'url':url, 'mode':mode, 'page':page, 'kanal':kanal}
-    add_dir(name, params, image, infoLabels=infoLabels, menuItems=menuItems, video_item = video_item)
+import cookielib
+import urllib2
+import urlparse
+import re
+import rfc822, time
+import util,resolver
+from provider import ContentProvider
+from provider import ResolveException
+import xbmcprovider
+import util
+from xml.etree import ElementTree as ET
 
-def addLink(name, url, image, *args, **kwargs):
-    add_video(name, url, None, image)
+class TVSMEContentProvider(ContentProvider):
 
-import HTMLParser
-from datetime import datetime,timedelta
+	def __init__(self, username=None, password=None, filter=None, tmp_dir='/tmp'):
+		ContentProvider.__init__(self, 'TV SME.sk', 'https://video.sme.sk/', username, password, filter, tmp_dir)
+		self.cp = urllib2.HTTPCookieProcessor(cookielib.LWPCookieJar())
+		self.init_urllib()
 
-__baseurl__ = 'http://tv.sme.sk'
-__piano_d__ = '?piano_d=1'
-__addon__ = ArchivCZSK.get_xbmc_addon('plugin.video.tv.sme.sk')
-__cwd__ = __addon__.getAddonInfo('path')
-__scriptname__ = 'plugin.video.tv.sme.sk'
-icon = os.path.join(__cwd__, 'icon.png')
-nexticon = os.path.join(__cwd__, 'nextpage.png') 
-video_quality = int(__addon__.getSetting('quality'))
+	def init_urllib(self):
+		opener = urllib2.build_opener(self.cp)
+		urllib2.install_opener(opener)
 
-VQ_SELECT = 0
-VQ_SD = 1
-VQ_HD = 2
+	def capabilities(self):
+		return ['categories', 'resolve', '!download']
 
+	def categories(self):
+		result = []
+		result.append(self.dir_item('Najnovšie videá', self.base_url+'rss'))
+		result.append(self.dir_item('Spravodajstvo', self.base_url+'r/7026/spravodajstvo.html'))
+		result.append(self.dir_item('Publicistika', self.base_url+'r/7028/publicistika.html'))
+		result.append(self.dir_item('Zábava', self.base_url+'r/7031/zabava.html'))
+		result.append(self.dir_item('Zoznam relácií', self.base_url+'relacie/'))
+		result.append(self.dir_item('Hledat', self.base_url+'search?'))
+		return result
 
-def log(msg, level='debug'):
-	if type(msg).__name__=='unicode':
-		msg = msg.encode('utf-8','ignore')
-	if level == 'debug':
-		logfnc = ACZSKLog.debug
-	else:
-		logfnc = ACZSKLog.error
-	logfnc("[%s] %s"%(__scriptname__,msg))
+	def list(self, url):
+		result = []
+		# najnovsie
+		if 'rss' in url:
+			xml = ET.fromstring(util.request(url))
+			for i in xml.find('channel').findall('item'):
+				item = self.video_item()
+				item['title'] = toString(i.find('title').text).strip().replace('(video)','')
+				item['url'] = i.find('link').text
+				item['img'] = i.find('enclosure').attrib['url']
+				item['plot'] = time.strftime('%d.%m.%Y %H:%M:%S',time.localtime(rfc822.mktime_tz(rfc822.parsedate_tz(i.find('pubDate').text)))) + ' - ' + i.find('description').text
+				self._filter(result, item)
+			return result
 
-def logDbg(msg):
-	log(msg,level='debug')
+		# hledat
+		if 'search?' in url:
+			query = client.getTextInput(session, "Hledat")
+			if len(query) == 0:
+#				showError("Je potřeba zadat vyhledávaný řetězec")
+#				result.append(self.video_item('Je potřeba zadat vyhledávaný řetězec','#'))
+				return []
+			httpdata = util.request(self.base_url+'search?q='+query+'&period=180&order=date')
+			items = re.compile(u'<div class=\".+?media-two-cols\">.+?<a href="(.+?)">(.+?)</a>.+?<img src="(.+?)".+?alt="(.*?)"', re.DOTALL).findall(httpdata)
+			for link,name,img,plot in items:
+				print link,name,img,plot
+				item = self.video_item()
+				item['title'] = name
+				item['url'] = link
+				item['img'] = img
+				item['plot'] = plot
+				result.append(item)
+			return result
 
-def logErr(msg):
-	log(msg,level='error')
+		# zoznam relacii
+		if 'relacie' in url:
+			httpdata = util.request(url)
+			items = re.compile(u'<div class=\"col-sm col-3-sm px-s px-m-mo\">.+?<a href="(.+?)" title="(.+?)" class="tvshows-item">.+?<img src="(.+?)"', re.DOTALL).findall(httpdata)
+			for link,name,img in items:
+				result.append(self.dir_item(name,link))
+			return result
 
-def getDataFromUrl(url):
-	req = urllib2.Request(url)
-	req.add_header('User-Agent', 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3')
-	response = urllib2.urlopen(req)
-	data = response.read()
-	response.close()
-	return data
-
-def getHtmlFromUrl(url):
-	return getDataFromUrl(url).decode("windows-1250")
-
-def getXmlFromUrl(url):
-	return getDataFromUrl(url).decode("utf-8")
-
-def listCategories():
-	logDbg("listCategories()")
-	addDir(u'[B]Všetky videá[/B]',__baseurl__+'/hs/',3,icon,'')
-	addDir(u'[B]Spravodajské[/B]',__baseurl__+'/vr/118/spravodajske/',3,icon,'')
-	addDir(u'[B]Publicistické[/B]',__baseurl__+'/vr/117/publicisticke/',3,icon,'')
-	addDir(u'[B]Zábavné[/B]',__baseurl__+'/vr/119/zabavne/',3,icon,'')
-	addDir(u'[B]Zoznam relácií (aktívne)[/B]',__baseurl__+'/relacie/',1,icon,'')
-	addDir(u'[B]Zoznam relácií (archív)[/B]',__baseurl__+'/relacie/',2,icon,'')
-
-def listShows(url,section):
-	logDbg("listShows("+section+")")
-	httpdata = getHtmlFromUrl(url)
-	match = re.compile(u'<h2 class="light">'+section+'</h2>(.+?)<div class="cb"></div></div>', re.DOTALL).findall(httpdata)
-	if match:
-		items = re.compile('img src="(.*?)" alt=.+?<h2><a href="(.+?)">(.+?)</a></h2>', re.DOTALL).findall(match[0])
-		for img,link,name in items:
-			link = __baseurl__+link
-			addDir(name,link,3,img,'')
-	else:
-		logErr("List of TV shows not found!")
-
-def listEpisodes(url):
-	logDbg("listEpisodes()")
-	httpdata = getHtmlFromUrl(url)
-	match = re.compile('<div class="list">(.+?)<div id="otherartw" class="pages"', re.DOTALL).findall(httpdata)
-	if match:
-		items = re.compile('src="(.*?)" alt=.+?<h2>.*?<a href="(.+?)">(.+?)</a>.+?<div class="time">(.+?)</div>(.*?)</div>', re.DOTALL).findall(match[0])
-		for img,link,name,date,desc in items:
-			link = __baseurl__+link
-			# remove new lines
-			desc=desc.replace("\n", "")
-			if len(desc):
-				match = re.compile('<p>(.+?)</p>', re.DOTALL).findall(desc)
-				if match:
-					desc = match[0]
-					# remove optional <span>...</span> tag
-					if "<span" in desc:
-						match = re.compile('<span.*</span>(.*)', re.DOTALL).findall(desc)
-						if match:
-							desc = match[0]
-							logDbg("new desc: "+desc)
-			addDir('('+date+') '+name,link,5,img,desc, video_item=True)
-		items = re.compile('<div class="otherart r"><h5><a href="(.+?)">(.+?)</a>', re.DOTALL).findall(httpdata)
-		if items:
-			link, name = items[0]
-			link = __baseurl__+link
-			h = HTMLParser.HTMLParser()
-			addDir('[B]'+h.unescape(name)+'[/B]',link,3,nexticon,'')
-	else:
-		logErr("List of episodes not found!")
-
-def getVideoUrl(url):
-	logDbg("getVideoUrl()")
-	logDbg("\tPage url="+url)
-	httpdata = getHtmlFromUrl(url)
-	match = re.compile('_fn\(t\)(.+?)</script>', re.DOTALL).findall(httpdata)
-	if match:
-		items = re.compile('var rev=(.+?);.+?"file", escape\("(.+?)"\+ rev \+"(.+?)"\)\);', re.DOTALL).findall(match[0])
-		if items:
-			rev,link1,link2 = items[0]
-			link = link1+str(rev)+link2
-			logDbg("\tPlaylist url="+link)
-			xmldata = getXmlFromUrl(link)
-			item = re.compile('<title>(.+?)</title>.+?<location>(.+?)</location>.+?<image>(.+?)</image>', re.DOTALL).findall(xmldata)
-			if item:
-				title, link, img = item[0]
-				logDbg("\tVideo url="+link)
-				return link
+		# episody
+		httpdata = util.request(url)
+		beg_idx=httpdata.find('class="video-row')
+		end_idx=httpdata.find('id="js-paging"')
+		data=httpdata[beg_idx:end_idx]
+		pattern = re.compile('data-deep-tags=\"position-[0-9]+\" class=\"video-box-tile\".+?href=\"(.+?)\">.+?<img class=\"video-box-tile-img\" src=\"(.+?)\".+?>.+?<h2.*?>(.+?)</h2>.+?<span class=\"media-box-author.*?>(.+?)</span>.+?(?:(?:<time datetime=\"(.+?)\">)|(?:</a>.+?<a))', re.DOTALL)
+		it = re.finditer(pattern,data)
+		for item in it:
+			link,img,title,authors,duration = item.groups()
+			item = self.video_item()
+			item['title'] = toString(title.strip().replace('(video)',''))
+			item['url'] = link
+			item['img'] = img
+			item['plot'] = duration
+			self._filter(result, item)
+		nextlink=re.compile('<link rel=\"next\" href=\"(.+?)\">', re.DOTALL).search(httpdata)
+		if nextlink:
+			if not nextlink.group(1).startswith('http'):
+				url=self.base_url+nextlink.group(1)[1:]
 			else:
-				logErr("Video location not found!")
-		else:
-			logErr("Video informations not found!")
-	else:
-		logErr("Player script not found!")
-	return None
+				url=nextlink.group(1)
+			result.append(self.dir_item('Nasledujúce články',url))
+		return result
 
-def playEpisode(url1):
-	logDbg("playEpisode()")
-	logDbg("\turl="+url1)
-	logDbg("\tVideo quality: "+str(video_quality))
-	url1_is_hd = False
-	url2 = ''
-	httpdata = getHtmlFromUrl(url1+__piano_d__)
-	match = re.compile('<div class="v-podcast-box js-v-podcast-box">(.+?)<div class="(?:v-clanok|v-perex)">', re.DOTALL).findall(httpdata)
-	if match:
-		items = re.compile('</label><a href="(.+?)" class="hd-btn(.+?)"></a>', re.DOTALL).findall(match[0])
-		if items:
-			url2, hd_btn_off = items[0]
-			url2 = __baseurl__ + url2
-			if len(hd_btn_off) == 0:
-				url1_is_hd = True
-		else:
-			logDbg("Alternative video quality not found.")
-	else:
-		logErr("podcast-box not found!")
-	
-	if len(url2):
-		if url1_is_hd:
-			url_sd=url2
-			url_hd=url1
-		else:
-			url_sd=url1
-			url_hd=url2
-		logDbg("\tHD URL: "+url_hd)
-		logDbg("\tSD URL: "+url_sd)
-		if video_quality == VQ_SELECT:
-			addLink('[HD] ' + name , getVideoUrl(url_hd + __piano_d__), None)
-			addLink('[SD] ' + name , getVideoUrl(url_sd + __piano_d__), None)
-		elif video_quality == VQ_SD:
-			addLink('[SD] ' + name , getVideoUrl(url_sd + __piano_d__), None)
-		else:
-			addLink('[HD] ' + name , getVideoUrl(url_hd + __piano_d__), None)
-	else:
-		addLink('[HD] ' + name , getVideoUrl(url1 + __piano_d__), None)
-	return
-url=None
-name=None
-desc=None
-mode=None
+	def resolve(self, item, captcha_cb=None, select_cb=None):
+		item = item.copy()
+		result = []
+		data = util.request(self._url(item['url']))
+		try:
+			video_id = re.search("//cdn.jwplayer.com/players/([a-zA-Z0-9]*)", data, re.DOTALL).group(1)
+		except:
+			match = re.compile(r'<iframe src=\"//www\.youtube\.com/embed/(.+?)\"', re.DOTALL).search(data)
+			if match:
+				return self._getYT('https://www.youtube.com/watch?v='+match.group(1))
+			else:
+				match = re.compile(r'<iframe src=\"//(.*?sme\.sk/vp/.+?)\"', re.DOTALL).search(data)
+				if match:
+					data = util.request(self._url('http://'+match.group(1)))
+					match = re.compile(r'<iframe src=\"//www\.youtube\.com/embed/(.+?)\"', re.DOTALL).search(data)
+					if match:
+						return self._getYT('https://www.youtube.com/watch?v='+match.group(1))
+					else:
+						raise ResolveException('Video nenalezeno')
+				else:
+					raise ResolveException('Video nenalezeno')
+		manifest_url = "http://cdn.jwplayer.com/manifests/" + video_id + ".m3u8"
+		manifest = util.request(manifest_url)
+		for m in re.finditer('#EXT-X-STREAM-INF:PROGRAM-ID=\d+,BANDWIDTH=(?P<bandwidth>\d+),RESOLUTION=\d+x(?P<resolution>\d+),.*?\s(?P<chunklist>[^\s]+)', manifest, re.DOTALL):
+			item = self.video_item()
+			item['surl'] = item['title']
+			item['quality'] = m.group('resolution')
+			item['url'] = urlparse.urljoin(manifest_url, m.group('chunklist'))
+			result.append(item)
+		result = sorted(result, key=lambda x:int(x['quality']), reverse=True)
+		for idx, item in enumerate(result):
+			item['quality'] += "p"
+		if len(result) > 0 and select_cb:
+			return select_cb(result)
+		return result
 
-try:
-	url=urllib.unquote_plus(params["url"])
-except:
-	pass
-try:
-	name=urllib.unquote_plus(params["name"])
-except:
-	pass
-try:
-	mode=int(params["mode"])
-except:
-	pass
-try:
-	desc=urllib.unquote_plus(params["desc"])
-except:
-	pass
+	def _getYT(self, url):
+		print url
+		result = []
+		video_formats = client.getVideoFormats(url)
+		video_url = [video_formats[-1]]
+		print 'videourl:', video_url[:]
+		if not video_url[:]:
+			raise ResolveException('Video nenalezeno')
+		i = video_url[:][0]
+		item = self.video_item()
+		try:
+			item['title'] = i['title']
+		except KeyError:
+			pass
+		item['url'] = i['url']
+		item['quality'] = i['format_note']
+		item['headers'] = {}
+		try:
+			item['fmt'] = i['fmt']
+		except KeyError:
+			pass
+		result.append(item)
+		return result
 
-logDbg("Mode: "+str(mode))
-logDbg("URL: "+str(url))
-#logDbg("Name: "+str(name))
-logDbg("Desc: "+str(desc))
 
-if mode==None or url==None or len(url)<1:
-	listCategories()
-	
-elif mode==1:
-	listShows(url,u'Aktívne')
+__scriptid__ = 'plugin.video.tv.sme.sk'
+__scriptname__ = 'TV SME.sk'
+__addon__ = ArchivCZSK.get_xbmc_addon(__scriptid__)
+__language__ = __addon__.getLocalizedString
 
-elif mode==2:
-	listShows(url,u'Archív')
+settings = {'quality':__addon__.getSetting('quality')}
 
-elif mode==3:
-	listEpisodes(url)
+provider = TVSMEContentProvider(tmp_dir='/tmp')
 
-elif mode==5:
-	playEpisode(url)
+xbmcprovider.XBMCMultiResolverContentProvider(provider, settings, __addon__, session).run(params)
