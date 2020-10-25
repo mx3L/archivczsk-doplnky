@@ -9,20 +9,11 @@
 # Free for non-commercial use under author's permissions
 # Credits must be used
 
-import urllib2,urllib,re,sys,os,string,time,base64,datetime,json,aes,requests
-import email.utils as eut
-from urlparse import urlparse, urlunparse, parse_qs
+import os, re, urllib, datetime, requests
 from Components.config import config
-try:
-    import hashlib
-except ImportError:
-    import md5
-
-from parseutils import *
-from util import addDir, addSearch, getSearch
 from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
 from Plugins.Extensions.archivCZSK.engine.tools.util import unescapeHTML
-from Plugins.Extensions.archivCZSK.engine.client import add_video
+from Plugins.Extensions.archivCZSK.engine.client import add_video, add_dir
 
 _UserAgent_ = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:60.0) Gecko/20100101 Firefox/60.0'
 addon =  ArchivCZSK.get_xbmc_addon('plugin.video.mall.tv')
@@ -67,6 +58,10 @@ class loguj(object):
             f.close()
         except:
             pass
+
+def addDir(name, url, mode, image, page=None, kanal=None, infoLabels={}, menuItems={}):
+	params = {'name':name, 'url':url, 'mode':mode, 'page':page, 'kanal':kanal}
+	add_dir(name, params, image, infoLabels=infoLabels, menuItems=menuItems)
 
 def get_url(url):
 	headers = {'User-Agent': _UserAgent_, 'Set-Cookie': '_selectedLanguage='+lang}
@@ -178,9 +173,11 @@ def VIDEA(sid):
         if not html:
             break
         data = re.findall('video-card .*?href=(.*?) .*?title="(.*?)".*?data-img=(.*?) ', html, re.S)
+#        data = re.findall('video-card .*?href=(.*?) .*?title="(.*?)".*?data-img=(.*?) .*?video-duration.*?>(.*?)<.*?video-card__info .*?title="(.*?)"', html, re.S)
         if data:
             for item in data:
                 addDir(unescapeHTML(item[1]),item[0],9,item[2],1)
+#                addDir(unescapeHTML(item[1]),item[0],9,item[2],1,infoLabels={'plot':item[3]+' '+item[4]})
         if strana >= celkem:
             break
         strana+=1
@@ -191,26 +188,28 @@ def VIDEOLINK(url):
     html = get_url(url)
 
     try:
-        title = re.search('<meta property=og:title content=["]*(.*?)["]*>', html, re.S).group(1)
+        title = re.search('<meta property=og:title content=["]*(.*?)["]* />', html, re.S).group(1)
     except:
         title = ""
     try:
-        image = re.search('<meta property=og:image content=["]*(.*?)["]*>', html, re.S).group(1)
+        image = re.search('<meta property=og:image content=["]*(.*?)["]* />', html, re.S).group(1)
     except:
         image = None
     try:
-        descr = re.search('<meta property=og:description content=["]*(.*?)["]*>', html, re.S).group(1)
+        descr = re.search('<meta property=og:description content=["]*(.*?)["]* />', html, re.S).group(1).replace("\n", "").replace("\r", "")
     except:
         descr = ""
     try:
-        src = re.search('source src=(.*?) ', html, re.S).group(1)+'.m3u8'
+        src = re.search('VideoSource":"(.*?)"', html, re.S).group(1)
         if src[0:2] == '//':
             src = 'http:'+src
-#        add_video(title,src.replace('https','http'),None,image.replace('https','http'),infoLabels={'plot':descr})
-        add_video(title,src,None,image,infoLabels={'plot':descr})
+        if src == '':
+            add_video("[COLOR red]Video zatím neexistuje[/COLOR]","#",None,None)
+        else:
+            add_video(title,src+'.m3u8',None,image,infoLabels={'plot':descr})
+        print src
     except:
         add_video("[COLOR red]Video nelze načíst[/COLOR]","#",None,None)
-
 
 name=None
 url=None
