@@ -532,6 +532,36 @@ def get_similar(cid):
 			data = get_media_data('/api/media/filter/service?type=movie&'+'&'.join(vals)+'&service=csfd','')
 			if 'data' in data: process_movies_series(data['data'])
 
+def get_csfd_tops(origin):
+	if origin>0:
+		html = get_csfd_api('/zebricky/specificky-vyber/?type=3&origin='+str(origin)+'&genre=&year_from=&year_to=&actor=&director=&ok=Zobrazit&_form_=charts&show=complete')
+	else:
+		html = get_csfd_api('/zebricky/nejlepsi-serialy/?show=complete')
+	if html:
+		data = re.search('<table class="content.*?>(.*?)</table>', html, re.S)
+		if data:
+			articles = re.findall('<a href="/film/([0-9]+?)\-.*?"', data.group(1), re.S)
+			vals=[]
+			for article in articles:
+				vals.append("value="+article)
+			data = get_media_data('/api/media/filter/service?type=tvshow&'+'&'.join(vals)+'&service=csfd','')
+			if 'data' in data: process_movies_series(data['data'])
+
+def get_csfd_topf(origin):
+	if origin>0:
+		html = get_csfd_api('/zebricky/specificky-vyber/?type=0&origin='+str(origin)+'&genre=&year_from=&year_to=&actor=&director=&ok=Zobrazit&_form_=charts&show=complete')
+	else:
+		html = get_csfd_api('/zebricky/nejlepsi-filmy/?show=complete')
+	if html:
+		data = re.search('<table class="content.*?>(.*?)</table>', html, re.S)
+		if data:
+			articles = re.findall('<a href="/film/([0-9]+?)\-.*?"', data.group(1), re.S)
+			vals=[]
+			for article in articles:
+				vals.append("value="+article)
+			data = get_media_data('/api/media/filter/service?type=movie&'+'&'.join(vals)+'&service=csfd','')
+			if 'data' in data: process_movies_series(data['data'])
+
 
 xuuid = addon.getSetting('uuid')
 if xuuid == "":
@@ -589,6 +619,14 @@ menu = {
 		build_item(addon.getLocalizedString(30200), 'folder','movies'),
 		build_item(addon.getLocalizedString(30201), 'folder', 'series'),
 		build_item(addon.getLocalizedString(30309), 'csfd', 'tips'),
+		build_item('ČSFD.cz Top filmy', 'csfdtopf', '0'),
+		build_item('ČSFD.cz Top seriály', 'csfdtops', 'tops'),
+		build_item('ČSFD.cz Top filmy (Československo)', 'csfdtopf', '197'),
+		build_item('ČSFD.cz Top filmy (Česko)', 'csfdtopf', '1'),
+		build_item('ČSFD.cz Top filmy (Slovensko)', 'csfdtopf', '2'),
+		build_item('ČSFD.cz Top seriály (Československo)', 'csfdtops', '197'),
+		build_item('ČSFD.cz Top seriály (Česko)', 'csfdtops', '1'),
+		build_item('ČSFD.cz Top seriály (Slovensko)', 'csfdtops', '2'),
 #		build_item(addon.getLocalizedString(30254), 'seen', 'seen'),
 	],
 	'movies': [
@@ -632,6 +670,10 @@ elif action is None:
 		render_item(c)
 elif action[0] == 'csfd':
 	get_csfd_tips()
+elif action[0] == 'csfdtopf':
+	get_csfd_topf(action_value[0])
+elif action[0] == 'csfdtops':
+	get_csfd_tops(action_value[0])
 elif action[0] == 'folder':
 	if action_value[0] in menu:
 		for c in menu[action_value[0]]:
