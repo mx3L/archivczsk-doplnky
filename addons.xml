@@ -1,5 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addons>
+<addon id="plugin.video.yt" name="YouTube" provider-name="Michal Novotny" version="1.0">
+  <requires>
+    <import addon="xbmc.python" version="2.1.0" />
+    <import addon="script.module.stream.resolver" version="1.6.22" />
+  </requires>
+  <extension library="default.py" point="xbmc.python.pluginsource" provides="video">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <summary>YouTube video plugin</summary>
+    <description>Plugin to search and play YouTube videos</description>
+    <description lang="cs">Plugin pro vyhledávání a přehrávání videí z YouTube</description>
+    <description lang="sk">Plugin pre vyhľadavanie a prehrávanie videí z YouTube</description>
+  </extension>
+</addon>
+
 <addon id="plugin.video.tv.sme.sk" name="TV SME.sk" provider-name="Michal Novotny" version="1.1">
   <requires>
     <import addon="xbmc.python" version="2.1.0" />
@@ -373,7 +390,7 @@
 
 <addon id="plugin.video.sc2"
        name="Stream Cinema Community"
-       version="2.1.13"
+       version="2.1.14"
        provider-name="hotshot.sk">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
