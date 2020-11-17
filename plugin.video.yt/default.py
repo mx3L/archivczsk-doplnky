@@ -23,11 +23,21 @@ from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
 from Plugins.Extensions.archivCZSK.engine.tools.util import toString
 from Plugins.Extensions.archivCZSK.engine import client
 
-import cookielib,urllib2,urlparse,re,rfc822,time,util,resolver,json
+import cookielib,urllib2,urlparse,re,rfc822,time,util,resolver,json,datetime
 from provider import ContentProvider
 from provider import ResolveException
 import xbmcprovider
 import util
+
+def writeLog(msg, type='INFO'):
+	try:
+		from Components.config import config
+		f = open(os.path.join(config.plugins.archivCZSK.logPath.getValue(),'yt.log'), 'a')
+		dtn = datetime.datetime.now()
+		f.write(dtn.strftime("%d.%m.%Y %H:%M:%S.%f")[:-3] + " [" + type + "] %s\n" % msg)
+		f.close()
+	except:
+		pass
 
 class YTContentProvider(ContentProvider):
 
@@ -164,7 +174,15 @@ class YTContentProvider(ContentProvider):
 		end = httpdata.index("};", start) + 1
 		json_str = httpdata[start:end]
 		data = json.loads(json_str)
-		videos = data["contents"]["twoColumnSearchResultsRenderer"]["primaryContents"]["sectionListRenderer"]["contents"][0]["itemSectionRenderer"]["contents"]
+		videos = []
+		for section in data["contents"]["twoColumnSearchResultsRenderer"]["primaryContents"]["sectionListRenderer"]["contents"]:
+			try:
+				for item in section["itemSectionRenderer"]["contents"]:
+					if "videoRenderer" in item:
+						videos = section["itemSectionRenderer"]["contents"]
+						break
+			except:
+				pass
 		for video in videos:
 			if "videoRenderer" in video.keys():
 				video_data = video.get("videoRenderer", {})
@@ -182,7 +200,7 @@ class YTContentProvider(ContentProvider):
 					pass
 				duration = video_data.get("lengthText", {}).get("simpleText", 0)
 				views = video_data.get("viewCountText", {}).get("simpleText", 0)
-				item['plot'] = "[" + duration + "] - " + channel + " : " + views + " - " + descr
+				item['plot'] = "[" + str(duration) + "] - " + str(channel) + " : " + str(views) + " - " + descr
 				item['menu'] = {}
 				item['menu']['Videa kanalu: '+channel] = {'list': self.base_url+'channel/'+channelUrl+'/videos?sort=dd', 'action-type':'list'}
 				item['menu']['Ulozit kanal: '+channel] = {'list': 'save;'+channel+';'+channelUrl, 'action-type':'list'}
