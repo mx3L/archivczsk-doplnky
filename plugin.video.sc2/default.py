@@ -201,7 +201,7 @@ def get_info(media,st=False):
 	rating = 0
 	poster = None
 	if lang_id in labels:
-		if 'plot' in labels[lang_id]: plot += labels[lang_id]['plot']
+		if 'plot' in labels[lang_id] and labels[lang_id]['plot']: plot += labels[lang_id]['plot']
 		if 'rating' in labels[lang_id]: rating = labels[lang_id]['rating']
 		if 'art' in labels[lang_id] and 'poster' in labels[lang_id]['art'] and labels[lang_id]['art']['poster'] != "": poster = labels[lang_id]['art']['poster']
 	if poster is None and 'art' in labels['en'] and 'poster' in labels['en']['art'] and labels['en']['art']['poster'] != "": poster = labels['en']['art']['poster']
@@ -305,12 +305,18 @@ def isFilterLangStream(stream):
 
 def isFilterLang(media):
 	# 0 all, 1-CZ&SK, 2-CZ 3-SK, 4-EN
-	if langFilter != '0' and 'available_streams' in media and 'audio_languages' in media['available_streams'] and len(media['available_streams']['audio_languages'])>0:
-		if '' in media['available_streams']['audio_languages']: return False # neuvedeny jazyk vzdy zobrazit
-		if langFilter == '1' and 'cs' in media['available_streams']['audio_languages'] or 'sk' in media['available_streams']['audio_languages']: return False
-		if langFilter == '2' and 'cs' in media['available_streams']['audio_languages']: return False
-		if langFilter == '3' and 'sk' in media['available_streams']['audio_languages']: return False
-		if langFilter == '4' and 'en' in media['available_streams']['audio_languages']: return False
+	alangs = []
+	try:
+		for lang in media['available_streams']['audio_languages']:
+			if lang['lang']: alangs.append(lang['lang'])
+	except:
+		pass
+	if langFilter != '0':
+		if '' in alangs: return False # neuvedeny jazyk vzdy zobrazit
+		if langFilter == '1' and 'cs' in alangs or 'sk' in alangs: return False
+		if langFilter == '2' and 'cs' in alangs: return False
+		if langFilter == '3' and 'sk' in alangs: return False
+		if langFilter == '4' and 'en' in alangs: return False
 		return True
 	return False
 
@@ -330,9 +336,9 @@ def process_seasons(mediaList):
 		if isExplicit(media['_source']): continue
 		if isFilterLang(media['_source']): continue
 		info = get_info(media['_source'])
-		if 'info_labels' in media['_source'] and 'episode' in media['_source']['info_labels']:
-			title = str(int(media['_source']['info_labels']['season'])).zfill(2)+'x'+str(int(media['_source']['info_labels']['episode'])).zfill(2)+' '
-		if 'info_labels' in media['_source'] and 'episode' in media['_source']['info_labels'] and media['_source']['info_labels']['episode'] == 0:
+		if 'info_labels' in media['_source']:
+			title = str(int(media['_source']['info_labels']['season'])).zfill(2)+' '
+		if 'info_labels' in media['_source'] and 'episode' in media['_source']['info_labels'] and not media['_source']['info_labels']['episode']:
 			addDir(info['title'], build_plugin_url({ 'action': 'episodes', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year'], 'genre': info['genres']})
 		else:
 			addDir(title+info['title'], build_plugin_url({ 'action': 'series.streams', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year'], 'genre': info['genres']})
@@ -430,7 +436,7 @@ def show_stream_dialog(id,ss=None,ep=None):
 	streams = get_media_data('/api/media/'+id+'/streams','')
 	for stream in streams:
 		title = ""
-		if 'info_labels' in media['data'][0]['_source'] and 'episode' in media['data'][0]['_source']['info_labels'] and media['data'][0]['_source']['info_labels']['episode'] != 0:
+		if 'info_labels' in media['data'][0]['_source'] and 'episode' in media['data'][0]['_source']['info_labels'] and media['data'][0]['_source']['info_labels']['episode']:
 			title += str(int(media['data'][0]['_source']['info_labels']['season'])).zfill(2)+'x'+str(int(media['data'][0]['_source']['info_labels']['episode'])).zfill(2)+' '
 		if addon.getSetting('filter_hevc') == 'true' and 'video' in stream and 'codec' in stream['video'][0] and stream['video'][0]['codec'].upper() == 'HEVC': continue
 		if isFilterLangStream(stream): continue

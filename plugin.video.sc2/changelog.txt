@@ -1,3 +1,7 @@
+2020-11-30 [2.1.15]
+ * oprava kvuli zmenam na serveru
+ * oprava jazykoveho filtru
+
 2020-11-16 [2.1.14]
  * Pridany CSFD TOP filmy a serialy
 
