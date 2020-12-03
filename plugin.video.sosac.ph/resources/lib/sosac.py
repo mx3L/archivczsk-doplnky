@@ -202,7 +202,7 @@ class SosacContentProvider(ContentProvider):
                 for episode_key, video in episode.iteritems():
                     item = self.video_item()
                     item['title'] = series_key + "x" + episode_key + " - " + video['n']
-                    item['img'] = IMAGE_EPISODE + video['i']
+                    if video['i'] is not None: item['img'] = IMAGE_EPISODE + video['i']
                     item['url'] = video['l'] if video['l'] else ""
                     result.append(item)
         if not self.reverse_eps:

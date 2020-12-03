@@ -10,10 +10,12 @@
 # Credits must be used
 
 import os, re, urllib, datetime, requests
+from urllib import quote
 from Components.config import config
 from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
 from Plugins.Extensions.archivCZSK.engine.tools.util import unescapeHTML
-from Plugins.Extensions.archivCZSK.engine.client import add_video, add_dir
+from Plugins.Extensions.archivCZSK.engine.client import add_video, add_dir, getTextInput, add_operation
+from Plugins.Extensions.archivCZSK.engine import client
 
 _UserAgent_ = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:60.0) Gecko/20100101 Firefox/60.0'
 addon =  ArchivCZSK.get_xbmc_addon('plugin.video.mall.tv')
@@ -67,17 +69,17 @@ def get_url(url):
 	headers = {'User-Agent': _UserAgent_, 'Set-Cookie': '_selectedLanguage='+lang}
 	result = requests.get(url, headers=headers, timeout=15, verify=False)
 	if result.status_code != 200:
-		client.add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
+		add_operation("SHOW_MSG", {'msg': 'Chyba nacitani dat', 'msgType': 'error', 'msgTimeout': 10, 'canClose': True })
 		return ""
 	return result.content
 
 def OBSAH():
+    addDir('Hledat',"#",5,icon,10002)
     addDir('Živá vysílání',"#",7,icon,2)
     addDir('SlowTV - Nonstop živě',"#",7,icon,4)
     addDir('Odvysílaná živá vysílání',"#",7,icon,3)
     addDir('Připravovaná živá vysílání',"#",7,icon,1)
     addDir('Nejnovější',"#",5,icon,10001)
-    addDir('Populární',"#",5,icon,10002)
     addDir('Kategorie',"#",2,icon,1)
     addDir('Pořady',"#",3,icon,1)
 
@@ -89,10 +91,12 @@ def ZIVE(sid):
         html = get_url(__baseurl__+'/Live/LiveSectionVideos?sectionId='+str(sid)+'&page='+str(strana))
         if not html:
             break
-        data = re.findall('<div.*?video-card.*?<a.*?href=(.*?) .*?title="(.*?)".*?data-img=(.*?) .*?_info', html, re.S)
+        if sid != 3: data = re.findall('<div.*?video-card.*?<a.*?href=(.*?) .*?title="(.*?)".*?data-img=(.*?) .*?_info', html, re.S)
+        else: data = re.findall('video-card .*?href=(.*?) .*?title="(.*?)".*?data-img=(.*?) .*?video-duration.*?>(.*?)<.*?video-card__info .*?title="(.*?)".*?video-card__info-timestamp.*?>(.*?)<', html, re.S)
         if data:
             for item in data:
-                addDir(unescapeHTML(item[1]),item[0],9,item[2],1)
+                if sid != 3: addDir(unescapeHTML(item[1]),item[0],9,item[2],1)
+                else: addDir(unescapeHTML(item[1]),item[0],9,item[2],1,infoLabels={'plot':item[5]+' '+item[4]+' ('+item[3]+')'})
                 pocet+=1
         temp = re.search('slider-total=(.*?) ', html, re.S)
         if temp:
@@ -100,6 +104,8 @@ def ZIVE(sid):
         if pocet >= celkem:
             break
         strana+=1
+        if strana > 10:
+            break
 
 def KATEGORIE():
     html = get_url(__baseurl__+'/kategorie')
@@ -163,21 +169,26 @@ def VYBERY(url):
 def VIDEA(sid):
     strana = 0
     celkem = 10 # max stran pro jistotu, aby se nezacyklil a u nejnovejsich a popularnich jsou to tisice!
+    if sid==10002: # hledat
+        query = getTextInput(session, "Hledat")
+        if len(query) == 0:
+            add_operation("SHOW_MSG", {'msg': "Je potřeba zadat vyhledávaný řetězec", 'msgType': 'error', 'msgTimeout': 4, 'canClose': True })
+            return   
     while True:
         url = '/Serie/Season?seasonId='+str(sid)+'&sortType=3&' # sekce dle data id
         if sid==10001: # nejnovejsi
             url = '/sekce/nejnovejsi?' if lang is 'cz' else '/sekcia/najnovsie?'
-        if sid==10002: # popularni
-            url = '/sekce/trending?' if lang is 'cz' else '/sekcia/trending?'
+        if sid==10002: # hledat
+            url = '/Search/Videos?q='+quote(query)+'&sortType=3&'
         html = get_url(__baseurl__+url+'page='+str(strana))
         if not html:
             break
-        data = re.findall('video-card .*?href=(.*?) .*?title="(.*?)".*?data-img=(.*?) ', html, re.S)
-#        data = re.findall('video-card .*?href=(.*?) .*?title="(.*?)".*?data-img=(.*?) .*?video-duration.*?>(.*?)<.*?video-card__info .*?title="(.*?)"', html, re.S)
+#        data = re.findall('video-card .*?href=(.*?) .*?title="(.*?)".*?data-img=(.*?) ', html, re.S)
+        data = re.findall('video-card .*?href=(.*?) .*?title="(.*?)".*?data-img=(.*?) .*?video-duration.*?>(.*?)<.*?video-card__info .*?title="(.*?)".*?video-card__info-timestamp.*?>(.*?)<', html, re.S)
         if data:
             for item in data:
-                addDir(unescapeHTML(item[1]),item[0],9,item[2],1)
-#                addDir(unescapeHTML(item[1]),item[0],9,item[2],1,infoLabels={'plot':item[3]+' '+item[4]})
+#                addDir(unescapeHTML(item[1]),item[0],9,item[2],1)
+                addDir(unescapeHTML(item[1]),item[0],9,item[2],1,infoLabels={'plot':item[5]+' '+item[4]+' ('+item[3]+')'})
         if strana >= celkem:
             break
         strana+=1
@@ -261,3 +272,5 @@ elif mode==7:
         ZIVE(page)
 elif mode==9:
         VIDEOLINK(url)
+
+if len(client.GItem_lst[0]) == 0: addDir(None,'',1,None)
