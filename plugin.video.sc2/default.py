@@ -336,12 +336,10 @@ def process_seasons(mediaList):
 		if isExplicit(media['_source']): continue
 		if isFilterLang(media['_source']): continue
 		info = get_info(media['_source'])
-		if 'info_labels' in media['_source']:
-			title = str(int(media['_source']['info_labels']['season'])).zfill(2)+' '
-		if 'info_labels' in media['_source'] and 'episode' in media['_source']['info_labels'] and not media['_source']['info_labels']['episode']:
+		if media.get('_source',{}).get('info_labels',{}).get('mediatype','') == 'season':
 			addDir(info['title'], build_plugin_url({ 'action': 'episodes', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year'], 'genre': info['genres']})
 		else:
-			addDir(title+info['title'], build_plugin_url({ 'action': 'series.streams', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year'], 'genre': info['genres']})
+			addDir(info['title'], build_plugin_url({ 'action': 'series.streams', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year'], 'genre': info['genres']})
 
 def process_movies_series(mediaList,sort=0):
 	for media in mediaList:
@@ -393,6 +391,7 @@ def process_years(mediaList):
 #	client.GItem_lst[0].sort(key=lambda x:int(x.name), reverse=True)
 
 def process_languages(mediaList):
+	if len(mediaList) == 0: return
 	langs = {}
 	langkeys = {}
 	for lang in mediaList:
@@ -618,6 +617,7 @@ except:
 #writeLog('NAME: '+str(name))
 #writeLog('ACT: '+str(action))
 #writeLog('ACTVAL: '+str(action_value))
+#print params
 
 menu = {
 	'root': [

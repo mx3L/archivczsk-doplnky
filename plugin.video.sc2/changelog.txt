@@ -1,3 +1,7 @@
+2020-12-04 [2.1.16]
+ * oprava epizod u serialu (nektere nemaji sezony)
+ * oprava chyby Podle jazyka (nevraci aktualne nic)
+
 2020-11-30 [2.1.15]
  * oprava kvuli zmenam na serveru
  * oprava jazykoveho filtru
