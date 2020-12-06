@@ -1,3 +1,7 @@
+2020-12-06 [2.1.17]
+ * pridany koncerty
+ * oprava zobrazeni hodnoceni a traileru
+
 2020-12-04 [2.1.16]
  * oprava epizod u serialu (nektere nemaji sezony)
  * oprava chyby Podle jazyka (nevraci aktualne nic)

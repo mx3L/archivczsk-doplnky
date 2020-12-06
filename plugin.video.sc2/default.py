@@ -198,11 +198,10 @@ def get_info(media,st=False):
 			if genre in genre_lang: genreL.append(addon.getLocalizedString(genre_lang[genre]))
 			genres = ', '.join(genreL)
 	plot = '[' + genres + '] ' if genres else ""
-	rating = 0
+	rating = media.get("ratings",{}).get("csfd",{}).get("rating",0)
 	poster = None
 	if lang_id in labels:
 		if 'plot' in labels[lang_id] and labels[lang_id]['plot']: plot += labels[lang_id]['plot']
-		if 'rating' in labels[lang_id]: rating = labels[lang_id]['rating']
 		if 'art' in labels[lang_id] and 'poster' in labels[lang_id]['art'] and labels[lang_id]['art']['poster'] != "": poster = labels[lang_id]['art']['poster']
 	if poster is None and 'art' in labels['en'] and 'poster' in labels['en']['art'] and labels['en']['art']['poster'] != "": poster = labels['en']['art']['poster']
 	duration = media['info_labels']['duration'] if 'info_labels' in media and 'duration' in media['info_labels'] else 0
@@ -347,16 +346,12 @@ def process_movies_series(mediaList,sort=0):
 		if isFilterLang(media['_source']): continue
 		info = get_info(media['_source'])
 		cmenuItems = {}
-		try:
+		if media.get("_source",{}).get("info_labels",{}).get("trailer","") != "":
 			cmenuItems['Přehrát trailer']={'action': 'trailer', 'id': media['_source']['info_labels']['trailer']}
-		except:
-			pass
-		try:
+		if media.get("_source",{}).get("services",{}).get("csfd","") != "":
 			cmenuItems[addon.getLocalizedString(40503)]={'action': 'related', 'id': media['_source']['services']['csfd']}
 			cmenuItems[addon.getLocalizedString(40504)]={'action': 'similar', 'id': media['_source']['services']['csfd']}
-		except:
-			pass
-		if media['_source']['info_labels']['mediatype'] == 'tvshow':
+		if media.get("_source",{}).get("info_labels",{}).get("mediatype","") == 'tvshow':
 			addDir(info['title'], build_plugin_url({ 'action': 'seasons', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year'], 'genre': info['genres']}, menuItems=cmenuItems)
 		else:
 			addDir(info['title'], build_plugin_url({ 'action': 'movies.streams', 'action_value': media['_id'] }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': info['duration'], 'year': info['year'], 'genre': info['genres']}, menuItems=cmenuItems)
@@ -624,6 +619,7 @@ menu = {
 		build_item(addon.getLocalizedString(30204), 'listsearch', ''),
 		build_item(addon.getLocalizedString(30200), 'folder','movies'),
 		build_item(addon.getLocalizedString(30201), 'folder', 'series'),
+		build_item(addon.getLocalizedString(30174), 'folder', 'concerts'),
 		build_item(addon.getLocalizedString(30309), 'csfd', 'tips'),
 		build_item('ČSFD.cz Top filmy', 'csfdtopf', '0'),
 		build_item('ČSFD.cz Top seriály', 'csfdtops', 'tops'),
@@ -662,8 +658,25 @@ menu = {
 		build_item(addon.getLocalizedString(30259), 'languages','series'),
 		build_item(addon.getLocalizedString(30256), 'years','series'),
 		build_item(addon.getLocalizedString(30255), 'studios','series')
+	],
+	'concerts': [
+		build_item(addon.getLocalizedString(30261), 'concerts','trending'),
+		build_item(addon.getLocalizedString(30211), 'concerts','popularity'),
+		build_item(addon.getLocalizedString(30262), 'concerts','popular'),
+		build_item(addon.getLocalizedString(30136), 'concerts','aired'),
+		build_item(addon.getLocalizedString(30137), 'concerts','dateadded'),
+		build_item(addon.getLocalizedString(30210), 'a-z','concerts,'),
+		build_item(addon.getLocalizedString(30209), 'genres','concerts'),
+		build_item(addon.getLocalizedString(30257), 'countries','concerts'),
+		build_item(addon.getLocalizedString(30259), 'languages','concerts'),
+		build_item(addon.getLocalizedString(30256), 'years','concerts'),
+		build_item(addon.getLocalizedString(30255), 'studios','concerts')
 	]
 }
+
+if action and action[0] == 'movies': mos = 'movie'
+elif action and action[0] == 'series': mos = 'tvshow'
+else: mos = 'concert'
 
 if 'action' in nparams and nparams['action'] == 'related' and 'id' in nparams:
 	get_related(nparams['id'])
@@ -684,8 +697,7 @@ elif action[0] == 'folder':
 	if action_value[0] in menu:
 		for c in menu[action_value[0]]:
 			render_item(c)
-elif action[0] == 'movies' or action[0] == 'series':
-	mos = 'movie' if action[0] == 'movies' else 'tvshow'
+elif action[0] == 'movies' or action[0] == 'series' or action[0] == 'concerts':
 	if action_value[0] == 'popular':
 		data = get_media_data('/api/media/filter/all?sort=playCount&type=%s&order=desc&page=%s'%(mos,page),'')
 	elif action_value[0] == 'popularity':
@@ -720,8 +732,7 @@ elif action[0] == 'movies' or action[0] == 'series':
 	else:
 		data = get_media_data('/api/media/filter/startsWithSimple?type=%s&value=%s&page=%s'%(mos,action_value[0],page),'')
 		abc = True
-	if action[0] == 'movies' and 'data' in data: process_movies_series(data['data'])
-	if action[0] == 'series' and 'data' in data: process_movies_series(data['data'])
+	if 'data' in data: process_movies_series(data['data'])
 	if 'pagination' in data and 'pageCount' in data['pagination'] and 'page' in data['pagination'] and data['pagination']['pageCount']>1:
 		add_paging(int(data['pagination']['page'])+1, data['pagination']['pageCount'])
 elif action[0] == 'movies.streams':
@@ -735,28 +746,25 @@ elif action[0] == 'seasons':
 	media = get_media_data('/api/media/filter/parent?sort=episode&value='+action_value[0],'')
 	if 'data' in media: process_seasons(media['data'])
 elif action[0] == 'genres':
-	mos = 'movie' if action_value[0] == 'movies' else 'tvshow'
 	media = get_media_data('/api/media/filter/all/count/genres?type='+mos,'')
 	if 'data' in media: process_genres(media['data'])
 elif action[0] == 'studios':
-	mos = 'movie' if action_value[0] == 'movies' else 'tvshow'
 	media = get_media_data('/api/media/filter/all/count/studios?type='+mos,'')
 	if 'data' in media: process_studios(media['data'])
 elif action[0] == 'years':
-	mos = 'movie' if action_value[0] == 'movies' else 'tvshow'
 	media = get_media_data('/api/media/filter/all/count/years?type='+mos,'')
 	if 'data' in media: process_years(media['data'])
 elif action[0] == 'languages':
-	mos = 'movie' if action_value[0] == 'movies' else 'tvshow'
 	media = get_media_data('/api/media/filter/all/count/languages?type='+mos,'')
 	if 'data' in media: process_languages(media['data'])
 elif action[0] == 'countries':
-	mos = 'movie' if action_value[0] == 'movies' else 'tvshow'
 	media = get_media_data('/api/media/filter/all/count/countries?type='+mos,'')
 	if 'data' in media: process_countries(media['data'])
 elif action[0] == 'a-z':
 	(m,v) = action_value[0].split(',')
-	mos = 'movie' if m == 'movies' else 'tvshow'
+	if m == 'movies': mos = 'movie'
+	elif m == 'series': mos = 'tvshow'
+	else: mos = 'concert'
 	media = get_media_data('/api/media/filter/startsWithSimple/count/titles?type=%s&value=%s'%(mos,v),'')
 	if 'data' in media: process_az(media['data'])
 elif action[0] == 'listsearch':
