@@ -309,6 +309,7 @@ class RtvsContentProvider(ContentProvider):
             channel_id = item['url'].split('.')[1]
             data = util.request("http://www.rtvs.sk/json/live5f.json?c=%s&b=mozilla&p=linux&v=84&f=0&d=1"%(channel_id))
             videodata = util.json.loads(data)['clip']
+            videodata['sources'][0]['src'] = ''.join(videodata['sources'][0]['src'].split())
             if is_kodi_leia():
                 #return playlist with adaptive flag
                 item = self.video_item()
