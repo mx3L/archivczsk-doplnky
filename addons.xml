@@ -390,7 +390,7 @@
 
 <addon id="plugin.video.sc2"
        name="Stream Cinema Community"
-       version="2.1.17"
+       version="2.1.18"
        provider-name="hotshot.sk">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
