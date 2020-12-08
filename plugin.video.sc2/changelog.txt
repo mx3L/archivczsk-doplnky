@@ -1,3 +1,6 @@
+2020-12-08 [2.1.18]
+ * oprava zobrazeni Podle filtru (a-z, zanr, zeme, rok, studio)
+
 2020-12-06 [2.1.17]
  * pridany koncerty
  * oprava zobrazeni hodnoceni a traileru

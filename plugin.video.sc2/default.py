@@ -612,7 +612,7 @@ except:
 #writeLog('NAME: '+str(name))
 #writeLog('ACT: '+str(action))
 #writeLog('ACTVAL: '+str(action_value))
-#print params
+print params
 
 menu = {
 	'root': [
@@ -674,9 +674,7 @@ menu = {
 	]
 }
 
-if action and action[0] == 'movies': mos = 'movie'
-elif action and action[0] == 'series': mos = 'tvshow'
-else: mos = 'concert'
+moses = { 'movies': 'movie', 'series': 'tvshow', 'concerts': 'concert'}
 
 if 'action' in nparams and nparams['action'] == 'related' and 'id' in nparams:
 	get_related(nparams['id'])
@@ -699,38 +697,38 @@ elif action[0] == 'folder':
 			render_item(c)
 elif action[0] == 'movies' or action[0] == 'series' or action[0] == 'concerts':
 	if action_value[0] == 'popular':
-		data = get_media_data('/api/media/filter/all?sort=playCount&type=%s&order=desc&page=%s'%(mos,page),'')
+		data = get_media_data('/api/media/filter/all?sort=playCount&type=%s&order=desc&page=%s'%(moses.get(action[0],'movie'),page),'')
 	elif action_value[0] == 'popularity':
-		data = get_media_data('/api/media/filter/all?sort=popularity&type=%s&order=desc&page=%s'%(mos,page),'')
+		data = get_media_data('/api/media/filter/all?sort=popularity&type=%s&order=desc&page=%s'%(moses.get(action[0],'movie'),page),'')
 	elif action_value[0] == 'trending':
-		data = get_media_data('/api/media/filter/all?sort=trending&type=%s&order=desc&page=%s'%(mos,page),'')
+		data = get_media_data('/api/media/filter/all?sort=trending&type=%s&order=desc&page=%s'%(moses.get(action[0],'movie'),page),'')
 	elif action_value[0] == 'aired':
-		data = get_media_data('/api/media/filter/news?sort=dateAdded&type=%s&order=desc&days=365&page=%s'%(mos,page),'')
+		data = get_media_data('/api/media/filter/news?sort=dateAdded&type=%s&order=desc&days=365&page=%s'%(moses.get(action[0],'movie'),page),'')
 	elif action_value[0] == 'dateadded':
-		data = get_media_data('/api/media/filter/all?sort=dateAdded&type=%s&order=desc&page=%s'%(mos,page),'')
+		data = get_media_data('/api/media/filter/all?sort=dateAdded&type=%s&order=desc&page=%s'%(moses.get(action[0],'movie'),page),'')
 	elif action_value[0] == 'dubbed':
-		data = get_media_data('/api/media/filter/newsDubbed?lang=cs&lang=sk&sort=dateAdded&type=%s&order=desc&days=365&page=%s'%(mos,page),'')
+		data = get_media_data('/api/media/filter/newsDubbed?lang=cs&lang=sk&sort=dateAdded&type=%s&order=desc&days=365&page=%s'%(moses.get(action[0],'movie'),page),'')
 	elif 'genre' in action_value[0]:
 		(t,g) = action_value[0].split(',')
-		data = get_media_data('/api/media/filter/genre?sort=year&type=%s&order=desc&value=%s&page=%s'%(mos,g,page),'')
+		data = get_media_data('/api/media/filter/genre?sort=year&type=%s&order=desc&value=%s&page=%s'%(moses.get(action[0],'movie'),g,page),'')
 	elif 'studio' in action_value[0]:
 		(t,g) = action_value[0].split(',')
-		data = get_media_data('/api/media/filter/studio?sort=year&type=%s&order=desc&value=%s&page=%s'%(mos,g,page),'')
+		data = get_media_data('/api/media/filter/studio?sort=year&type=%s&order=desc&value=%s&page=%s'%(moses.get(action[0],'movie'),g,page),'')
 	elif 'year' in action_value[0]:
 		(t,g) = action_value[0].split(',')
-		data = get_media_data('/api/media/filter/year?sort=year&type=%s&order=desc&value=%s&page=%s'%(mos,g,page),'')
+		data = get_media_data('/api/media/filter/year?sort=year&type=%s&order=desc&value=%s&page=%s'%(moses.get(action[0],'movie'),g,page),'')
 	elif 'country' in action_value[0]:
 		(t,g) = action_value[0].split(',')
-		data = get_media_data('/api/media/filter/country?sort=year&type=%s&order=desc&value=%s&page=%s'%(mos,g,page),'')
+		data = get_media_data('/api/media/filter/country?sort=year&type=%s&order=desc&value=%s&page=%s'%(moses.get(action[0],'movie'),g,page),'')
 	elif 'language' in action_value[0]:
 		(t,g) = action_value[0].split(',')
-		data = get_media_data('/api/media/filter/language?sort=year&type=%s&order=desc&value=%s&page=%s'%(mos,g,page),'')
+		data = get_media_data('/api/media/filter/language?sort=year&type=%s&order=desc&value=%s&page=%s'%(moses.get(action[0],'movie'),g,page),'')
 	elif 'a-z' in action_value[0]:
 		(m,v) = action_value[0].split(',')
-		data = get_media_data('/api/media/filter/startsWithSimple?type=%s&value=%s'%(mos,v),'')
+		data = get_media_data('/api/media/filter/startsWithSimple?type=%s&value=%s'%(moses.get(action[0],'movie'),v),'')
 		abc = True
 	else:
-		data = get_media_data('/api/media/filter/startsWithSimple?type=%s&value=%s&page=%s'%(mos,action_value[0],page),'')
+		data = get_media_data('/api/media/filter/startsWithSimple?type=%s&value=%s&page=%s'%(moses.get(action[0],'movie'),action_value[0],page),'')
 		abc = True
 	if 'data' in data: process_movies_series(data['data'])
 	if 'pagination' in data and 'pageCount' in data['pagination'] and 'page' in data['pagination'] and data['pagination']['pageCount']>1:
@@ -746,26 +744,23 @@ elif action[0] == 'seasons':
 	media = get_media_data('/api/media/filter/parent?sort=episode&value='+action_value[0],'')
 	if 'data' in media: process_seasons(media['data'])
 elif action[0] == 'genres':
-	media = get_media_data('/api/media/filter/all/count/genres?type='+mos,'')
+	media = get_media_data('/api/media/filter/all/count/genres?type='+moses.get(action_value[0],'movie'),'')
 	if 'data' in media: process_genres(media['data'])
 elif action[0] == 'studios':
-	media = get_media_data('/api/media/filter/all/count/studios?type='+mos,'')
+	media = get_media_data('/api/media/filter/all/count/studios?type='+moses.get(action_value[0],'movie'),'')
 	if 'data' in media: process_studios(media['data'])
 elif action[0] == 'years':
-	media = get_media_data('/api/media/filter/all/count/years?type='+mos,'')
+	media = get_media_data('/api/media/filter/all/count/years?type='+moses.get(action_value[0],'movie'),'')
 	if 'data' in media: process_years(media['data'])
 elif action[0] == 'languages':
-	media = get_media_data('/api/media/filter/all/count/languages?type='+mos,'')
+	media = get_media_data('/api/media/filter/all/count/languages?type='+moses.get(action_value[0],'movie'),'')
 	if 'data' in media: process_languages(media['data'])
 elif action[0] == 'countries':
-	media = get_media_data('/api/media/filter/all/count/countries?type='+mos,'')
+	media = get_media_data('/api/media/filter/all/count/countries?type='+moses.get(action_value[0],'movie'),'')
 	if 'data' in media: process_countries(media['data'])
 elif action[0] == 'a-z':
 	(m,v) = action_value[0].split(',')
-	if m == 'movies': mos = 'movie'
-	elif m == 'series': mos = 'tvshow'
-	else: mos = 'concert'
-	media = get_media_data('/api/media/filter/startsWithSimple/count/titles?type=%s&value=%s'%(mos,v),'')
+	media = get_media_data('/api/media/filter/startsWithSimple/count/titles?type=%s&value=%s'%(moses.get(m,'movie'),v),'')
 	if 'data' in media: process_az(media['data'])
 elif action[0] == 'listsearch':
 	list_search()
@@ -777,4 +772,3 @@ elif action[0] == 'play' and action_value[0] != "" and name !="":
 if len(client.GItem_lst[0]) == 0:
 	render_item(build_item(None, ''))
 #	client.showInfo('Nic nenalezeno')
-
