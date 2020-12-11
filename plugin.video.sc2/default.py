@@ -168,13 +168,8 @@ def get_info(media,st=False):
 		dadded = ""
 	year = media['info_labels']['year'] if 'info_labels' in media and 'year' in media['info_labels'] else 0
 	if year == 0 and 'aired' in media['info_labels'] and media['info_labels']['aired']: year = media['info_labels']['aired'][0:4]
-	try:
-		alangs = []
-		for lst in media['available_streams']['audio_languages']:
-			alangs.append(lst['lang'])
-		langs = (', '.join(alangs)).upper()
-	except:
-		langs = ''
+	alangs = media.get("available_streams",{}).get("languages",{}).get("audio",{}).get("map",[])
+	langs = (', '.join(alangs)).upper()
 	labels = {}
 	if 'i18n_info_labels' in media:
 		for label in media['i18n_info_labels']:
@@ -304,12 +299,7 @@ def isFilterLangStream(stream):
 
 def isFilterLang(media):
 	# 0 all, 1-CZ&SK, 2-CZ 3-SK, 4-EN
-	alangs = []
-	try:
-		for lang in media['available_streams']['audio_languages']:
-			if lang['lang']: alangs.append(lang['lang'])
-	except:
-		pass
+	alangs = media.get("available_streams",{}).get("languages",{}).get("audio",{}).get("map",[])
 	if langFilter != '0':
 		if '' in alangs: return False # neuvedeny jazyk vzdy zobrazit
 		if langFilter == '1' and 'cs' in alangs or 'sk' in alangs: return False
@@ -346,8 +336,8 @@ def process_movies_series(mediaList,sort=0):
 		if isFilterLang(media['_source']): continue
 		info = get_info(media['_source'])
 		cmenuItems = {}
-		if media.get("_source",{}).get("info_labels",{}).get("trailer","") != "":
-			cmenuItems['Přehrát trailer']={'action': 'trailer', 'id': media['_source']['info_labels']['trailer']}
+		if media.get("_source",{}).get("videos",None) and media.get("_id",None):
+			cmenuItems['Trailer']={'action': 'trailer', 'id': media.get("_id","")}
 		if media.get("_source",{}).get("services",{}).get("csfd","") != "":
 			cmenuItems[addon.getLocalizedString(40503)]={'action': 'related', 'id': media['_source']['services']['csfd']}
 			cmenuItems[addon.getLocalizedString(40504)]={'action': 'similar', 'id': media['_source']['services']['csfd']}
@@ -472,11 +462,23 @@ def play(ident,title):
 #		Player(session).play_item(item = it)
 #		client.refresh_screen()
 
-def play_trailer(turl):
-	video_formats = client.getVideoFormats(turl)
-	video_url = [video_formats[-1]]
-	if video_url[0]['url']:
-		add_video('Trailer',video_url[0]['url'],None,None)
+def play_trailer(id):
+	media = get_media_data('/api/media/filter/ids?id='+id,'')
+	if 'data' not in media or len(media['data'])==0: return False
+	for video in media.get('data',[])[0].get('_source',{}).get('videos',[]):
+		url = video.get('url','')
+		if not url: continue
+		if not url.startswith('http'):
+			url = "https://" + url.lstrip('./')
+		lang = video.get('lang','') or '??'
+		name = video.get('name','') or 'Trailer'
+		if 'youtube.com' in url:
+			video_formats = client.getVideoFormats(url)
+			video_url = [video_formats[-1]]
+			if video_url[0]['url']:
+				add_video(lang.upper()+": "+name,video_url[0]['url'],None,None)
+		else:
+			add_video(lang.upper()+": "+name,url,None,None)
 #		from Plugins.Extensions.archivCZSK.engine.player.player import Player
 #		from Plugins.Extensions.archivCZSK.engine.items import PVideo
 #		it = PVideo()
@@ -612,7 +614,7 @@ except:
 #writeLog('NAME: '+str(name))
 #writeLog('ACT: '+str(action))
 #writeLog('ACTVAL: '+str(action_value))
-print params
+#print params
 
 menu = {
 	'root': [

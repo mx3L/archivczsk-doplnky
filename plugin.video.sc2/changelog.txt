@@ -1,3 +1,7 @@
+2020-12-11 [2.1.19]
+ * oprava zobrazeni a filtru jazyka
+ * menu Trailer zobrazi vsechny dostupne videa
+
 2020-12-08 [2.1.18]
  * oprava zobrazeni Podle filtru (a-z, zanr, zeme, rok, studio)
 
