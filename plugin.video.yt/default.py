@@ -29,6 +29,8 @@ from provider import ResolveException
 import xbmcprovider
 import util
 
+ytinfo = "https://www.youtube.com/get_video_info?video_id="
+
 def writeLog(msg, type='INFO'):
 	try:
 		from Components.config import config
@@ -62,7 +64,6 @@ class YTContentProvider(ContentProvider):
 
 	def save_channel(self,name,url):
 		max_history = __addon__.getSetting("channels") or 10
-		print max_history
 		cnt = 0
 		history = []
 		filename = addon_userdata_dir + "channels.txt"
@@ -146,11 +147,19 @@ class YTContentProvider(ContentProvider):
 
 	def parseChannel(self, httpdata):
 		result = []
-		start = (httpdata.index('window["ytInitialData"]') + 26)
+		try:
+			start = (httpdata.index('window["ytInitialData"]') + 26)
+		except:
+			start = (httpdata.index('var ytInitialData = ') + 20)
 		end = httpdata.index("};", start) + 1
 		json_str = httpdata[start:end]
 		data = json.loads(json_str)
-		videos = data["contents"]["twoColumnBrowseResultsRenderer"]["tabs"][1]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]["itemSectionRenderer"]["contents"][0]["gridRenderer"]["items"]
+		try:
+			videos = data["contents"]["twoColumnBrowseResultsRenderer"]["tabs"][1]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]["itemSectionRenderer"]["contents"][0]["gridRenderer"]["items"]
+		except:
+			from Screens.MessageBox import MessageBox
+			session.open(MessageBox, 'Kanal nenalezen', MessageBox.TYPE_INFO, timeout=8)
+			return []
 		for video in videos:
 			if "gridVideoRenderer" in video.keys():
 				video_data = video.get("gridVideoRenderer", {})
@@ -210,27 +219,43 @@ class YTContentProvider(ContentProvider):
 	def resolve(self, item, captcha_cb=None, select_cb=None):
 		item = item.copy()
 		result = []
-		video_formats = client.getVideoFormats(self._url(item['url']))
-#		print 'videoformats:', video_formats
-		video_url = [video_formats[-1]]
-#		print 'videourl:', video_url[:]
-		if not video_url[:]:
-			raise ResolveException('Video nenalezeno')
-		i = video_url[:][0]
-		item = self.video_item()
-		try:
-			item['title'] = i['title']
-		except KeyError:
-			pass
-		item['url'] = i['url']
-		item['quality'] = i['format_note']
-		item['headers'] = {}
-		try:
-			item['fmt'] = i['fmt']
-		except KeyError:
-			pass
-		result.append(item)
-		return result
+		import youtube_dl
+		from enigma import getDesktop
+		ydl_opts = {}
+		with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+			meta = ydl.extract_info(self._url(item['url']), download=False)
+		if not meta: return []
+		full_ids = ["18","22","35","37","38","91","92","94","300"]
+		audio_url = ""
+		audio_size = 0
+		for format in meta.get("formats",[]):
+			if 'DASH' in format.get("format",""): continue	# dash neumime
+			url = ""
+			split = "p"
+			filesize = ""
+			if format.get("format_id","0") == "140" and format.get("url",""):
+				audio_url = format.get("url")
+				audio_size = format.get("filesize",0)
+				continue
+			if format.get("format_id","0") in full_ids and format.get("url",""):
+				url = format.get("url","")
+				if format.get("filesize",0): filesize = str(round(format.get("filesize",0)/1048576)) + "MB"
+			elif format.get("height","") > 300 and format.get("url","") and audio_url:  # nezobrazovat zbytecne mensi nez 300p
+				url = format.get("url")+"&suburi="+audio_url
+				if format.get("filesize",0): filesize = str(round((format.get("filesize",0)+audio_size)/1048576)) + "MB"
+				split = "s"
+			if not url: continue
+			if format.get("height",0) > getDesktop(0).size().height(): continue  # nezobrazovat vetsi rozliseni nez je obrazovka
+			item = self.video_item()
+			item['url'] = url
+			item['quality'] = str(format.get("height",0)) + split
+			fsplit = format.get("format","").split(' - ')
+			fsearch = re.search("\((.*?)\)", fsplit[1], re.S)
+			if fsearch: title = fsearch.group(1)
+			else: title = fsplit[1]
+			item['title'] = "[" + title + " " + format.get("vcodec","") + " " + filesize + "]"  # zobrazime i ruzne kodeky at si kazdy vybere
+			result.append(item)
+		return list(reversed(result))
 
 __scriptid__ = 'plugin.video.yt'
 __scriptname__ = 'YouTube'
