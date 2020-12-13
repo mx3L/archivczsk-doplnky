@@ -37,6 +37,11 @@ otvusr = addon.getSetting('orangetvuser')
 otvpwd = addon.getSetting('orangetvpwd')
 _deviceid = addon.getSetting('deviceid')
 _quality = 'PC'
+try:
+	with open(profile + "/epg.dat", "r") as file:
+		epgcache = json.load(file)
+except IOError:
+	epgcache = {}
 
 _COMMON_HEADERS = {
 	"X-NanguTv-Platform-Id": "b0af5c7d6e17f24259a20cf60e069c22",
@@ -232,13 +237,31 @@ class O2TVGO:
 	def getChannelPrograms(self,ch):
 		fromts = int(time.time())*1000
 		tots = (int(time.time())+60)*1000
-		headers = _COMMON_HEADERS
-		cookies = {"access_token": self.access_token, "deviceId": self.device_id}
-		params = {"channelKey": ch, "fromTimestamp": fromts, "imageSize": "LARGE", "language": "ces", "offer": self.offer, "toTimestamp": tots}
-		req = requests.get('https://app01.gtm.orange.sk/sws/server/tv/channel-programs.json', params=params, headers=headers, cookies=cookies)
-		j = req.json()
-		title = _to_string(j[0]["name"]) + " - " + datetime.datetime.fromtimestamp(j[0]["startTimestamp"]/1000).strftime('%H:%M') + "-" + datetime.datetime.fromtimestamp(j[0]["endTimestamp"]/1000).strftime('%H:%M')
-		return {"title": title, "desc": _to_string(j[0]["shortDescription"])}
+		hodiny = [0,21600,43200,86400,172800]
+		title = ""
+		desc = ""
+		if int(addon.getSetting('epgcache')) != 0:
+			tots = (int(time.time())+hodiny[int(addon.getSetting('epgcache'))])*1000
+			if ch in epgcache:
+				for epg in epgcache[ch]:
+					if epg["start"] < fromts and epg["end"] > fromts:
+						title = epg["title"]
+						desc = epg["desc"]
+						break
+		if title == "":
+			headers = _COMMON_HEADERS
+			cookies = {"access_token": self.access_token, "deviceId": self.device_id}
+			params = {"channelKey": ch, "fromTimestamp": fromts, "imageSize": "LARGE", "language": "ces", "offer": self.offer, "toTimestamp": tots}
+			req = requests.get('https://app01.gtm.orange.sk/sws/server/tv/channel-programs.json', params=params, headers=headers, cookies=cookies)
+			j = req.json()
+#			_log(json.dumps(j))
+			epgcache[ch] = []
+			for one in j:
+				title = _to_string(one["name"]) + " - " + datetime.datetime.fromtimestamp(one["startTimestamp"]/1000).strftime('%H:%M') + "-" + datetime.datetime.fromtimestamp(one["endTimestamp"]/1000).strftime('%H:%M')
+				epgcache[ch].append({"start": one["startTimestamp"], "end": one["endTimestamp"], "title": title, "desc": one["shortDescription"]})
+			title = _to_string(j[0]["name"]) + " - " + datetime.datetime.fromtimestamp(j[0]["startTimestamp"]/1000).strftime('%H:%M') + "-" + datetime.datetime.fromtimestamp(j[0]["endTimestamp"]/1000).strftime('%H:%M')
+			desc = _to_string(j[0]["shortDescription"])
+		return {"title": title, "desc": desc}
 
 	def getArchivChannelPrograms(self,ch,day):
 		if not self.access_token:
@@ -265,7 +288,7 @@ toomany_error = 'TooManyDevicesError'
 nopurch_error = 'NoPurchasedServiceError'
 
 def OBSAH():
-	addDir("Naživo", 'live', 1, None, infoLabels={'plot':"Ak sa vám pomaly načíta táto položka, potom v Nastavenie vypnite Ukázať EPG"})
+	addDir("Naživo", 'live', 1, None, infoLabels={'plot':"Prvýkrát sa vďaka kešovania EPG načíta dlhšiu dobu, potom bude už načítať rýchlejšie podľa času v Nastavenie, ktorý si môžete zmeniť (defaultne 24 hodín)."})
 	addDir("Archív", 'archiv', 2, None, infoLabels={'plot':"Tu nájdete spätné prehrávanie vašich kanálov, pokiaľ máte zaplatenú službu archívu."})
 	if addon.getSetting('showdevices')=='true':
 		addDir("Zariadenia", 'devices', 9, None, infoLabels={'plot':"Tu si môžete zobraziť a prípadne vymazať/odregistrovať zbytočná zariadenia, aby ste sa mohli znova inde prihlásiť."})
@@ -322,6 +345,8 @@ def LIVE():
 			addDir(_to_string(channel.name)+' [COLOR yellow]'+epg["title"]+'[/COLOR]',channel.channel_key+"|||",8,channel.logo_url,1, infoLabels={'plot':epg["desc"]})
 		else:
 			addDir(_to_string(channel.name),channel.channel_key+"|||",8,channel.logo_url,1)
+	with open(profile + '/epg.dat', 'w') as file:
+		json.dump(epgcache, file)
 
 def VIDEOLINK(name, url):
 	channel_key,pid,fts,tts = url.split("|")
@@ -382,6 +407,7 @@ def VIDEOLINK(name, url):
 			if playlist == "":
 				playlist = json_data["uris"][0]["uri"]
 	# stahneme a zpracujeme playlist
+	result = []
 	r = requests.get(playlist, headers=_COMMON_HEADERS).text
 	for m in re.finditer('#EXT-X-STREAM-INF:PROGRAM-ID=\d+,BANDWIDTH=(?P<bandwidth>\d+),AUDIO="\d+"\s(?P<chunklist>[^\s]+)', r, re.DOTALL):
 		bandwidth = int(m.group('bandwidth'))
@@ -395,10 +421,9 @@ def VIDEOLINK(name, url):
 		else:
 			quality = "1080p"
 		url = m.group('chunklist')
-#		if quality == getquality:
-#		add_video('['+str(bandwidth)+'] '+name, url)
-		add_video('['+quality+'] '+name, url)
-#		addLink('['+quality+'] '+name, url, None, "")
+		result.append({"url":url,"title":'['+quality+'] '+name})
+	for one in reversed(result):
+		add_video(one["title"], one["url"])
 
 name=None
 url=None

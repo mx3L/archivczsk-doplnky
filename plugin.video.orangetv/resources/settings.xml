@@ -4,6 +4,7 @@
    <setting label="30000" id="orangetvuser" type="text" default="" />
    <setting label="30001" id="orangetvpwd" type="text" default="" option="true" />
    <setting label="Ukázať EPG (spomalí načítanie živých programov)" id="showliveepg" type="bool" default="true" />
+   <setting label="Nakešovat EPG (hodín)" id="epgcache" type="enum" lvalues="0=nekešovat|6h|12h|24h|48h" default="3" />
    <setting label="Ukázať menu Zariadenia (len pre pokročilých)" id="showdevices" type="bool" default="false" />
    <setting label="Device Id (neodporúčam meniť, len pre pokročilých)" id="deviceid" type="text" default="Nexus7" visible="true" />
 </settings>
