@@ -158,10 +158,10 @@ def convert_size(size_bytes):
 
 def convert_bitrate(mbit):
 	if mbit == 0 or mbit is None:
-		return "0 Mbit/s"
+		return "0 Mbps"
 	p = math.pow(1024, 2)
 	s = round(mbit / p, 2)
-	return "%s %s" % (s, "Mbit/s")
+	return "%s %s" % (s, "Mbps")
 
 def get_info(media,st=False):
 	try:
@@ -171,6 +171,9 @@ def get_info(media,st=False):
 	year = media['info_labels']['year'] if 'info_labels' in media and 'year' in media['info_labels'] else 0
 	if year == 0 and 'aired' in media['info_labels'] and media['info_labels']['aired']: year = media['info_labels']['aired'][0:4]
 	alangs = media.get("available_streams",{}).get("languages",{}).get("audio",{}).get("map",[])
+	aset = set(alangs)
+	alangs = list(aset)
+	alangs.sort()
 	langs = (', '.join(alangs)).upper()
 	labels = {}
 	if 'i18n_info_labels' in media:
@@ -416,53 +419,61 @@ def process_az(mediaList):
 			addDir(az['key']+' ('+str(az['doc_count'])+')', build_plugin_url({ 'action': action[0], 'action_value': m+','+az['key'] }), 1, None, None, None)
 
 def show_stream_dialog(id,ss=None,ep=None):
-	media = get_media_data('/api/media/filter/ids?id='+id,'')
-	if 'data' not in media or len(media['data'])==0: return False
-	info = get_info(media['data'][0]['_source'],st=True)
+	audios = { 2: '2.0', 6: '5.1', 8: '7.1'}
+	media = get_media_data('/api/media/'+id,'')
+	if 'info_labels' in media:
+		info = get_info(media,st=True)
+	else:
+		info = {}
 	streams = get_media_data('/api/media/'+id+'/streams','')
 	for stream in streams:
 		title = ""
-		if 'info_labels' in media['data'][0]['_source'] and 'episode' in media['data'][0]['_source']['info_labels'] and media['data'][0]['_source']['info_labels']['episode']:
-			title += str(int(media['data'][0]['_source']['info_labels']['season'])).zfill(2)+'x'+str(int(media['data'][0]['_source']['info_labels']['episode'])).zfill(2)+' '
+		desc = ""
 		if addon.getSetting('filter_hevc') == 'true' and 'video' in stream and 'codec' in stream['video'][0] and stream['video'][0]['codec'].upper() == 'HEVC': continue
 		if isFilterLangStream(stream): continue
 		if addon.getSetting('max_size') != '0' and 'size' in stream and sizes[int(addon.getSetting('max_size'))]*1024*1024*1024 < stream['size']: continue
 		if addon.getSetting('max_bitrate') != '0' and 'size' in stream and 'video' in stream and 'duration' in stream['video'][0] and bitrates[int(addon.getSetting('max_bitrate'))]*1024*1024 < stream['size'] / stream['video'][0]['duration'] * 8: continue
 		if addon.getSetting('max_quality') != '0' and 'video' in stream and 'height' in stream['video'][0] and qualities[int(addon.getSetting('max_quality'))] < stream['video'][0]['height']: continue
 		auds = []
-		for audio in stream['audio']:
+		for audio in stream.get('audio',{}):
 			if 'language' in audio:
-				if audio['language'] == "": auds.append("??")
-				else: auds.append(audio['language'])
+				if audio['language'] == "": auds.append(audio.get('codec','')+" "+audios[audio.get('channels',2)]+" ??")
+				else: auds.append(audio.get('codec','')+" "+audios[audio.get('channels',2)]+" "+audio['language'])
 		audset = set(auds)
 		auds = list(audset)
 		auds.sort()
-		bit_rate = ' - '+convert_bitrate(stream['size'] / stream['video'][0]['duration'] * 8) if addon.getSetting('show_bitrate')=='true' and 'size' in stream and 'video' in stream and 'duration' in stream['video'][0] else ''
-#		title += '['+str(stream['video'][0]['height'])+'p] ' if 'video' in stream and 'height' in stream['video'][0] else ''
-		title += '['+resolution_to_quality(stream['video'][0])+'] ' if 'video' in stream and 'height' in stream['video'][0] else ''
-		title += '['+str(stream['video'][0]['codec'])+'] ' if addon.getSetting('show_codec')=='true' and 'video' in stream and 'codec' in stream['video'][0] else ''
-		title += '[3D] ' if 'video' in stream and '3d' in stream['video'][0] and stream['video'][0]['3d']=='true' else ''
-		title += info['title']
-		title += ' - '+(', '.join(auds)).upper() if len(auds)>0 else ''
+		subs = []
+		for sub in stream.get('subtitles',{}):
+			if 'language' in sub:
+				forced = ""
+#				forced = "FORCED " if sub.get('forced',False) else ""
+				if sub['language'] == "": subs.append(forced+"??")
+				else: subs.append(forced+sub['language'])
+		subset = set(subs)
+		subs = list(subset)
+		subs.sort()
+		bit_rate = ', '+convert_bitrate(stream['size'] / stream['video'][0]['duration'] * 8) if addon.getSetting('show_bitrate')=='true' and 'size' in stream and 'video' in stream and 'duration' in stream['video'][0] else ''
+		title += '['
+		title += resolution_to_quality(stream['video'][0]) if 'video' in stream and 'height' in stream['video'][0] else ''
+		title += ' '+str(stream['video'][0]['codec']) if addon.getSetting('show_codec')=='true' and 'video' in stream and 'codec' in stream['video'][0] else ''
+		title += ' 3D' if 'video' in stream and '3d' in stream['video'][0] and stream['video'][0]['3d']=='true' else ''
+		title += '] '
+#		title += info['title']+' ' if 'title' in info else ''
+		title += (', '.join(auds)).upper() if len(auds)>0 else ''
+		title += " (tit. "+(', '.join(subs)).upper()+")" if len(subs)>0 else ''
+		desc += "audio: "+(', '.join(auds)).upper()+"\n" if len(auds)>0 else ''
+		desc += "tit.: "+(', '.join(subs)).upper()+"\n" if len(subs)>0 else ''
 		title += ' ('+convert_size(stream['size'])+bit_rate+')' if 'size' in stream else ''
 		duration = stream['video'][0]['duration'] if 'video' in stream and 'duration' in stream['video'][0] else 0
-		addDir(title,build_plugin_url({ 'action': 'play', 'action_value': stream['ident'], 'name': title.encode('utf-8') }), 1, info['poster'], None, None, { 'plot': info['plot'], 'rating': info['rating'], 'duration': duration, 'year': info['year'], 'genre': info['genres']})
-#		gurl = get_stream_url(stream['ident'])
-#		if gurl is not None:
-#			add_video(title,gurl,None,info['poster'],infoLabels={ 'plot': info['plot'], 'rating': info['rating'], 'duration': duration, 'year': info['year'], 'genre': info['genres']})
-#	client.GItem_lst[0].sort(key=lambda x:x.name)
+		if info:
+			addDir(title,build_plugin_url({ 'action': 'play', 'action_value': stream['ident'], 'name': name }), 1, info['poster'], None, None, { 'title': info['title'], 'plot': info['plot'], 'rating': info['rating'], 'duration': duration, 'year': info['year'], 'genre': info['genres']})
+		else:
+			addDir(title,build_plugin_url({ 'action': 'play', 'action_value': stream['ident'], 'name': name }), 1, None, None, None, {'plot': desc, 'duration': duration})
 
 def play(ident,title):
 	gurl = get_stream_url(ident)
 	if gurl is not None:
-		add_video(title,gurl,None,None)
-#		from Plugins.Extensions.archivCZSK.engine.player.player import Player
-#		from Plugins.Extensions.archivCZSK.engine.items import PVideo
-#		it = PVideo()
-#		it.name = title
-#		it.url = gurl
-#		Player(session).play_item(item = it)
-#		client.refresh_screen()
+		add_video(title,gurl,None,None,filename=nparams['name'],infoLabels={'title': nparams['name']})
 
 def play_trailer(id):
 	media = get_media_data('/api/media/filter/ids?id='+id,'')
