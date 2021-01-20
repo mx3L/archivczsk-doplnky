@@ -1,3 +1,6 @@
+2021-01-20 (misanov)
+ * channel display fix
+ * channel default order
 2020-12-13 (misanov)
  * cache epg
  * reverse resolution
