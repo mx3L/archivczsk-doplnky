@@ -19,7 +19,6 @@ addon = ArchivCZSK.get_xbmc_addon('plugin.video.sc2')
 addon_userdata_dir = addon.getAddonInfo('profile')+'/'
 home = addon.getAddonInfo('path')
 christmas = datetime.date(datetime.date.today().year, 12, 20) <= datetime.date.today() <= datetime.date(datetime.date.today().year+1, 1, 6)
-#icon = os.path.join(home, 'icon-christmas.png')
 icon = os.path.join(home, 'icon.png')
 hotshot_url = 'https://plugin.sc2.zone'
 ws_api = 'https://webshare.cz/api'
@@ -86,7 +85,7 @@ def login():
 def get_stream_url(ident):
 	token = login()
 	if token == "":
-		client.add_operation("SHOW_MSG", {'msg': addon.getLocalizedString(40501), 'msgType': 'error', 'msgTimeout': 1, 'canClose': True })
+		client.add_operation("SHOW_MSG", {'msg': addon.getLocalizedString(40501), 'msgType': 'error', 'msgTimeout': 5, 'canClose': True })
 	req = ws_api_request('/file_link/', { 'wst': token, 'ident': ident })
 	xml = ET.fromstring(req.text)
 	if not xml.find('status').text == 'OK':
@@ -176,6 +175,8 @@ def get_info(media,st=False):
 	alangs.sort()
 	langs = (', '.join(alangs)).upper()
 	labels = {}
+	parent = ""
+	fulltitle = ""
 	if 'i18n_info_labels' in media:
 		for label in media['i18n_info_labels']:
 			labels[label['lang']] = label
@@ -186,10 +187,17 @@ def get_info(media,st=False):
 			for lang in langs_pref:
 				if title == '' and lang in labels and 'title' in labels[lang] and re.sub(r'[^a-z0-9]','',strip_accents(labels[lang]['title']).lower())[:len(v)] == v.lower():
 					title = labels[lang]['title']
+					parent = labels[lang].get('parent_titles',[])[0] + " - " if len(labels[lang].get('parent_titles',[])) > 0 else ""
 		title = media['info_labels']['originaltitle'] if title == '' and 'info_labels' in media and 'originaltitle' in media['info_labels'] else title
 	else:
 		title = media['i18n_info_labels'][0]['title'] if 'i18n_info_labels' in media and 'title' in media['i18n_info_labels'][0] else ""
+		parent = media.get('i18n_info_labels',[])[0].get('parent_titles',[])[0] + " - " if len(media.get('i18n_info_labels',[])[0].get('parent_titles',[])) > 0 else ""
 		title = ' ' + media['info_labels']['originaltitle'] + langs if 'info_labels' in media and 'originaltitle' in media['info_labels'] and title == "" else title
+	setitle = ""
+	if 'info_labels' in media and 'episode' in media['info_labels'] and media['info_labels'].get('mediatype') != "movie":
+		if int(media['info_labels']['season']) == 0: setitle = str(int(media['info_labels']['episode'])).zfill(2)+' '
+		elif int(media['info_labels']['season']) != 0: setitle = str(int(media['info_labels']['season'])).zfill(2)+'x'+str(int(media['info_labels']['episode'])).zfill(2)+' '
+	fulltitle = parent + setitle + title + ' (' + str(year) + ')'
 	if not st: title += ' - ' + langs + ' (' + str(year) + ')'
 	genres = ""
 	if 'info_labels' in media and 'genre' in media['info_labels']:
@@ -212,7 +220,7 @@ def get_info(media,st=False):
 		try: duration = media['stream_info']['video']['duration'] or 0
 		except:	pass
 	if 'play_count' in media: plot += "{"+str(media['play_count'])+"}"
-	return {'title': title, 'plot': plot+dadded, 'rating': rating, 'duration': duration, 'poster': poster, 'year': year, 'genres': genres, 'langs': langs}
+	return {'title': title, 'plot': plot+dadded, 'rating': rating, 'duration': duration, 'poster': poster, 'year': year, 'genres': genres, 'langs': langs, 'parent': parent, 'fulltitle': fulltitle}
 
 def add_paging(page, pageCount):
 	if page <= pageCount:
@@ -419,10 +427,13 @@ def process_az(mediaList):
 			addDir(az['key']+' ('+str(az['doc_count'])+')', build_plugin_url({ 'action': action[0], 'action_value': m+','+az['key'] }), 1, None, None, None)
 
 def show_stream_dialog(id,ss=None,ep=None):
-	audios = { 2: '2.0', 6: '5.1', 8: '7.1'}
+	audios = { 1: '1.0', 2: '2.0', 6: '5.1', 8: '7.1'}
+	pname = name
 	media = get_media_data('/api/media/'+id,'')
 	if 'info_labels' in media:
 		info = get_info(media,st=True)
+		if info['fulltitle']:
+			pname = info['fulltitle']
 	else:
 		info = {}
 	streams = get_media_data('/api/media/'+id+'/streams','')
@@ -437,8 +448,8 @@ def show_stream_dialog(id,ss=None,ep=None):
 		auds = []
 		for audio in stream.get('audio',{}):
 			if 'language' in audio:
-				if audio['language'] == "": auds.append(audio.get('codec','')+" "+audios[audio.get('channels',2)]+" ??")
-				else: auds.append(audio.get('codec','')+" "+audios[audio.get('channels',2)]+" "+audio['language'])
+				if audio['language'] == "": auds.append(audio.get('codec','')+" "+audios.get(audio.get('channels',2),"")+" ??")
+				else: auds.append(audio.get('codec','')+" "+audios.get(audio.get('channels',2),"")+" "+audio['language'])
 		audset = set(auds)
 		auds = list(audset)
 		auds.sort()
@@ -466,14 +477,15 @@ def show_stream_dialog(id,ss=None,ep=None):
 		title += ' ('+convert_size(stream['size'])+bit_rate+')' if 'size' in stream else ''
 		duration = stream['video'][0]['duration'] if 'video' in stream and 'duration' in stream['video'][0] else 0
 		if info:
-			addDir(title,build_plugin_url({ 'action': 'play', 'action_value': stream['ident'], 'name': name }), 1, info['poster'], None, None, { 'title': info['title'], 'plot': info['plot'], 'rating': info['rating'], 'duration': duration, 'year': info['year'], 'genre': info['genres']})
+			addDir(title,build_plugin_url({ 'action': 'play', 'action_value': stream['ident'], 'name': pname }), 1, info['poster'], None, None, { 'title': info['title'], 'plot': info['plot'], 'rating': info['rating'], 'duration': duration, 'year': info['year'], 'genre': info['genres']})
 		else:
-			addDir(title,build_plugin_url({ 'action': 'play', 'action_value': stream['ident'], 'name': name }), 1, None, None, None, {'plot': desc, 'duration': duration})
+			addDir(title,build_plugin_url({ 'action': 'play', 'action_value': stream['ident'], 'name': pname }), 1, None, None, None, {'plot': desc, 'duration': duration})
 
 def play(ident,title):
 	gurl = get_stream_url(ident)
 	if gurl is not None:
-		add_video(title,gurl,None,None,filename=nparams['name'],infoLabels={'title': nparams['name']})
+		name = nparams['name']
+		add_video(title,gurl,None,None,filename=name,infoLabels={'title': name})
 
 def play_trailer(id):
 	media = get_media_data('/api/media/filter/ids?id='+id,'')
@@ -632,8 +644,8 @@ except:
 menu = {
 	'root': [
 		build_item(addon.getLocalizedString(30204), 'listsearch', ''),
-		build_item('Vánoce', 'vanoce', '0'),
-		build_item('Vánoce (Česko)', 'vanocecr', '0'),
+#		build_item('Vánoce', 'vanoce', '0'),
+#		build_item('Vánoce (Česko)', 'vanocecr', '0'),
 		build_item(addon.getLocalizedString(30200), 'folder','movies'),
 		build_item(addon.getLocalizedString(30201), 'folder', 'series'),
 		build_item(addon.getLocalizedString(30174), 'folder', 'concerts'),
