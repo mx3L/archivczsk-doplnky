@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<settings>
+	<setting id="pagination" type="enum" label="Položek na stránku" lvalues="25|50|100|150|300|500" default="2"/>
+	<setting id="username" type="text" label="E-mail" default=""/>
+	<setting id="password" type="text" label="Heslo" option="true" default=""/>
+	<setting id="accessToken" type="text" label="Access token" default="" visible="false"/>
+</settings>
