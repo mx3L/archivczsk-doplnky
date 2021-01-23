@@ -110,6 +110,20 @@
   </extension>
 </addon>
 
+<addon id="plugin.video.iprima" version="1.1" name="iPrima.cz" provider-name="Michal Novotný, Roman Smolka">
+<requires>
+	<import addon="xbmc.python" version="2.25.0"/>
+</requires>
+<extension point="xbmc.python.pluginsource" library="default.py">
+	<provides>video</provides>
+</extension>
+<extension point="xbmc.addon.metadata">
+	<summary>iPrima.cz</summary>
+	<description>Doplněk pro zobrazování obsahu z archivu iPrima. Registrace nutná na webu iprima.cz.</description>
+	<platform>all</platform>
+</extension>
+</addon>
+
 <addon id="script.module.dmd-czech.common" name="dmd-czech common python modules" version="1.5.2" provider-name="Jiri Vyhnalek">
   <requires>
     <import addon="xbmc.python" version="2.1.0" />
@@ -427,7 +441,7 @@
 
 <addon id="plugin.video.sledovanitv"
        name="Sledovani.tv"
-       version="1.0"
+       version="1.1"
        provider-name="misanov">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
@@ -591,7 +605,7 @@
   </extension>
 </addon>
 
-<addon id="plugin.video.primaplay" name="iPrima" version="0.4.11" provider-name="Michal Novotny, Ladislav Dokulil">
+<addon id="plugin.video.primaplay" name="iPrima" version="0.4.12" provider-name="Michal Novotny, Ladislav Dokulil">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
     <import addon="script.module.stream.resolver" version="1.6.24" />
