@@ -56,13 +56,19 @@ def main_menu(pageurl, list_only=False):
 
 
 def shows_menu(pageurl, list_only=False):
-    add_dir("ŽIVĚ - Prima", {'action': 'PLAY', 'linkurl': 'https://prima.iprima.cz'}, None, video_item=True)
-    add_dir("ŽIVĚ - Prima COOL", {'action': 'PLAY', 'linkurl': 'https://cool.iprima.cz'}, None, video_item=True)
-    add_dir("ŽIVĚ - Prima MAX", {'action': 'PLAY', 'linkurl': 'https://max.iprima.cz'}, None, video_item=True)
-    add_dir("ŽIVĚ - Prima KRIMI", {'action': 'PLAY', 'linkurl': 'https://krimi.iprima.cz'}, None, video_item=True)
-    add_dir("ŽIVĚ - Prima LOVE", {'action': 'PLAY', 'linkurl': 'https://love.iprima.cz'}, None, video_item=True)
-    add_dir("ŽIVĚ - Prima ZOOM", {'action': 'PLAY', 'linkurl': 'https://zoom.iprima.cz'}, None, video_item=True)
-    add_dir("ŽIVĚ - CNN Prima News", {'action': 'PLAY', 'linkurl': 'https://cnn.iprima.cz/vysilani'}, None, video_item=True)
+    add_dir("[COLOR red]Tento doplněk již není podporován, použijte nový iPrima.cz[/COLOR]", {'action': '', 'linkurl': ''}, os.path.join(_addon_.getAddonInfo('path'), 'cross.png'), infoLabels={'plot':'Tento doplněk již není podporován a bude brzy zrušen a odstraněn z archivu, použijte nový iPrima.cz'})
+    ch = {}
+    html = _play_parser.get_data_cached('https://www.iprima.cz', _play_parser.useCache, 3)
+    sections = re.findall("molecule--list--live-broadcasting-list--item\".*?<a .*?data-trueview-id=\"HP - TV Channels - (.*?)\".*?--item--time\">(.*?)</span>(.*?)</a>.*?--item--time\">(.*?)</span>", html, re.S)
+    for chan in sections:
+        ch[chan[0]] = ' [COLOR YELLOW](' + chan[2].replace("&nbsp;", " ").strip() + ' ' + chan[1] + ' - ' + chan[3] + ')[/COLOR]'
+    add_dir("ŽIVĚ - Prima"+ch.get('prima',''), {'action': 'PLAY', 'linkurl': 'https://prima.iprima.cz'}, None, video_item=True)
+    add_dir("ŽIVĚ - Prima COOL"+ch.get('cool',''), {'action': 'PLAY', 'linkurl': 'https://cool.iprima.cz'}, None, video_item=True)
+    add_dir("ŽIVĚ - Prima MAX"+ch.get('max',''), {'action': 'PLAY', 'linkurl': 'https://max.iprima.cz'}, None, video_item=True)
+    add_dir("ŽIVĚ - Prima KRIMI"+ch.get('krimi',''), {'action': 'PLAY', 'linkurl': 'https://krimi.iprima.cz'}, None, video_item=True)
+    add_dir("ŽIVĚ - Prima LOVE"+ch.get('love',''), {'action': 'PLAY', 'linkurl': 'https://love.iprima.cz'}, None, video_item=True)
+    add_dir("ŽIVĚ - Prima ZOOM"+ch.get('zoom',''), {'action': 'PLAY', 'linkurl': 'https://zoom.iprima.cz'}, None, video_item=True)
+    add_dir("ŽIVĚ - CNN Prima News"+ch.get('cnn',''), {'action': 'PLAY', 'linkurl': 'https://cnn.iprima.cz/vysilani'}, None, video_item=True)
     add_dir("VŠECHNY POŘADY", {'action': 'CATEGORIES', 'linkurl': pageurl}, None)
     add_dir("HLAVNÍ ZPRÁVY", {'action': 'SHOW-NAV', 'linkurl': '//cnn.iprima.cz/porady/hlavni-zpravy'}, None)
 #    add_search_menu()
@@ -233,12 +239,11 @@ def resolve_videos(link):
     result = resolver.filter_by_quality(result, _quality)
     if len(result) > 0:
         for videoItem in result:
-            add_video(videoItem['title'],videoItem['url'])
+            add_video(videoItem['title'],videoItem['url'],infoLabels={'title': re.sub("[\[].*?[\]]", "", videoItem['title'])})
 
 
 def get_menu_link(**kwargs):
     return kwargs
-
 
 action = params.get('action')
 linkurl = params.get('linkurl')

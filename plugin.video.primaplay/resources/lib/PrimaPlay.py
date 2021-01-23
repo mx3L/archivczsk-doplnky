@@ -13,6 +13,7 @@ import datetime
 from Components.config import config
 from cachestack import lru_cache
 from Plugins.Extensions.archivCZSK.engine.tools.util import toString
+from Plugins.Extensions.archivCZSK.engine.client import add_video, showError, showInfo
 
 __author__ = "Ladislav Dokulil"
 __license__ = "GPL 2"
@@ -199,6 +200,18 @@ class Parser:
     def get_video(self, productID):
         url = self.get_player_init_url(productID)
         content = self.get_data_cached(url, self.useCache, 1)
+
+        status = re.findall("<status>(.*?)</status>", content, re.S)
+        for stat in status:
+            if stat == "USER_REQUIRED":
+                showError("Pro zobrazeni tohoto videa je nutne se prihlasit.")
+                return None
+            if stat == "NOT_FOUND":
+                showError("Video bohuzel nebylo nalezeno.")
+                return None
+            if stat != "OK":
+                showError(stat)
+                return None
 
         link_re = re.compile("'?src'?\s*:\s+'(https?://[^']+\\.m3u8.*)'")
         title_re = re.compile("programName: '(.*?)',")

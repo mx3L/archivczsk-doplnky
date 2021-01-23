@@ -1,3 +1,6 @@
+2021-01-22 [0.4.12] (misanov)
+ * Ukonceni podpory doplnku, pouzijte doplnek iPrima.cz
+
 2020-08-31 [0.4.11] (misanov)
  * Uprava zmen na CNN webu
 
