@@ -21,6 +21,7 @@ addon_userdata_dir = addon.getAddonInfo('profile')
 home = addon.getAddonInfo('path')
 icon = os.path.join(home, 'icon.png')
 sessid = addon.getSetting("sessionid")
+pin = addon.getSetting("pin")
 apitime = int(time.time())
 
 headers = {"User-Agent": "okhttp/3.12.0", "PHPSESSID": sessid}
@@ -37,15 +38,18 @@ def writeLog(msg, type='INFO'):
 	except:
 		pass
 
+def _to_string(text):
+	if type(text).__name__ == 'unicode':
+		output = text.encode('utf-8')
+	else:
+		output = str(text)
+	return output
+
 def showInfo(mmsg):
 	client.showInfo(mmsg)
-#	client.add_operation("SHOW_MSG", {'msg': mmsg, 'msgType': 'info', 'msgTimeout': 4, 'canClose': True })
-#	writeLog(mmsg)
 
 def showError(mmsg):
 	client.showInfo(mmsg)
-#	client.add_operation("SHOW_MSG", {'msg': mmsg, 'msgType': 'error', 'msgTimeout': 4, 'canClose': True })
-#	writeLog(mmsg,'ERROR')
 
 def addDir(name, url, mode, image, page=None, kanal=None, infoLabels={}, menuItems={}):
 	params = {'name':name, 'url':url, 'mode':mode, 'page':page, 'kanal':kanal}
@@ -186,19 +190,30 @@ def list_channels():
 	if "status" not in epgdata or epgdata['status'] is 0:
 		showError("Problém s načtením EPG: %s"%data['error'])
 
+	playlist = "#NAME Sledovani TV\n"
+	count = 0
 	if 'channels' in data:
 		for channel in data['channels']:
+			if channel['locked'] != 'none' and channel['locked'] != 'pin': continue
 			title = " (" + epgdata['channels'][channel["id"]][0]["title"] + " - " + epgdata['channels'][channel["id"]][0]["startTime"][-5:] + "-" + epgdata['channels'][channel["id"]][0]["endTime"][-5:] + ")" if 'channels' in epgdata else ""
 			desc = epgdata['channels'][channel["id"]][0].get('description')
 			thumb = epgdata['channels'][channel["id"]][0].get('poster')
 			duration = epgdata['channels'][channel["id"]][0].get('duration')*60
 			year = epgdata['channels'][channel["id"]][0].get('year')
-			if channel['locked'] != 'none': continue
+			if channel['locked'] == 'pin':
+				dname = '[COLOR red]' + channel["name"] + title + '[/COLOR]'
+			else:
+				dname = channel["name"]+'[COLOR yellow]'+title+'[/COLOR]'
 			if channel['type'] != 'radio':
-				addDir(channel["name"]+'[COLOR yellow]'+title+'[/COLOR]', get_url(action='play', title=(channel["name"]+title).encode('utf-8'), url=channel["url"]), 1, thumb, infoLabels={'plot':desc,'duration':duration,'year':year}, menuItems={'Nahrát pořad': {'action': 'set_rec', 'eventid': epgdata['channels'][channel["id"]][0]["eventId"]}})
+				addDir(dname, get_url(action='play', title=(channel["name"]+title).encode('utf-8'), url=channel["url"]), 1, thumb, infoLabels={'plot':desc,'duration':duration,'year':year}, menuItems={'Nahrát pořad': {'action': 'set_rec', 'eventid': epgdata['channels'][channel["id"]][0]["eventId"]}})
+				playlist += "#SERVICE 4097:0:1:"+str(count)+":0:0:0:0:0:0:"+channel['url'].replace(":","%3a")+": "+_to_string(channel["name"])+"\n#DESCRIPTION "+_to_string(channel["name"]+title)+"\n"
+				count = count + 1
 	else:
 		showError("Problém s načtením kanálů: no channels")
 		return
+	f = open(os.path.join(config.plugins.archivCZSK.logPath.getValue(),'sledovanitv.pls'), 'w')
+	f.write(playlist)
+	f.close()
 	return True
 
 def list_radios():
@@ -284,7 +299,6 @@ def list_search():
 
 def list_home():
 	data = call_api(url = "https://sledovanitv.cz/api/show-category?category=box-homescreen&detail=events%2Csubcategories&eventCount=1&PHPSESSID="+sessid, data = "", header = headers)
-#	writeLog(json.dumps(data))
 	if "status" not in data or data['status'] is 0:
 		showError("Problém s načtením kanálů: %s"%data['error'])
 		return False
@@ -316,11 +330,21 @@ def list_continue():
 	if "status" not in data or data['status'] is 0:
 		showError("Problém s načtením pořadů: %s"%data['error'])
 		return False
-	writeLog(json.dumps(data))
 
-def play(title, url):
+def play(title, url, subs=None):
 	res = []
-	req = requests.get(url)
+#	data = call_api(url = "https://sledovanitv.cz/api/pin-lock?PHPSESSID="+sessid, data = "", header = headers)
+	data = call_api(url = "https://sledovanitv.cz/api/is-pin-locked?PHPSESSID="+sessid, data = "", header = headers)
+	if data['pinLocked'] == 1 and pin != "":
+		data = call_api(url = "https://sledovanitv.cz/api/pin-unlock?pin="+str(pin)+"&whiteLogo=true&PHPSESSID="+sessid, data = "", header = headers)
+		if data.get('error'):
+			showError("Špatný PIN")
+			return
+	try:
+		req = requests.get(url)
+	except:
+		showError("Problém při načtení videa. Pokud je červené, zadejte v nastavení správný PIN!")
+		return
 	if req.status_code != 200:
 		showError("Problém při načtení videa z %s: %s"%(url,req.status_code))
 		return
@@ -332,14 +356,19 @@ def play(title, url):
 		res.append(itm)
 	res = sorted(res,key=lambda i:(len(i['quality']),i['quality']), reverse = True)
 	for stream in res:
-		add_video('['+stream['quality']+'] '+title.decode('utf-8'),stream['url'])
+		add_video('['+stream['quality']+'] '+title.decode('utf-8'),stream['url'],subs=subs)
 
 def play_event(eventid):
 	data = call_api(url = "https://sledovanitv.cz/api/event-timeshift?format=m3u8&eventId="+eventid+"&PHPSESSID="+sessid, data = "", header = headers)
 	if "status" not in data or data['status'] is 0:
 		showError("Problém s načtením nahrávky: %s"%data['error'])
 		return
-	play(data["event"]["title"].encode('utf-8'),data["url"])
+	subs = None
+#	if 'subtitles' in data:						### vtt titulky prehravac zatim nepodporuje!
+#		for sub in data['subtitles']:
+#			if sub.get('lang') == "cze":
+#				subs = sub.get('url')
+	play(data["event"]["title"].encode('utf-8'),data["url"],subs)
 
 def play_rec(recid):
 	data = call_api(url = "https://sledovanitv.cz/api/record-timeshift?format=m3u8&recordId="+recid+"&PHPSESSID="+sessid, data = "", header = headers)
@@ -402,7 +431,6 @@ def router(paramstring):
 		list_menu()
 
 url=params['url'][1:] if 'url' in params else urlencode(params)
-#writeLog("URL: "+url)
 
 if check_settings():
 	if not addon.getSetting("sessionid"): get_pairing()
