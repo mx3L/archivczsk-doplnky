@@ -195,9 +195,10 @@ def get_info(media,st=False):
 		title = ' ' + media['info_labels']['originaltitle'] + langs if 'info_labels' in media and 'originaltitle' in media['info_labels'] and title == "" else title
 	setitle = ""
 	if 'info_labels' in media and 'episode' in media['info_labels'] and media['info_labels'].get('mediatype') != "movie":
-		if int(media['info_labels']['season']) == 0: setitle = str(int(media['info_labels']['episode'])).zfill(2)+' '
-		elif int(media['info_labels']['season']) != 0: setitle = str(int(media['info_labels']['season'])).zfill(2)+'x'+str(int(media['info_labels']['episode'])).zfill(2)+' '
+		if int(media['info_labels'].get('season',0)) == 0: setitle = str(int(media['info_labels']['episode'])).zfill(2)+' '
+		elif int(media['info_labels'].get('season',0)) > 0: setitle = str(int(media['info_labels']['season'])).zfill(2)+'x'+str(int(media['info_labels']['episode'])).zfill(2)+' '
 	fulltitle = parent + setitle + title + ' (' + str(year) + ')'
+	if title == '' and setitle != '': title = setitle
 	if not st: title += ' - ' + langs + ' (' + str(year) + ')'
 	genres = ""
 	if 'info_labels' in media and 'genre' in media['info_labels']:
