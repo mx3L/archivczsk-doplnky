@@ -1,3 +1,6 @@
+[B]1.9.2: (misanov)[/B]
+- search
+- fix archiv
 [B]1.9.1: (misanov)[/B]
 - fix live
 [B]1.9.0: (misanov)[/B]
