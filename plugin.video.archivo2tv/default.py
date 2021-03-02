@@ -258,7 +258,7 @@ def list_days(channelKey):
 		  epgId = channel["live"]["epgId"]
 
 	if epgId <> 0:
-	  epgdata = call_o2_api(url = "https://www.o2tv.cz/unity/api/v1/programs/" + str(epgId) + "/", data = None, header = header_unity)
+	  epgdata = call_o2_api(url = "https://api.o2tv.cz/unity/api/v1/programs/" + str(epgId) + "/", data = None, header = header_unity)
 	  if "err" in epgdata:
 		showError("Problém s načtením programu: %s"%toString(epgdata['err']))
 		return
@@ -327,7 +327,7 @@ def list_program(channelKey, day_min):
 
 		if to_ts > int(programs["end"]/1000):	  
 		  if addon.getSetting("details") == "true":  
-			data = call_o2_api(url = "https://www.o2tv.cz/unity/api/v1/programs/" + str(epgId) + "/", data = None, header = header_unity)
+			data = call_o2_api(url = "https://api.o2tv.cz/unity/api/v1/programs/" + str(epgId) + "/", data = None, header = header_unity)
 			if "err" in data:
 			  showError("Problém s načtením programu: %s"%toString(data['err']))
 			  return
@@ -381,7 +381,7 @@ def future_program(channelKey):
 		  epgId = programs["epgId"]
   
 		  if addon.getSetting("details_future") == "true":  
-			data = call_o2_api(url = "https://www.o2tv.cz/unity/api/v1/programs/" + str(epgId) + "/", data = None, header = header_unity)
+			data = call_o2_api(url = "https://api.o2tv.cz/unity/api/v1/programs/" + str(epgId) + "/", data = None, header = header_unity)
 			if "err" in data:
 			  showError("Problém s načtením programu: %s"%toString(data['err']))
 			  return
@@ -574,7 +574,7 @@ def play_video(channelKey, start, end, epgId=0):
 	  return
 
 	if epgId <> 0:
-	  epgdata = call_o2_api(url = "https://www.o2tv.cz/unity/api/v1/programs/" + str(epgId) + "/", data = None, header = header_unity)
+	  epgdata = call_o2_api(url = "https://api.o2tv.cz/unity/api/v1/programs/" + str(epgId) + "/", data = None, header = header_unity)
 	  if "err" in data:
 		showError("Problém s načtením programu")
 #		return
@@ -660,9 +660,8 @@ def program_search(query):
 	if len(channels) > 0:
 	  for channel in channels:
 		kanaly.append(channel[0])
-	writeLog(kanaly)
 	max_ts = int(time.mktime(datetime.now().timetuple()))
-	data = call_o2_api(url = "https://www.o2tv.cz/unity/api/v1/search/tv/depr/?groupLimit=1&maxEnd=" + str(max_ts*1000) + "&q=" + quote(query), data = None, header = header_unity)
+	data = call_o2_api(url = "https://api.o2tv.cz/unity/api/v1/search/tv/depr/?groupLimit=1&maxEnd=" + str(max_ts*1000) + "&q=" + quote(query), data = None, header = header_unity)
 	if "err" in data:
 	  showError("Problém při hledání")
 	  return
@@ -677,7 +676,7 @@ def program_search(query):
 		epgId = programs["epgId"]
 		
 		if addon.getSetting("details") == "true":
-		  epgdata = call_o2_api(url = "https://www.o2tv.cz/unity/api/v1/programs/" + str(epgId) + "/", data = None, header = header_unity)
+		  epgdata = call_o2_api(url = "https://api.o2tv.cz/unity/api/v1/programs/" + str(epgId) + "/", data = None, header = header_unity)
 		  if "err" in epgdata:
 			showError("Problém při hledání")
 #			return
@@ -948,7 +947,7 @@ def get_stream_url(channelKey):
 		  if channel["channel"]["channelKey"].encode("utf-8") == channelKey and "live" in channel:
 			epgId = channel["live"]["epgId"]
 	  if epgId <> 0:
-		data = call_o2_api(url = "https://www.o2tv.cz/unity/api/v1/programs/" + str(epgId) + "/", data = None, header = header_unity)
+		data = call_o2_api(url = "https://api.o2tv.cz/unity/api/v1/programs/" + str(epgId) + "/", data = None, header = header_unity)
 		if "err" in data:
 		  showError("Problém s načtením programu")
 		  return
