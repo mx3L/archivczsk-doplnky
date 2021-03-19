@@ -117,19 +117,19 @@ resources = {
 		'path': shared['graphql_base'],
 		'method': 'POST',
 		'content_path': ['data', 'strip', 'content'],
-		'post_data': '{ "query": "{ strip( id: \\"web-search-episodes\\", paging: { count: $count, offset: $offset } sort: title_asc params: { keyword: \\"$keyword\\" } ) { title content { title type teaser genres premiereDate length admittanceType thumbnailData(size: hbbtv_tile_m) {url} playId } } }"}'
+		'post_data': '{ "query": "{ strip( id: \\"web-search-episodes\\", paging: { count: $count, offset: $offset } sort: title_asc params: { keyword: \\"$keyword\\" } ) { title content { title type teaser genres premiereDate length admittanceType thumbnailData(size: hbbtv_tile_m) {url} playId nid } } }"}'
 	},
 	'search_movies': {
 		'path': shared['graphql_base'],
 		'method': 'POST',
 		'content_path': ['data', 'strip', 'content'],
-		'post_data': '{ "query": "{ strip( id: \\"web-search-movies\\", paging: { count: $count, offset: $offset } sort: title_asc params: { keyword: \\"$keyword\\" } ) { title content { title type teaser genres premiereDate length admittanceType thumbnailData(size: hbbtv_tile_m) {url} playId } } }"}'
+		'post_data': '{ "query": "{ strip( id: \\"web-search-movies\\", paging: { count: $count, offset: $offset } sort: title_asc params: { keyword: \\"$keyword\\" } ) { title content { title type teaser genres premiereDate length admittanceType thumbnailData(size: hbbtv_tile_m) {url} playId nid } } }"}'
 	},
 	'search_bonus': {
 		'path': shared['graphql_base'],
 		'method': 'POST',
 		'content_path': ['data', 'strip', 'content'],
-		'post_data': '{ "query": "{ strip( id: \\"web-search-video-bonus\\", paging: { count: $count, offset: $offset } sort: title_asc params: { keyword: \\"$keyword\\" } ) { title content { title type teaser genres premiereDate length admittanceType thumbnailData(size: hbbtv_tile_m) {url} playId } } }"}'
+		'post_data': '{ "query": "{ strip( id: \\"web-search-video-bonus\\", paging: { count: $count, offset: $offset } sort: title_asc params: { keyword: \\"$keyword\\" } ) { title content { title type teaser genres premiereDate length admittanceType thumbnailData(size: hbbtv_tile_m) {url} playId nid } } }"}'
 	},
 	'play': {
 		'path': shared['play_api_base'] + '/products/id-{id}/play',

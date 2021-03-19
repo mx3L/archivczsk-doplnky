@@ -201,7 +201,7 @@ adr = url.split('/')
 #print('PAGE: ',page)
 
 lookups.shared['pagination'] = lookups.settings['pagination_options'][int(addon.getSetting('pagination'))]
-credentialsAvailable = helpers.performCredentialCheck()
+credentialsAvailable = auth.performCredentialCheck()
 if credentialsAvailable:
 	router(url)
 else:

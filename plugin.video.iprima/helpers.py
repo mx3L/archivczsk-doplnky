@@ -33,24 +33,6 @@ def getJSONPath(data, keys):
 def isPlayable(itemType):
 	return lookups.item_types[itemType]['playable']
 
-def performCredentialCheck():
-	username = addon.getSetting('username')
-	password = addon.getSetting('password')
-	if not username or not password:
-		client.showInfo('Pro přehrávání pořadů je potřeba účet na iPrima.cz\n\nPokud účet nemáte, zaregistrujte se na auth.iprima.cz/user/register a pak zde Menu -> Nastavení vyplňte přihlašovací údaje.')
-		return False
-	return True
-
-def getAccessToken(refresh=False):
-	access_token = addon.getSetting('accessToken')
-	if not access_token or refresh:
-#		print('Getting new access token')
-		username = addon.getSetting('username')
-		password = addon.getSetting('password')
-		access_token = auth.login(username, password)
-		addon.setSetting('accessToken', access_token)
-	return access_token
-
 def requestResource(resource, count=0, page=0, replace={}, postOptions={}, retrying=False):
 	url = getResourceUrl(resource, replace)
 	method = getResourceMethod(resource)
@@ -59,18 +41,23 @@ def requestResource(resource, count=0, page=0, replace={}, postOptions={}, retry
 		'offset': str(page * lookups.shared['pagination'])
 	}
 	options.update(postOptions)
-	token = getAccessToken(refresh=retrying)
+	authorization = auth.getAccessToken(refresh=retrying)
 	common_headers = {
-		'Authorization': 'Bearer ' + token,
-		'x-prima-access-token': token,
-		'X-OTT-Access-Token': token
+		'Authorization': 'Bearer ' + authorization['token'],
+		'x-prima-access-token': authorization['token'],
+		'X-OTT-Access-Token': authorization['token']
+	}
+	cookies = {
+		'prima_device_id': auth.getDeviceId(),
+		'prima_sso_logged_in': authorization['user_id']
 	}
 	if method == 'POST':
 		data = getResourcePostData(resource, options).encode('utf-8')
 		contentPath = getResourceContentPath(resource)
-		request = postUrl(url, data, common_headers)
+		request = postUrl(url, data, common_headers, cookies)
 	else:
-		request = getUrl(url, common_headers)
+		request = getUrl(url, common_headers, cookies)
+#	print(request.content)
 	if request.ok:
 		return getJSONPath(request.json(), contentPath) if method == 'POST' else request.json()
 	elif request.status_code in {401, 403}:
@@ -81,21 +68,23 @@ def requestResource(resource, count=0, page=0, replace={}, postOptions={}, retry
 	client.showError('Server neodpovídá správně')
 	sys.exit(1)
 
-def getUrl(url, headers):
+def getUrl(url, headers, cookies):
 #	print('Requesting: ' + url)
 	request = requests.get(
 		url,
 		timeout=20,
-		headers=headers
+		headers=headers,
+		cookies=cookies
 	)
 	return request
 
-def postUrl(url, data, headers):
+def postUrl(url, data, headers, cookies):
 #	print('Requesting: %s; with data: %s' % (url, data))
 	request = requests.post(
 		url,
 		data=data,
 		timeout=20,
-		headers=headers
+		headers=headers,
+		cookies=cookies
 	)
 	return request
