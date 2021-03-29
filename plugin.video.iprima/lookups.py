@@ -81,19 +81,19 @@ resources = {
 		'path': shared['graphql_base'],
 		'method': 'POST',
 		'content_path': ['data', 'strip', 'content'],
-		'post_data': '{ "query": "{ strip( id: \\"web-movies\\", paging: { count: $count, offset: $offset } sort: title_asc params: { facetFilters: { type: [video] } } ) { title content { title type teaser genres premiereDate length admittanceType thumbnailData(size: hbbtv_tile_m) {url} playId } } }"}'
+		'post_data': '{ "query": "{ strip( id: \\"web-movies\\", paging: { count: $count, offset: $offset } sort: title_asc params: { facetFilters: { type: [video] } } ) { title content { ... on VideoNode { title type teaser genres premiereDate length admittanceType thumbnailData(size: hbbtv_tile_m) {url} playId } } } }"}'
 	},
 	'kids_movies': {
 		'path': shared['graphql_base'],
 		'method': 'POST',
 		'content_path': ['data', 'strip', 'content'],
-		'post_data': '{ "query": "{ strip( id: \\"web-children\\", paging: { count: $count, offset: $offset } sort: title_asc params: { facetFilters: { type: [video] } } ) { title content { title type teaser genres premiereDate length admittanceType thumbnailData(size: hbbtv_tile_m) {url} playId } } }"}'
+		'post_data': '{ "query": "{ strip( id: \\"web-children\\", paging: { count: $count, offset: $offset } sort: title_asc params: { facetFilters: { type: [video] } } ) { title content { ... on VideoNode { title type teaser genres premiereDate length admittanceType thumbnailData(size: hbbtv_tile_m) {url} playId } } } }"}'
 	},
 	'kids_series': {
 		'path': shared['graphql_base'],
 		'method': 'POST',
 		'content_path': ['data', 'strip', 'content'],
-		'post_data': '{ "query": "{ strip( id: \\"web-children\\", paging: { count: $count, offset: $offset } sort: title_asc params: { facetFilters: { type: [program] } } ) { title content { title type teaser genres seasons availableEpisodesCount thumbnailData(size: hbbtv_tile_m) {url} nid } } }"}'
+		'post_data': '{ "query": "{ strip( id: \\"web-children\\", paging: { count: $count, offset: $offset } sort: title_asc params: { facetFilters: { type: [program] } } ) { title content { ... on ProgramNode { title type teaser genres seasons availableEpisodesCount thumbnailData(size: hbbtv_tile_m) {url} nid } } } }"}'
 	},
 	'season': {
 		'path': shared['graphql_base'],
@@ -111,25 +111,26 @@ resources = {
 		'path': shared['graphql_base'],
 		'method': 'POST',
 		'content_path': ['data', 'strip', 'content'],
-		'post_data': '{ "query": "{ strip( id: \\"web-search-series\\", paging: { count: $count, offset: $offset } sort: title_asc params: { keyword: \\"$keyword\\" } ) { title content { title type teaser genres premiereDate length admittanceType thumbnailData(size: hbbtv_tile_m) {url} playId } } }"}'
+		'post_data': '{ "query": "{ strip( id: \\"web-search-series\\", paging: { count: $count, offset: $offset } sort: title_asc params: { keyword: \\"$keyword\\" } ) { title content { ... on VideoNode { title type teaser genres premiereDate length admittanceType thumbnailData(size: hbbtv_tile_m) {url} playId } } } }"}'
+
 	},
 	'search_episodes': {
 		'path': shared['graphql_base'],
 		'method': 'POST',
 		'content_path': ['data', 'strip', 'content'],
-		'post_data': '{ "query": "{ strip( id: \\"web-search-episodes\\", paging: { count: $count, offset: $offset } sort: title_asc params: { keyword: \\"$keyword\\" } ) { title content { title type teaser genres premiereDate length admittanceType thumbnailData(size: hbbtv_tile_m) {url} playId nid } } }"}'
+		'post_data': '{ "query": "{ strip( id: \\"web-search-episodes\\", paging: { count: $count, offset: $offset } sort: title_asc params: { keyword: \\"$keyword\\" } ) { title content { ... on VideoNode { title type teaser genres premiereDate length admittanceType thumbnailData(size: hbbtv_tile_m) {url} playId nid } } } }"}'
 	},
 	'search_movies': {
 		'path': shared['graphql_base'],
 		'method': 'POST',
 		'content_path': ['data', 'strip', 'content'],
-		'post_data': '{ "query": "{ strip( id: \\"web-search-movies\\", paging: { count: $count, offset: $offset } sort: title_asc params: { keyword: \\"$keyword\\" } ) { title content { title type teaser genres premiereDate length admittanceType thumbnailData(size: hbbtv_tile_m) {url} playId nid } } }"}'
+		'post_data': '{ "query": "{ strip( id: \\"web-search-movies\\", paging: { count: $count, offset: $offset } sort: title_asc params: { keyword: \\"$keyword\\" } ) { title content { ... on VideoNode { title type teaser genres premiereDate length admittanceType thumbnailData(size: hbbtv_tile_m) {url} playId nid } } } }"}'
 	},
 	'search_bonus': {
 		'path': shared['graphql_base'],
 		'method': 'POST',
 		'content_path': ['data', 'strip', 'content'],
-		'post_data': '{ "query": "{ strip( id: \\"web-search-video-bonus\\", paging: { count: $count, offset: $offset } sort: title_asc params: { keyword: \\"$keyword\\" } ) { title content { title type teaser genres premiereDate length admittanceType thumbnailData(size: hbbtv_tile_m) {url} playId nid } } }"}'
+		'post_data': '{ "query": "{ strip( id: \\"web-search-video-bonus\\", paging: { count: $count, offset: $offset } sort: title_asc params: { keyword: \\"$keyword\\" } ) { title content { ... on VideoNode { title type teaser genres premiereDate length admittanceType thumbnailData(size: hbbtv_tile_m) {url} playId nid } } } }"}'
 	},
 	'play': {
 		'path': shared['play_api_base'] + '/products/id-{id}/play',

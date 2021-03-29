@@ -45,8 +45,9 @@ def requestResource(resource, count=0, page=0, replace={}, postOptions={}, retry
 	common_headers = {
 		'Authorization': 'Bearer ' + authorization['token'],
 		'x-prima-access-token': authorization['token'],
-		'X-OTT-Access-Token': authorization['token']
-	}
+		'X-OTT-Access-Token': authorization['token'],
+		'Content-Type': 'application/json'
+		}
 	cookies = {
 		'prima_device_id': auth.getDeviceId(),
 		'prima_sso_logged_in': authorization['user_id']
@@ -57,7 +58,9 @@ def requestResource(resource, count=0, page=0, replace={}, postOptions={}, retry
 		request = postUrl(url, data, common_headers, cookies)
 	else:
 		request = getUrl(url, common_headers, cookies)
-#	print(request.content)
+#	print("URL",url)
+#	print("DAT",data,common_headers,cookies)
+#	print("REQ",request.content)
 	if request.ok:
 		return getJSONPath(request.json(), contentPath) if method == 'POST' else request.json()
 	elif request.status_code in {401, 403}:
