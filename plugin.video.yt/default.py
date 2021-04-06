@@ -29,8 +29,6 @@ from provider import ResolveException
 import xbmcprovider
 import util
 
-ytinfo = "https://www.youtube.com/get_video_info?video_id="
-
 def writeLog(msg, type='INFO'):
 	try:
 		from Components.config import config
@@ -44,7 +42,7 @@ def writeLog(msg, type='INFO'):
 class YTContentProvider(ContentProvider):
 
 	def __init__(self, username=None, password=None, filter=None, tmp_dir='/tmp'):
-		ContentProvider.__init__(self, 'YouTube', 'https://youtube.com/', username, password, filter, tmp_dir)
+		ContentProvider.__init__(self, 'YouTube', 'https://www.youtube.com/', username, password, filter, tmp_dir)
 		self.cp = urllib2.HTTPCookieProcessor(cookielib.LWPCookieJar())
 		self.init_urllib()
 
@@ -109,7 +107,7 @@ class YTContentProvider(ContentProvider):
 
 		# kanal dalsi
 		if 'browse_ajax?ctoken=' in url:
-			headers = {"cookie": "CONSENT=YES+CZ.cs+V10+BX; GPS=1", "referer": "https://www.youtube.com", "x-youtube-client-name": "1", "x-youtube-client-version": "2.20201110.02.00"}
+			headers = {"cookie": "CONSENT=YES+CZ.cs+V10+BX; GPS=1", "referer": self.base_url, "x-youtube-client-name": "1", "x-youtube-client-version": "2.20201110.02.00"}
 			httpdata = util.request(url, headers=headers)
 			return self.parseChannelNext(httpdata)
 
@@ -122,6 +120,10 @@ class YTContentProvider(ContentProvider):
 			httpdata = util.request(url,headers=headers)
 			return self.parseSearch(httpdata)
 			
+		# formaty
+		if 'watch?' in url:
+			return self.parseFormats(url)
+
 		return []
 
 	def parseChannelNext(self, httpdata):
@@ -132,7 +134,7 @@ class YTContentProvider(ContentProvider):
 			if "gridVideoRenderer" in video.keys():
 				video_data = video.get("gridVideoRenderer", {})
 				if video_data["thumbnailOverlays"][0]["thumbnailOverlayTimeStatusRenderer"]["style"] == "UPCOMING": continue
-				item = self.video_item()
+				item = self.dir_item()
 				item['title'] = video_data.get("title", {}).get("runs", [[{}]])[0].get("text", None)
 				item['url'] = self.base_url+'watch?v='+video_data.get("videoId", None)
 				item['img'] = 'https://i.ytimg.com/vi/'+video_data.get("videoId", 0)+'/0.jpg'
@@ -140,7 +142,7 @@ class YTContentProvider(ContentProvider):
 				result.append(item)
 		try:
 			ctoken=data[1]["response"]["continuationContents"]["gridContinuation"]["continuations"][0]["nextContinuationData"]["continuation"]
-			result.append(self.dir_item('Dalsi', 'https://www.youtube.com/browse_ajax?ctoken='+ctoken))
+			result.append(self.dir_item('Dalsi', self.base_url + 'browse_ajax?ctoken='+ctoken))
 		except:
 			pass
 		return result
@@ -164,7 +166,7 @@ class YTContentProvider(ContentProvider):
 			if "gridVideoRenderer" in video.keys():
 				video_data = video.get("gridVideoRenderer", {})
 				if video_data["thumbnailOverlays"][0]["thumbnailOverlayTimeStatusRenderer"]["style"] == "UPCOMING": continue
-				item = self.video_item()
+				item = self.dir_item()
 				item['title'] = video_data.get("title", {}).get("runs", [[{}]])[0].get("text", None)
 				item['url'] = self.base_url+'watch?v='+video_data.get("videoId", None)
 				item['img'] = 'https://i.ytimg.com/vi/'+video_data.get("videoId", 0)+'/0.jpg'
@@ -172,7 +174,7 @@ class YTContentProvider(ContentProvider):
 				result.append(item)
 		try:
 			ctoken=data["contents"]["twoColumnBrowseResultsRenderer"]["tabs"][1]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]["itemSectionRenderer"]["contents"][0]["gridRenderer"]["continuations"][0]["nextContinuationData"]["continuation"]
-			result.append(self.dir_item('Dalsi', 'https://www.youtube.com/browse_ajax?ctoken='+ctoken))
+			result.append(self.dir_item('Dalsi', self.base_url + 'browse_ajax?ctoken='+ctoken))
 		except:
 			pass
 		return result
@@ -195,7 +197,7 @@ class YTContentProvider(ContentProvider):
 		for video in videos:
 			if "videoRenderer" in video.keys():
 				video_data = video.get("videoRenderer", {})
-				item = self.video_item()
+				item = self.dir_item()
 				item['title'] = video_data.get("title", {}).get("runs", [[{}]])[0].get("text", None)
 				channel = video_data.get("longBylineText", {}).get("runs", [[{}]])[0].get("text", "")
 				channelUrl = video_data.get("longBylineText", {}).get("runs", [[{}]])[0].get("navigationEndpoint", {}).get("browseEndpoint", {}).get("browseId","")
@@ -216,46 +218,59 @@ class YTContentProvider(ContentProvider):
 				result.append(item)
 		return result
 
-	def resolve(self, item, captcha_cb=None, select_cb=None):
-		item = item.copy()
+	def parseFormats(self, url):
 		result = []
-		import youtube_dl
-		from enigma import getDesktop
-		ydl_opts = {}
-		with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-			meta = ydl.extract_info(self._url(item['url']), download=False)
-		if not meta: return []
-		full_ids = ["18","22","35","37","38","91","92","94","300"]
-		audio_url = ""
-		audio_size = 0
-		for format in meta.get("formats",[]):
-			if 'DASH' in format.get("format",""): continue	# dash neumime
-			url = ""
-			split = "p"
-			filesize = ""
-			if format.get("format_id","0") == "140" and format.get("url",""):
-				audio_url = format.get("url")
-				audio_size = format.get("filesize",0)
-				continue
-			if format.get("format_id","0") in full_ids and format.get("url",""):
-				url = format.get("url","")
-				if format.get("filesize",0): filesize = str(round(format.get("filesize",0)/1048576)) + "MB"
-			elif format.get("height","") > 300 and format.get("url","") and audio_url:  # nezobrazovat zbytecne mensi nez 300p
-				url = format.get("url")+"&suburi="+audio_url
-				if format.get("filesize",0): filesize = str(round((format.get("filesize",0)+audio_size)/1048576)) + "MB"
-				split = "s"
-			if not url: continue
-			if format.get("height",0) > getDesktop(0).size().height(): continue  # nezobrazovat vetsi rozliseni nez je obrazovka
+		url_data = urlparse.urlparse(url)
+		query = urlparse.parse_qs(url_data.query)
+		video_id = query["v"][0]
+		html = util.request(self.base_url + 'get_video_info?video_id=%s&' % video_id)
+		stream_data = urlparse.parse_qs(html.decode('ascii'))
+		player_response = json.loads(stream_data["player_response"][0])
+		if player_response.get("videoDetails",[]).get("isLive",0): # je live, nacteme hls
+			if "streamingData" in player_response and "hlsManifestUrl" in player_response["streamingData"]:
+				html = util.request(player_response["streamingData"]["hlsManifestUrl"])
+				for m in re.finditer('#EXT-X-STREAM-INF:.*?RESOLUTION=\d+x(?P<resolution>\d+).*?\s(?P<chunklist>[^\s]+)', html, re.DOTALL):
+					item = self.video_item()
+					item['url'] = m.group('chunklist')
+					item['quality'] = m.group('resolution') + "p"
+					item['title'] = "[" + item['quality'] + "] " + player_response.get("videoDetails",[]).get("title")
+					result.append(item)
+		else: # neni live, zkonvertujeme do mp4
+			headers = {"referer": "https://yt1s.com/en5","user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36","x-requested-with": "XMLHttpRequest"}
+			html = util.post('https://yt1s.com/api/ajaxSearch/index', {"q":url, "vt": "home"}, headers=headers)
+			data = json.loads(html)
+			if data["status"] == "ok" and "links" in data and "mp4" in data["links"]:
+				for format in data["links"]["mp4"]:
+					item = self.video_item()
+					item['url'] = data["vid"]+"|"+data["links"]["mp4"][format].get("k")
+					item['quality'] = data["links"]["mp4"][format].get("q")
+					item['title'] = "[" + data["links"]["mp4"][format].get("q","") + "] " + data["title"]
+					result.append(item)
+		return sorted(result, key=lambda i:(len(i['quality']),i['quality']), reverse = True)
+
+	def resolve(self, item, captcha_cb=None, select_cb=None):
+		itm = item.copy()
+		result = []
+		if '|' in item['url']:
+			par = item['url'].split('|')
+			headers = {"referer": "https://yt1s.com/en5","user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36","x-requested-with": "XMLHttpRequest"}
+			try:
+				html = util.post('https://yt1s.com/api/ajaxConvert/convert', {"vid":par[0], "k": par[1]}, headers=headers)
+				data = json.loads(html)
+				if data["status"] == "ok" and "dlink" in data:
+					item = self.video_item()
+					item['url'] = data["dlink"]
+					item['quality'] = data["fquality"]
+					item['title'] = data["title"]
+					result.append(item)
+			except Exception, e:
+				client.showInfo("Exception {0} occurred".format(e))
+		else:
 			item = self.video_item()
-			item['url'] = url
-			item['quality'] = str(format.get("height",0)) + split
-			fsplit = format.get("format","").split(' - ')
-			fsearch = re.search("\((.*?)\)", fsplit[1], re.S)
-			if fsearch: title = fsearch.group(1)
-			else: title = fsplit[1]
-			item['title'] = "[" + title + " " + format.get("vcodec","") + " " + filesize + "]"  # zobrazime i ruzne kodeky at si kazdy vybere
+			item['url'] = itm["url"]
+			item['title'] = itm["title"]
 			result.append(item)
-		return list(reversed(result))
+		return result
 
 __scriptid__ = 'plugin.video.yt'
 __scriptname__ = 'YouTube'
