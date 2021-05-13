@@ -514,7 +514,7 @@ def play_trailer(id):
 #		client.refresh_screen()
 
 def get_csfd_api(url):
-	cookies = {'tv_stations':'2%2C3%2C4%2C5%2C24%2C19%2C26%2C33%2C16%2C78%2C1%2C8%2C93%2C13%2C22%2C14%2C41%2C88','tv_tips_order':'rating'}
+	cookies = {'tv_stations':'2%2C3%2C4%2C5%2C24%2C19%2C26%2C33%2C16%2C78%2C1%2C8%2C93%2C13%2C22%2C14%2C41%2C88'}
 	headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:75.0) Gecko/20100101 Firefox/75.0'}
 	result = requests.get('https://www.csfd.cz'+url, headers=headers, cookies=cookies, timeout=loading_timeout, verify=False)
 	if result.status_code != 200:
@@ -523,14 +523,13 @@ def get_csfd_api(url):
 	return result.content
 
 def get_csfd_tips():
-	html = get_csfd_api('/televize/')
+	html = get_csfd_api('/televize/?sort=rating')
 	if html:
-		data = re.search('<ul class="content ui-image-list">(.*?)</ul>', html, re.S)
 		try:
-			articles = re.findall('<img src="(.*?)\?.*?<a href="/film/([0-9]+?)-.*?>(.*?)<.*?film-year.*?>\((.*?)\).*?<p>(.*?)<', data.group(1), re.S)
+			articles = re.findall('<article.*?href="/film/([0-9]+?)-.*?</article>', html, re.S)
 			vals=[]
 			for article in articles:
-				vals.append("value="+article[1])
+				vals.append("value="+article)
 			data = get_media_data('/api/media/filter/service?type=movie&'+'&'.join(vals)+'&service=csfd','')
 			if 'data' in data: process_movies_series(data['data'])
 		except:
@@ -539,9 +538,9 @@ def get_csfd_tips():
 def get_related(cid):
 	html = get_csfd_api('/film/'+str(cid))
 	if html:
-		data = re.search('<div class="ct-related related">(.*?)</div>', html, re.S)
+		data = re.search('<section.*?<h3>[\s]*?Související(.*?)</section>', html, re.S)
 		if data:
-			articles = re.findall('<a href="/film/([0-9]+?)\-.*?"', data.group(1), re.S)
+			articles = re.findall('<article.*?href="/film/([0-9]+?)\-.*?".*?</article>', data.group(1), re.S)
 			vals=[]
 			for article in articles:
 				vals.append("value="+article)
@@ -551,9 +550,9 @@ def get_related(cid):
 def get_similar(cid):
 	html = get_csfd_api('/film/'+str(cid))
 	if html:
-		data = re.search('<div class="ct-related similar">(.*?)</div>', html, re.S)
+		data = re.search('<section.*?<h3>[\s]*?Podobné(.*?)</section>', html, re.S)
 		if data:
-			articles = re.findall('<a href="/film/([0-9]+?)\-.*?"', data.group(1), re.S)
+			articles = re.findall('<article.*?href="/film/([0-9]+?)\-.*?".*?</article>', data.group(1), re.S)
 			vals=[]
 			for article in articles:
 				vals.append("value="+article)
@@ -561,14 +560,18 @@ def get_similar(cid):
 			if 'data' in data: process_movies_series(data['data'])
 
 def get_csfd_tops(origin):
-	if origin>0:
-		html = get_csfd_api('/zebricky/specificky-vyber/?type=3&origin='+str(origin)+'&genre=&year_from=&year_to=&actor=&director=&ok=Zobrazit&_form_=charts&show=complete')
-	else:
-		html = get_csfd_api('/zebricky/nejlepsi-serialy/?show=complete')
+	html = None
+	if int(origin) == 0:
+		html = get_csfd_api('/zebricky/vlastni-vyber/?show=1&filter=rlW0rKOyVwbmYPWipzyanJ4vBz51oTjfVzqyoaWyVwcoKFjvrJIupy9zpz9gVwchqJkfYPW5MJSlK3EiVwchqJkfYPWuL3EipvV6J10fVzEcpzIwqT9lVwcoKK0%3D') # top100 all
+	elif int(origin) == 197:
+		html = get_csfd_api('/zebricky/vlastni-vyber/?show=1&filter=rlW0rKOyVwbmYPWipzyanJ4vBwR5AljvM2IhpzHvBygqYPW5MJSlK2Mlo20vBz51oTjfVayyLKWsqT8vBz51oTjfVzSwqT9lVwcoKFjvMTylMJA0o3VvBygqsD%3D%3D'); # Ceskoslovensko
+	elif int(origin) == 1:
+		html = get_csfd_api('/zebricky/vlastni-vyber/?show=1&filter=rlW0rKOyVwbmYPWipzyanJ4vBwRfVzqyoaWyVwcoKFjvrJIupy9zpz9gVwchqJkfYPW5MJSlK3EiVwchqJkfYPWuL3EipvV6J10fVzEcpzIwqT9lVwcoKK0%3D'); # Cesko
+	elif int(origin) == 2:
+		html = get_csfd_api('/zebricky/vlastni-vyber/?show=1&filter=rlW0rKOyVwbmYPWipzyanJ4vBwVfVzqyoaWyVwcoKFjvrJIupy9zpz9gVwchqJkfYPW5MJSlK3EiVwchqJkfYPWuL3EipvV6J10fVzEcpzIwqT9lVwcoKK0%3D'); # Slovensko
 	if html:
-		data = re.search('<table class="content.*?>(.*?)</table>', html, re.S)
-		if data:
-			articles = re.findall('<a href="/film/([0-9]+?)\-.*?"', data.group(1), re.S)
+		articles = re.findall('<article.*?href="/film/([0-9]+?)-.*?</article>', html, re.S)
+		if articles:
 			vals=[]
 			for article in articles:
 				vals.append("value="+article)
@@ -576,14 +579,18 @@ def get_csfd_tops(origin):
 			if 'data' in data: process_movies_series(data['data'])
 
 def get_csfd_topf(origin):
-	if origin>0:
-		html = get_csfd_api('/zebricky/specificky-vyber/?type=0&origin='+str(origin)+'&genre=&year_from=&year_to=&actor=&director=&ok=Zobrazit&_form_=charts&show=complete')
-	else:
-		html = get_csfd_api('/zebricky/nejlepsi-filmy/?show=complete')
+	html = None
+	if int(origin) == 0:
+		html = get_csfd_api('/zebricky/vlastni-vyber/?show=1&filter=rlW0rKOyVwbjYPWipzyanJ4vBz51oTjfVzqyoaWyVwcoKFjvrJIupy9zpz9gVwchqJkfYPW5MJSlK3EiVwchqJkfYPWuL3EipvV6J10fVzEcpzIwqT9lVwcoKK0%3D') # top100 all
+	elif int(origin) == 197:
+		html = get_csfd_api('/zebricky/vlastni-vyber/?show=1&filter=rlW0rKOyVwbjYPWipzyanJ4vBwR5AljvM2IhpzHvBygqYPW5MJSlK2Mlo20vBz51oTjfVayyLKWsqT8vBz51oTjfVzSwqT9lVwcoKFjvMTylMJA0o3VvBygqsD%3D%3D'); # Ceskoslovensko
+	elif int(origin) == 1:
+		html = get_csfd_api('/zebricky/vlastni-vyber/?show=1&filter=rlW0rKOyVwbjYPWipzyanJ4vBwRfVzqyoaWyVwcoKFjvrJIupy9zpz9gVwchqJkfYPW5MJSlK3EiVwchqJkfYPWuL3EipvV6J10fVzEcpzIwqT9lVwcoKK0%3D'); # Cesko
+	elif int(origin) == 2:
+		html = get_csfd_api('/zebricky/vlastni-vyber/?show=1&filter=rlW0rKOyVwbjYPWipzyanJ4vBwVfVzqyoaWyVwcoKFjvrJIupy9zpz9gVwchqJkfYPW5MJSlK3EiVwchqJkfYPWuL3EipvV6J10fVzEcpzIwqT9lVwcoKK0%3D'); # Slovensko
 	if html:
-		data = re.search('<table class="content.*?>(.*?)</table>', html, re.S)
-		if data:
-			articles = re.findall('<a href="/film/([0-9]+?)\-.*?"', data.group(1), re.S)
+		articles = re.findall('<article.*?href="/film/([0-9]+?)-.*?</article>', html, re.S)
+		if articles:
 			vals=[]
 			for article in articles:
 				vals.append("value="+article)
@@ -652,7 +659,7 @@ menu = {
 		build_item(addon.getLocalizedString(30174), 'folder', 'concerts'),
 		build_item(addon.getLocalizedString(30309), 'csfd', 'tips'),
 		build_item('ČSFD.cz Top filmy', 'csfdtopf', '0'),
-		build_item('ČSFD.cz Top seriály', 'csfdtops', 'tops'),
+		build_item('ČSFD.cz Top seriály', 'csfdtops', '0'),
 		build_item('ČSFD.cz Top filmy (Československo)', 'csfdtopf', '197'),
 		build_item('ČSFD.cz Top filmy (Česko)', 'csfdtopf', '1'),
 		build_item('ČSFD.cz Top filmy (Slovensko)', 'csfdtopf', '2'),
