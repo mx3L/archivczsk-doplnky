@@ -1,3 +1,6 @@
+[B]1.1:[/B]
+Add default audio to show more streams (misanov)
+
 [B]1.0:[/B]
 Initial version (misanov)
 

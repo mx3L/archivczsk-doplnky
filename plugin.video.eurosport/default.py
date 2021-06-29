@@ -218,7 +218,10 @@ def onschedule_list(eurosport):
 				 options = scheduleFilter.get('options')
 				 for option in options:
 					scheduleStr = option.get('value')
-					scheduleDate = datetime.strptime(scheduleStr, '%Y-%m-%d')   
+					try:
+						scheduleDate = datetime.strptime(scheduleStr, '%Y-%m-%d')   
+					except TypeError:
+						scheduleDate = datetime(*(time.strptime(scheduleStr, '%Y-%m-%d')[0:6]))
 					format = '%d %B'
 					title = scheduleDate.strftime(format)  
 					parameter = option.get('parameter')
@@ -464,8 +467,13 @@ def play_video(id):
 
 	data = requests.get(stream_url).content
 
+	audqiurl = ''
 	audenurl = ''
 	audczurl = ''
+	# default qis lang
+	audio = re.search('#EXT-X-MEDIA:TYPE=AUDIO,.*?,LANGUAGE="qis",.*?,URI="(.*?)"', data, re.S)
+	if audio:
+		audqiurl = audio.group(1)
 	# default eng lang
 	audio = re.search('#EXT-X-MEDIA:TYPE=AUDIO,.*?,LANGUAGE="eng",.*?,URI="(.*?)"', data, re.S)
 	if audio:
@@ -489,6 +497,12 @@ def play_video(id):
 			itm['quality'] = m.group('quality') + 'p'
 			itm['lang'] = ' EN'
 			itm['url'] = spliturl[0] + m.group('chunklist') + '&suburi=' + spliturl[0] + audenurl
+			res.append(itm)
+		if audqiurl != '':
+			itm = {}
+			itm['quality'] = m.group('quality') + 'p'
+			itm['lang'] = ' N/A'
+			itm['url'] = spliturl[0] + m.group('chunklist') + '&suburi=' + spliturl[0] + audqiurl
 			res.append(itm)
 	res = sorted(res,key=lambda i:(len(i['quality']),i['quality']), reverse = True)
 	for item in res:
