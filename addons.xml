@@ -72,7 +72,7 @@
 
 <addon id="plugin.video.orangetv"
        name="OrangeTV"
-       version="1.4"
+       version="1.5"
        provider-name="Michal Novotný, Štěpán Ort">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
