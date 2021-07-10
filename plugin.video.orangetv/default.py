@@ -47,7 +47,7 @@ _COMMON_HEADERS = {
 	"X-NanguTv-Platform-Id": "b0af5c7d6e17f24259a20cf60e069c22",
 	"X-NanguTv-Device-size": "normal",
 	"X-NanguTv-Device-Name": "Nexus 7",
-	"X-NanguTv-App-Version": "Android#3.5.32.4-release",
+	"X-NanguTv-App-Version": "Android#7.6.3-release",
 	"X-NanguTv-Device-density": "440",
 	"User-Agent": "Dalvik/2.1.0 (Linux; U; Android 9; Nexus 7 Build/LMY47V)",
 	"Connection": "keep-alive"}
