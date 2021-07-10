@@ -647,6 +647,7 @@ except:
 #writeLog('NAME: '+str(name))
 #writeLog('ACT: '+str(action))
 #writeLog('ACTVAL: '+str(action_value))
+#print nparams
 #print params
 
 menu = {
@@ -785,8 +786,11 @@ elif action[0] == 'movies.streams':
 elif action[0] == 'series.streams':
 	show_stream_dialog(action_value[0])
 elif action[0] == 'episodes':
-	media = get_media_data('/api/media/filter/parent?sort=episode&value='+action_value[0],'')
+	addpage = '&page='+nparams['page'] if 'page' in nparams else ''
+	media = get_media_data('/api/media/filter/parent?sort=episode&value='+action_value[0]+addpage,'')
 	if 'data' in media: process_episodes(media['data'])
+	if 'pagination' in media and 'pageCount' in media['pagination'] and 'page' in media['pagination'] and media['pagination']['pageCount']>1:
+		add_paging(int(media['pagination']['page'])+1, media['pagination']['pageCount'])
 elif action[0] == 'seasons':
 	media = get_media_data('/api/media/filter/parent?sort=episode&value='+action_value[0],'')
 	if 'data' in media: process_seasons(media['data'])
