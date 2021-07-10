@@ -51,17 +51,10 @@ class TA3ContentProvider(ContentProvider):
         item['title'] = 'Live'
         item['url'] = "live.html"
         result.append(item)
-        result.append(self.dir_item('Spravodajstvo', self.base_url + 'archiv.html#mycat'))
-        result.append(self.dir_item('Publicistika', self.base_url + 'archiv/publicistika.html#mycat'))
+        result.append(self.dir_item('Relácie', self.base_url + 'archiv.html#mycat'))
         return result
 
     def list(self, url):
-        # calendar listing
-        if url.find("#date#") == 0:
-            year = int(url.split("#")[2])
-            month = int(url.split("#")[3])
-            url = url.split("#")[-1]
-            return self.date(year, month, url)
 
         purl = urlparse.urlparse(url)
         if url.find("#") != -1:
@@ -72,112 +65,59 @@ class TA3ContentProvider(ContentProvider):
             url = url.split("#")[0]
             result = []
             result.append(self.dir_item(url=url, type='new'))
-            d = date.today()
-            result.append(self.dir_item('[B]Podľa dátumu[/B]',
-                "#date#%d#%d#%s" %(d.year, d.month, url)))
             result.extend(self.list_categories(url))
             return result
-
-        if purl.fragment == "categories":
-            return self.list_categories("http://"+ purl.netloc + purl.path)
+            
+        if 'archiv?page=' in url:
+            result = []
+            result.extend(self.list_categories(url))
+            return result
+         
         return self.list_videos(self._url(url))
 
     def list_categories(self, url):
         result = []
         page = util.request(url)
-        if 'publicistika.html' in url:
-            start = '<select id="articleArchivFilterPublicistika-c"'
-        elif 'archiv.html' in url:
-            start = '<select id="articleArchivFilterSpravodajstvo-c"'
+        if 'archiv' in url:
+            start = '<section id="broadcast-categories-list">'
         else:
             self.error("_list_categories: unknown category url: %s" % url)
             return []
-        data = util.substr(page, start, '</select>')
-        for m in re.finditer('<option\ value=\"(?P<id>\d+)\">(?P<title>[^<]+)</option>', data):
+        data = util.substr(page, start, '</section>')
+        for m in re.finditer('<a\ href=\"(?P<url>[^\"]+)\"\ title=\"(?P<title>[^\"]+)\"', data):
             item = self.dir_item()
-            item['url'] = self._build_url(url, category=m.group('id'))
+            item['url'] = self.base_url + m.group('url') 
             item['title'] = m.group('title')
+            self._filter(result, item)
+        pager_data = util.substr(page,'<div class="pagination-wrap"', '</div>')
+        next_page_match = re.search(r'<a class="page-link" href="(?P<url>[^"]+)" rel="next"', pager_data)
+        if next_page_match:
+            item = self.dir_item()
+            item['type'] = 'next'
+            item['url'] = next_page_match.group('url').replace('&amp;','&')
             self._filter(result, item)
         return result
 
     def list_videos(self, url):
         result = []
         page = util.request(url)
-        data = util.substr(page, '<div class="articles">','<div class="paginator">')
-        listing_iter_re = r"""
-            <article\ class=\"row\">.+?
-                <a\ href=\"(?P<url>[^\"]+)\"><i\ class=\"ta3-icon-video\"[^>]+>[^>]+>(?P<title>[^<]+)</a>.+?
-            </article> """
-        for m in re.finditer(listing_iter_re, data, re.DOTALL | re.VERBOSE):
+        if '?page=' in url:
+             data = util.substr(page, '<h4 class="archive-loop-title">Ďalšie v archíve</h4>','</main>')
+        else:
+             data = util.substr(page, '<main class="main"','</main>')
+        listing_iter_re = r'<a href=\"(?P<url>[^\"]*)\" rel=\"bookmark\" >(?P<title>.*?)<\/a>'
+        for m in re.finditer(listing_iter_re, data, re.DOTALL ):
             item = self.video_item()
             item['title'] = m.group('title').strip()
-            #item['title'] = "%s (%s)" % (m.group('title').strip(), m.group('date').strip())
             item['url'] = m.group('url')
             self._filter(result, item)
-        pager_data = util.substr(page,'<div class="paginator">', '</div>')
-        next_page_match = re.search(r'<li class="next"><a href="(?P<url>[^"]+)', pager_data)
+        pager_data = util.substr(page,'<div class="pagination-wrap"', '</div>')
+        next_page_match = re.search(r'<a class="page-link" href="(?P<url>[^"]+)" rel="next"', pager_data)
         if next_page_match:
             item = self.dir_item()
             item['type'] = 'next'
-            next_url = next_page_match.group('url').replace('&amp;','&')
-            # ta3.com gives invalid page urls for publicistika
-            if "publicistika.html" in url:
-                purl = urlparse.urlparse(url)
-                pnext_url = urlparse.urlparse(next_url)
-                next_url = "http://" + purl.netloc + purl.path + "?" + pnext_url.query
-            item['url'] = next_url
+            item['url'] = next_page_match.group('url').replace('&amp;','&')
             self._filter(result, item)
-        return result
-
-    def _build_url(self, url, category=None, date=None, by_date=None, to_date=None, page=None):
-        purl = urlparse.urlparse(url)
-        if "publicistika.html" in purl.path:
-            date = date or by_date or to_date
-            if date is not None:
-                by_date = to_date = None
-        else:
-            if by_date is None or to_date is None:
-                by_date = date or by_date or to_date
-                to_date = by_date
-                date = None
-
-        # ommit query, we create our own
-        url = "http://" + purl.netloc + purl.path
-        params = {}
-        if category is not None:
-            params['c'] = category
-        if date is not None:
-            params['d'] = "%02d-%02d-%d" % (date)
-        if by_date is not None:
-            params['df'] = "%02d-%02d-%d" % (by_date)
-        if to_date is not None:
-            params['dt'] = "%02d-%02d-%d" % (to_date)
-        if page is not None:
-            params['p'] = page
-        if params:
-            url += "?" + urllib.urlencode(params)
-        return url
-
-
-    def date(self, year, month, url):
-        result = []
-        today = date.today()
-        prev_month = month > 1 and month - 1 or 12
-        prev_year = prev_month == 12 and year - 1 or year
-        item = self.dir_item()
-        item['type'] = 'prev'
-        item['url'] = "#date#%d#%d#%s" % (prev_year, prev_month, url)
-        result.append(item)
-        for d in calendar.LocaleTextCalendar().itermonthdates(year, month):
-            if d.month != month:
-                continue
-            if d > today:
-                break
-            item = self.dir_item()
-            item['title'] = "%d.%d %d" % (d.day, d.month, d.year)
-            item['url'] = self._build_url(url, date=(d.day, d.month, d.year))
-            self._filter(result, item)
-        result.reverse()
         return result
 
     def resolve(self, item, captcha_cb=None, select_cb=None):
