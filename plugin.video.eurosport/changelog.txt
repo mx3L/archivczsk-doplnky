@@ -1,3 +1,6 @@
+[B]1.2:[/B]
+Add live tv and olympics archiv to top menu (misanov)
+
 [B]1.1:[/B]
 Add default audio to show more streams (misanov)
 

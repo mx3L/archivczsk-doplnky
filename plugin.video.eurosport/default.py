@@ -91,6 +91,15 @@ def build_list(type, video, listing, response):
 		av_start_local = av_start.astimezone(tz.tzlocal())
 		av_startstr = av_start_local.strftime("%d.%m.%Y %H:%M")
 		title = av_startstr + ' - ' + attrs.get('name')
+	elif type == 'ontv':
+		# Pull start time from schedule start
+		av_start = parse_date(attrs['scheduleStart'])
+		av_start_local = av_start.astimezone(tz.tzlocal())
+		channel = attrs.get('path')
+		if 'eurosport-1' in channel:
+			title = 'Eurosport 1: ' + attrs.get('name')
+		if 'eurosport-2' in channel:
+			title = 'Eurosport 2: ' + attrs.get('name')
 	else:
 		# Set the base title
 		title = attrs.get('name')
@@ -110,7 +119,10 @@ def build_list(type, video, listing, response):
 	images = video.get('relationships', {}).get('images', {}).get('data', [])
 	image_url = ''
 	if len(images) > 0:
-		image_url = response.get_image_url(images[0]['id'])
+		try: 
+			image_url = response.get_image_url(images[0]['id'])
+		except:
+			pass
 
 	# Set the premiered date
 	if type == 'daily':
@@ -264,43 +276,95 @@ class Eurosport(object):
 		res = self.session.get('{}/playback/v2/videoPlaybackInfo/{}?usePreAuth=true'.format(ROOT_URL,video_id)).json()
 		return res
 
+	def olyonnow(self):
+		res = self.session.get('{0}/cms/routes/olympics/on-now?include=default'.format(ROOT_URL)).json()
+		for error in res.get('errors',[]):
+			if error.get('status',200) != 200:
+				client.showInfo('Error: ' + error.get('detail',''),timeout=20)
+		return OntvResponse(res)
+
+	def olyontoday(self):
+		res = self.session.get('{0}/cms/routes/olympics/schedule?include=default'.format(ROOT_URL)).json()
+		return DailyResponse(res)
+
+
 """
-	OnscheduleResponse sends back an object containing an id and an array of dates inthe current schedule
+    OntvResponse sends back a list of videos that have a start time before now and
+    and end time after now
+"""    
+class OntvResponse(object):
+    def __init__(self, data):
+        self._data = data
+
+    def videos(self, onlyAvailable=True):
+
+        def filterMethod(o):
+            
+            if o.get('type') != 'video':
+                return False
+            if not onlyAvailable:
+                return True
+
+            attributes = o.get('attributes', {})
+
+            # Exclude items not on a channel
+            materialType = attributes.get('materialType')
+            if materialType != 'LINEAR':
+                return False
+
+            # Only include items that are on now
+            if len(attributes) > 0:
+                av_start = parse_date(attributes['scheduleStart'])
+                av_end = parse_date(attributes['scheduleEnd'])
+                now = datetime.now(tz.tzutc())
+                return av_start <= now <= av_end
+
+            return False
+
+        return filter(
+            filterMethod,
+            self._data.get('included', [])
+        )
+
+"""
+    OnscheduleResponse sends back an object containing an id and an array of dates inthe current schedule
 """
 class OnscheduleResponse(object):
-	def __init__(self, data):
-		self._data = data
+    def __init__(self, data):
+        self._data = data
 
-	def scheduleCollection(self, onlyAvailable=True):
+    def scheduleCollection(self, onlyAvailable=True):
 
-		def filterMethod(o):
-			if o.get('type') != 'collection':
-				return False
-			if not onlyAvailable:
-				return True
-			return True	
+        def filterMethod(o):
+            if o.get('type') != 'collection':
+                return False
+            if not onlyAvailable:
+                return True
+                
+            return True    
 
-		return filter(
-			filterMethod,
-			self._data.get('included', [])
-		)
+        return filter(
+            filterMethod,
+            self._data.get('included', [])
+        )
 
-	def images(self):
-		return filter(
-			lambda o: o.get('type') == 'image',
-			self._data.get('included', [])
-		)
+    def images(self):
+        return filter(
+            lambda o: o.get('type') == 'image',
+            self._data.get('included', [])
+        )
 
-	def get_image_url(self, id):
-		wanted_images = list(
-			filter(
-				lambda i: i['id'] == id,
-				self.images()
-			)
-		)
-		if len(wanted_images) > 0:
-			return wanted_images[0]['attributes'].get('src')
-		return None
+    def get_image_url(self, id):
+        wanted_images = list(
+            filter(
+                lambda i: i['id'] == id,
+                self.images()
+            )
+        )
+        if len(wanted_images) > 0:
+            return wanted_images[0]['attributes'].get('src')
+        return None
+
 
 """
 	OndemandResponse sends back a list of sports that have videos available
@@ -433,6 +497,54 @@ class DailyResponse(object):
 		return None
 
 """
+    List what's on Eurosport 1 first
+"""    
+def channel_schedule_key(video):
+    attrs = video['attributes']
+
+    #if attrs.get('materialType') == 'LINEAR':
+    channel = attrs.get('path')
+    if 'eurosport-1' in channel:
+        return 1
+    if 'eurosport-2' in channel:
+        return 2
+
+    return attrs.get('scheduleStart')
+
+
+"""
+    Sort videos by the scheduleStart timestamp
+"""
+def schedule_start_key(video):
+    attrs = video['attributes']
+    return attrs.get('scheduleStart')
+
+
+"""
+    Return list of programmes that are on now
+"""    
+def olympics_onnow(eurosport):
+    olyonnow = eurosport.olyonnow()
+    videos = olyonnow.videos()
+    listing = []
+
+    for video in sorted(videos, key=channel_schedule_key):
+        build_list('ontv', video, listing, olyonnow)
+
+
+"""
+    Return list of available videos for this day
+"""    
+def olympics_ontoday(eurosport):
+    olyontoday = eurosport.olyontoday()
+    videos = olyontoday.videos()
+    listing = []
+
+    for video in sorted(videos, key=schedule_start_key):
+        build_list('daily', video, listing, olyontoday)
+
+
+"""
 Play video located at the URL
 """
 def play_video(id):
@@ -535,6 +647,8 @@ def addDir(name, url, mode, image, page=None, kanal=None, infoLabels={}, menuIte
 
 def menu():
 #	add_dir('Vyhledat', { 'url': '/search/'}, None)
+#	add_dir('Olympics: On now', { 'url': '?action=olympics-onnow'}, None)
+#	add_dir('Olympics: On today', { 'url': '?action=olympics-ontoday'}, None)
 	add_dir(addon.getLocalizedString(30030), { 'url': '?action=on-schedule'}, None)
 	add_dir(addon.getLocalizedString(30031), { 'url': '?action=on-demand' }, None)
 
@@ -550,7 +664,12 @@ def router(params):
 			sport_list(eurosport, params['sport'][0])
 		if params['action'][0] == 'play':
 			play_video(params['id'][0])
+		if params['action'][0] == 'olympics-onnow':
+			olympics_onnow(eurosport)
+		if params['action'][0] == 'olympics-ontoday':
+			olympics_ontoday(eurosport)
 	else:
+		olympics_onnow(eurosport)
 		menu()
 
 token = addon.getSetting('eurosporttoken')
