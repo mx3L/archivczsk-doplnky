@@ -1,3 +1,6 @@
+v1.4.6 (2021-07-28)
+- zmena api url
+
 v1.4.5 (2021-03-02)
 - oprava nacitani programu
 
