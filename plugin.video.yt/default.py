@@ -29,6 +29,10 @@ from provider import ResolveException
 import xbmcprovider
 import util
 
+api_url = "https://www.googleapis.com/youtube/v3/"
+api_key = "AIzaSyCNReMvKLnaWRR5T5uGWpvn4I2VYc78Gy4"
+max_res = 30
+
 def writeLog(msg, type='INFO'):
 	try:
 		from Components.config import config
@@ -38,6 +42,30 @@ def writeLog(msg, type='INFO'):
 		f.close()
 	except:
 		pass
+
+def jsonPost(url, jsonData, headers={}):
+    req = urllib2.Request(url, json.dumps(jsonData), headers)
+    # req.add_header('User-Agent', UA)
+    response = urllib2.urlopen(req)
+    data = response.read()
+    response.close()
+    return data
+
+def yt_time(duration="P1W2DT6H21M32S"):
+	ISO_8601 = re.compile(
+		'P'
+		'(?:(?P<years>\d+)Y)?'
+		'(?:(?P<months>\d+)M)?'
+		'(?:(?P<weeks>\d+)W)?'
+		'(?:(?P<days>\d+)D)?'
+		'(?:T'
+		'(?:(?P<hours>\d+)H)?'
+		'(?:(?P<minutes>\d+)M)?'
+		'(?:(?P<seconds>\d+)S)?'
+		')?')
+	units = list(ISO_8601.match(duration).groups()[-3:])
+	units = list(reversed([int(x) if x != None else 0 for x in units]))
+	return str(datetime.timedelta(seconds=sum([x*60**units.index(x) for x in units])))
 
 class YTContentProvider(ContentProvider):
 
@@ -54,10 +82,13 @@ class YTContentProvider(ContentProvider):
 		return ['categories', 'resolve', 'search']
 
 	def search(self, keyword):
-		return self.list(self.base_url+'results?search_query='+urllib2.quote(keyword))
+		return self.list(api_url + "search?q=" + urllib2.quote(keyword) + "&maxResults=" + str(max_res) + "&key=" + api_key + "&part=snippet,id")
 
 	def categories(self):
 		result = self.load_channels()
+		# result.append(self.dir_item('LIVE NOVÉ', api_url + "search?eventType=live&type=video&maxResults=" + str(max_res) + "&key=" + api_key + "&part=snippet,id&order=date"))
+		# result.append(self.dir_item('LIVE CZ', api_url + "search?eventType=live&type=video&regionCode=CZ&relevanceLanguage=cs&maxResults=" + str(max_res) + "&key=" + api_key + "&part=snippet,id"))
+		# result.append(self.dir_item('LIVE SK', api_url + "search?eventType=live&type=video&regionCode=SK&relevanceLanguage=sk&maxResults=" + str(max_res) + "&key=" + api_key + "&part=snippet,id"))
 		return result
 
 	def save_channel(self,name,url):
@@ -87,9 +118,10 @@ class YTContentProvider(ContentProvider):
 			with open(filename, "r") as file:
 				for line in file:
 					item = line[:-1].split(";")
-					history.append(self.dir_item(item[0], self.base_url+'channel/'+item[1]+'/videos?sort=dd'))
+					history.append(self.dir_item(item[0], api_url + "search?channelId=" + item[1] + "&maxResults=" + str(max_res) + "&key=" + api_key + "&part=snippet,id&order=date"))
 		except IOError:
 			history = []
+		print(history)
 		return history
 
 	def list(self, url):
@@ -99,123 +131,60 @@ class YTContentProvider(ContentProvider):
 			self.save_channel(item[1],item[2])
 			return []
 
-		# kanal
-		if '/channel/' in url:
-			headers = {"cookie": "CONSENT=YES+CZ.cs+V10+BX; GPS=1" }
-			httpdata = util.request(url,headers=headers)
-			return self.parseChannel(httpdata)
+		# vypis
+		if 'search?' in url:
+			return self.parseData(url)
 
-		# kanal dalsi
-		if 'browse_ajax?ctoken=' in url:
-			headers = {"cookie": "CONSENT=YES+CZ.cs+V10+BX; GPS=1", "referer": self.base_url, "x-youtube-client-name": "1", "x-youtube-client-version": "2.20201110.02.00"}
-			httpdata = util.request(url, headers=headers)
-			return self.parseChannelNext(httpdata)
-
-		# hledat v kanalu
-		#https://www.youtube.com/channel/{kanal_url}/search?query=
-
-		# vyhledat
-		if '?search' in url:
-			headers = {"cookie": "CONSENT=YES+CZ.cs+V10+BX; GPS=1" }
-			httpdata = util.request(url,headers=headers)
-			return self.parseSearch(httpdata)
-			
 		# formaty
 		if 'watch?' in url:
 			return self.parseFormats(url)
 
 		return []
 
-	def parseChannelNext(self, httpdata):
-		result = []
+	def parseData(self, url):
+		httpdata = util.request(url)
 		data = json.loads(httpdata)
-		videos = data[1]["response"]["continuationContents"]["gridContinuation"]["items"]
-		for video in videos:
-			if "gridVideoRenderer" in video.keys():
-				video_data = video.get("gridVideoRenderer", {})
-				if video_data["thumbnailOverlays"][0]["thumbnailOverlayTimeStatusRenderer"]["style"] == "UPCOMING": continue
-				item = self.dir_item()
-				item['title'] = video_data.get("title", {}).get("runs", [[{}]])[0].get("text", None)
-				item['url'] = self.base_url+'watch?v='+video_data.get("videoId", None)
-				item['img'] = 'https://i.ytimg.com/vi/'+video_data.get("videoId", 0)+'/0.jpg'
-				item['plot'] = video_data.get("title", {}).get("accessibility",{}).get("accessibilityData",{}).get("label","")
-				result.append(item)
-		try:
-			ctoken=data[1]["response"]["continuationContents"]["gridContinuation"]["continuations"][0]["nextContinuationData"]["continuation"]
-			result.append(self.dir_item('Dalsi', self.base_url + 'browse_ajax?ctoken='+ctoken))
-		except:
-			pass
-		return result
-
-	def parseChannel(self, httpdata):
 		result = []
-		try:
-			start = (httpdata.index('window["ytInitialData"]') + 26)
-		except:
-			start = (httpdata.index('var ytInitialData = ') + 20)
-		end = httpdata.index("};", start) + 1
-		json_str = httpdata[start:end]
-		data = json.loads(json_str)
-		try:
-			videos = data["contents"]["twoColumnBrowseResultsRenderer"]["tabs"][1]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]["itemSectionRenderer"]["contents"][0]["gridRenderer"]["items"]
-		except:
-			from Screens.MessageBox import MessageBox
-			session.open(MessageBox, 'Kanal nenalezen', MessageBox.TYPE_INFO, timeout=8)
-			return []
-		for video in videos:
-			if "gridVideoRenderer" in video.keys():
-				video_data = video.get("gridVideoRenderer", {})
-				if video_data["thumbnailOverlays"][0]["thumbnailOverlayTimeStatusRenderer"]["style"] == "UPCOMING": continue
-				item = self.dir_item()
-				item['title'] = video_data.get("title", {}).get("runs", [[{}]])[0].get("text", None)
-				item['url'] = self.base_url+'watch?v='+video_data.get("videoId", None)
-				item['img'] = 'https://i.ytimg.com/vi/'+video_data.get("videoId", 0)+'/0.jpg'
-				item['plot'] = video_data.get("title", {}).get("accessibility",{}).get("accessibilityData",{}).get("label","")
-				result.append(item)
-		try:
-			ctoken=data["contents"]["twoColumnBrowseResultsRenderer"]["tabs"][1]["tabRenderer"]["content"]["sectionListRenderer"]["contents"][0]["itemSectionRenderer"]["contents"][0]["gridRenderer"]["continuations"][0]["nextContinuationData"]["continuation"]
-			result.append(self.dir_item('Dalsi', self.base_url + 'browse_ajax?ctoken='+ctoken))
-		except:
-			pass
-		return result
-
-	def parseSearch(self, httpdata):
-		result = []
-		start = (httpdata.index("ytInitialData") + len("ytInitialData") + 3)
-		end = httpdata.index("};", start) + 1
-		json_str = httpdata[start:end]
-		data = json.loads(json_str)
-		videos = []
-		for section in data["contents"]["twoColumnSearchResultsRenderer"]["primaryContents"]["sectionListRenderer"]["contents"]:
-			try:
-				for item in section["itemSectionRenderer"]["contents"]:
-					if "videoRenderer" in item:
-						videos = section["itemSectionRenderer"]["contents"]
-						break
-			except:
-				pass
-		for video in videos:
-			if "videoRenderer" in video.keys():
-				video_data = video.get("videoRenderer", {})
-				item = self.dir_item()
-				item['title'] = video_data.get("title", {}).get("runs", [[{}]])[0].get("text", None)
-				channel = video_data.get("longBylineText", {}).get("runs", [[{}]])[0].get("text", "")
-				channelUrl = video_data.get("longBylineText", {}).get("runs", [[{}]])[0].get("navigationEndpoint", {}).get("browseEndpoint", {}).get("browseId","")
-				item['url'] = self.base_url+'watch?v='+video_data.get("videoId", None)
-				item['img'] = 'https://i.ytimg.com/vi/'+video_data.get("videoId", 0)+'/0.jpg'
-				descr = ""
-				try:
-					for desc in video_data.get("descriptionSnippet", {}).get("runs", [{}]):
-						descr+=desc["text"]
-				except:
-					pass
-				duration = video_data.get("lengthText", {}).get("simpleText", 0)
-				views = video_data.get("viewCountText", {}).get("simpleText", 0)
-				item['plot'] = "[" + str(duration) + "] - " + str(channel) + " : " + str(views) + " - " + descr
-				item['menu'] = {}
-				item['menu']['Videa kanalu: '+channel] = {'list': self.base_url+'channel/'+channelUrl+'/videos?sort=dd', 'action-type':'list'}
-				item['menu']['Ulozit kanal: '+channel] = {'list': 'save;'+channel+';'+channelUrl, 'action-type':'list'}
-				result.append(item)
+		ids = []
+		for item in data.get('items'):
+			if item.get("id", {}).get("videoId", "") != "": ids.append(item.get("id", {}).get("videoId", ""))
+		httpdata = util.request(api_url + "videos?id=" + ','.join(ids) + "&key=" + api_key + "&part=snippet,statistics,contentDetails")
+		details = json.loads(httpdata)
+		detail = {}
+		for temp in details.get('items'):
+			detail[temp.get('id')] = temp
+		for temp in data.get('items'):
+			videoId = temp.get("id", {}).get("videoId", "")
+			if videoId == "": continue
+			item = self.dir_item()
+			item['title'] = temp.get("snippet", {}).get("title", "")
+			if temp.get("snippet", {}).get("liveBroadcastContent", "") == "upcoming":
+				item['title'] = "[COLOR red]" + item['title'] + "[/COLOR]"
+			elif temp.get("snippet", {}).get("liveBroadcastContent", "") == "live":
+				item['title'] = "[COLOR green]" + item['title'] + "[/COLOR]"
+			item['url'] = self.base_url+'watch?v=' + videoId
+			item['img'] = detail[videoId].get("snippet", {}).get("thumbnails", {}).get("standard", {}).get("url", None)
+			pt = temp.get("snippet", {}).get("publishTime", "") #2020-12-19T19:58:27Z
+			pts = re.search("([\d]{4})-([\d]{2})-([\d]{2})T([\d]{2}):([\d]{2})",pt)
+			publish = pts.group(3)+"."+pts.group(2)+"."+pts.group(1)+" "+pts.group(4)+":"+pts.group(5) if pts else ""
+			desc = detail[videoId].get("snippet", {}).get("description", "")
+			chan = detail[videoId].get("snippet", {}).get("channelTitle", "")
+			chanId = detail[videoId].get("snippet", {}).get("channelId", "")
+			duration = yt_time(detail[videoId].get("contentDetails", {}).get("duration", ""))
+			views = detail[videoId].get("statistics", {}).get("viewCount", "")
+			item['plot'] = publish + " [" + chan + "] " + str(duration) + " (" + views + "x) - " + desc
+			item['menu'] = {}
+			item['menu']['Videa kanálu: '+chan] = {'list': api_url + "search?channelId=" + chanId + "&maxResults=" + str(max_res) + "&key=" + api_key + "&part=snippet,id&order=date", 'action-type':'list'}
+			item['menu']['Uložit kanál: '+chan] = {'list': 'save;'+chan+';'+chanId, 'action-type':'list'}
+			result.append(item)
+		if "nextPageToken" in data:
+			item = self.dir_item()
+			item['title'] = "[COLOR yellow]>>> DALŠÍ >>>[/COLOR]"
+			if "pageToken" in url:
+				item['url'] = re.sub(r"pageToken=([^\&]+)","pageToken=" + data["nextPageToken"],url)
+			else:
+				item['url'] = url + '&pageToken=' + data["nextPageToken"]
+			result.append(item)
 		return result
 
 	def parseFormats(self, url):
@@ -223,24 +192,49 @@ class YTContentProvider(ContentProvider):
 		url_data = urlparse.urlparse(url)
 		query = urlparse.parse_qs(url_data.query)
 		video_id = query["v"][0]
-		html = util.request(self.base_url + 'get_video_info?video_id=%s&' % video_id)
-		stream_data = urlparse.parse_qs(html.decode('ascii'))
-		player_response = json.loads(stream_data["player_response"][0])
-		if player_response.get("videoDetails",[]).get("isLive",0): # je live, nacteme hls
-			if "streamingData" in player_response and "hlsManifestUrl" in player_response["streamingData"]:
-				html = util.request(player_response["streamingData"]["hlsManifestUrl"])
-				for m in re.finditer('#EXT-X-STREAM-INF:.*?RESOLUTION=\d+x(?P<resolution>\d+).*?\s(?P<chunklist>[^\s]+)', html, re.DOTALL):
+		headers = {
+			"Content-Type": "application/json",
+			"Accept": "application/json",
+			"referer": "https://www.youtube.com",
+			"user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36",
+			"X-Goog-Api-Key": "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"
+		}
+		post = {
+			"context": {
+				"client": {
+					"clientName": "WEB",
+					"clientVersion": "2.20210721.00.00",
+					"clientScreen": "EMBED"
+				}
+			},
+			"videoId": video_id
+		}
+		html = jsonPost('https://youtubei.googleapis.com/youtubei/v1/player?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8', post, headers=headers)
+		data = json.loads(html)
+		if "streamingData" in data and "hlsManifestUrl" in data["streamingData"]: # Live stream
+			html = util.request(data["streamingData"]["hlsManifestUrl"])
+			for m in re.finditer('#EXT-X-STREAM-INF:.*?RESOLUTION=\d+x(?P<resolution>\d+).*?\s(?P<chunklist>[^\s]+)', html, re.DOTALL):
+				item = self.video_item()
+				item['url'] = m.group('chunklist')
+				item['quality'] = m.group('resolution') + "p"
+				item['title'] = "[" + item['quality'] + "] " + data.get("videoDetails",[]).get("title")
+				result.append(item)
+		elif "streamingData" in data and "formats" in data["streamingData"]: # Original YT stream
+			if "url" in data["streamingData"]["formats"][0]:
+				for format in data["streamingData"]["formats"]:
 					item = self.video_item()
-					item['url'] = m.group('chunklist')
-					item['quality'] = m.group('resolution') + "p"
-					item['title'] = "[" + item['quality'] + "] " + player_response.get("videoDetails",[]).get("title")
+					item['url'] = format['url']
+					item['quality'] = format['qualityLabel']
+					item['title'] = "[" + item['quality'] + " Orig] " + data.get("videoDetails",[]).get("title")
 					result.append(item)
-		else: # neni live, zkonvertujeme do mp4
-			headers = {"referer": "https://yt1s.com/en5","user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36","x-requested-with": "XMLHttpRequest"}
+		# Externi konverze do MP4 ne live streamu
+		if not data.get("videoDetails",[]).get("isLive"):
+			headers = {"referer": "https://yt1s.com/en23","user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36","x-requested-with": "XMLHttpRequest"}
 			html = util.post('https://yt1s.com/api/ajaxSearch/index', {"q":url, "vt": "home"}, headers=headers)
 			data = json.loads(html)
 			if data["status"] == "ok" and "links" in data and "mp4" in data["links"]:
 				for format in data["links"]["mp4"]:
+					if data["links"]["mp4"][format].get("q") == "auto": continue
 					item = self.video_item()
 					item['url'] = data["vid"]+"|"+data["links"]["mp4"][format].get("k")
 					item['quality'] = data["links"]["mp4"][format].get("q")
@@ -249,6 +243,8 @@ class YTContentProvider(ContentProvider):
 		return sorted(result, key=lambda i:(len(i['quality']),i['quality']), reverse = True)
 
 	def resolve(self, item, captcha_cb=None, select_cb=None):
+		if 'watch?' in item['url']:
+			return self.parseFormats(item['url'])
 		itm = item.copy()
 		result = []
 		if '|' in item['url']:
