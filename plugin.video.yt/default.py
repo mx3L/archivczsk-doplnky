@@ -121,7 +121,6 @@ class YTContentProvider(ContentProvider):
 					history.append(self.dir_item(item[0], api_url + "search?channelId=" + item[1] + "&maxResults=" + str(max_res) + "&key=" + api_key + "&part=snippet,id&order=date"))
 		except IOError:
 			history = []
-		print(history)
 		return history
 
 	def list(self, url):
@@ -202,8 +201,8 @@ class YTContentProvider(ContentProvider):
 		post = {
 			"context": {
 				"client": {
-					"clientName": "WEB",
-					"clientVersion": "2.20210721.00.00",
+					"clientName": "ANDROID",
+					"clientVersion": "16.20",
 					"clientScreen": "EMBED"
 				}
 			},

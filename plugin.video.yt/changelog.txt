@@ -1,3 +1,6 @@
+[B]1.5:[/B] 15.10.2021
+- zmena klienta
+
 [B]1.4:[/B] 11.9.2021
 - rewrite parseru dle Google API
 - formaty Orig jsou original z Youtube (jen do HD), ostatni jsou konvertovane (HD+, nacitaji se dele a nemusi fungovat)
