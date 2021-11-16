@@ -46,7 +46,8 @@ def requestResource(resource, count=0, page=0, replace={}, postOptions={}, retry
 		'Authorization': 'Bearer ' + authorization['token'],
 		'x-prima-access-token': authorization['token'],
 		'X-OTT-Access-Token': authorization['token'],
-		'Content-Type': 'application/json'
+		'Content-Type': 'application/json',
+		'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.35 Safari/537.36'
 		}
 	cookies = {
 		'prima_device_id': auth.getDeviceId(),
