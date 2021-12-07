@@ -71,7 +71,7 @@ def menu():
 
 def section(resource):
 	if resource == 'live':
-		html = requests.get('https://www.iprima.cz')
+		html = requests.get('https://www.iprima.cz', verify=False)
 		sections = re.findall("<video .*?poster=\"(.*?)\".*?molecule--list--live-broadcasting-list--item\".*?<a .*?data-trueview-id=\"HP - TV Channels - (.*?)\".*?--item--time\">(.*?)</span>(.*?)</a>.*?--item--time\">(.*?)</span>", html.text, re.S)
 		for chan in sections:
 			chid = chan[1]

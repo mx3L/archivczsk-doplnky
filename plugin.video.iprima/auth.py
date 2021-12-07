@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import re
+#from ssl import VerifyFlags
 import requests
 import helpers
 import sys
@@ -80,7 +81,7 @@ def login(email, password, device_id):
 	}
 
 	# Get login page
-	login_page = s.get('https://auth.iprima.cz/oauth2/login', cookies=cookies)
+	login_page = s.get('https://auth.iprima.cz/oauth2/login', cookies=cookies, verify=False)
 	login_page_content = login_page.text
 
 	# Acquire CSRF token
@@ -97,7 +98,7 @@ def login(email, password, device_id):
 		'_email': email,
 		'_password': password,
 		'_csrf_token': csrf_token
-	}, cookies=cookies)
+	}, cookies=cookies, verify=False)
 
 	# Acquire authorization code from login result
 	parsed_auth_url = urlparse(do_login.url)
@@ -114,7 +115,7 @@ def login(email, password, device_id):
 		'grant_type': 'authorization_code',
 		'code': auth_code,
 		'redirect_uri': 'https://auth.iprima.cz/sso/auth-check'
-	}, cookies=cookies)
+	}, cookies=cookies, verify=False)
 	if get_token.ok:
 		return get_token.json()
 	else:

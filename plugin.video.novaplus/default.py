@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import urllib2,urllib,re,os,string,time,base64,datetime
+import urllib2,urllib,re,os,string,time,base64,datetime,json
 from urlparse import urlparse, urlunparse, parse_qs
 import aes
 try:
@@ -11,6 +11,8 @@ from parseutils import *
 from util import addDir, addLink, addSearch, getSearch
 from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
 from Plugins.Extensions.archivCZSK.engine.client import add_video
+from Plugins.Extensions.archivCZSK.engine import client
+from Screens.MessageBox import MessageBox
 
 __baseurl__ = 'http://novaplus.nova.cz'
 __dmdbase__ = 'http://iamm.uvadi.cz/xbmc/voyo/'
@@ -20,11 +22,12 @@ profile = addon.getAddonInfo('profile')
 __settings__ = addon
 home = __settings__.getAddonInfo('path')
 icon =  os.path.join( home, 'icon.png' )
-fanart = os.path.join( home, 'fanart.jpg' )
 
-def get_url(url):
+def get_url(url,headers={}):
     req = urllib2.Request(url)
     req.add_header('User-Agent', _UserAgent_)
+    for h in headers:
+        req.add_header(h, headers[h])
     response = urllib2.urlopen(req)
     data=response.read()
     response.close()
@@ -63,23 +66,28 @@ class loguj(object):
             f.write(dtn.strftime("%d.%m.%Y %H:%M:%S.%f")[:-3] + " [" + type + "] %s\n" % msg)
             f.close()
         except:
-            print "####NOVAPLUS#### write log failed!!!"
             pass
-        finally:
-            print "####NOVAPLUS#### [" + type + "] " + msg
 
 def OBSAH():
-    addDir('ŽIVĚ - Nova','nova_avod',7,'https://upload.wikimedia.org/wikipedia/commons/2/2f/TV_Nova_logo_2017.png',1)
-    addDir('ŽIVĚ - Nova Cinema','nova_cinema_avod',7,'https://upload.wikimedia.org/wikipedia/commons/c/cd/Nova_Cinema_logo.png',1)
-    addDir('ŽIVĚ - Nova Action','nova_action_avod',7,'https://upload.wikimedia.org/wikipedia/commons/d/d2/Nova-action-logo-2017.png',1)
-    addDir('ŽIVĚ - Nova Gold','nova_gold_avod',7,'https://upload.wikimedia.org/wikipedia/commons/7/7f/Nova_Gold_logo.png',1)
-    addDir('ŽIVĚ - Nova 2','nova_2_avod',7,'https://upload.wikimedia.org/wikipedia/commons/3/34/Nova_2_logo-600x207.png',1)
-    addDir('Úvodní stránka','http://novaplus.nova.cz/',6,icon,1)
-    addDir('Seriály a pořady','http://novaplus.nova.cz/porady/',5,icon,1)
-    addDir('Televizní noviny','http://novaplus.nova.cz/porad/televizni-noviny',2,icon,1)
-    addDir('Víkend','http://novaplus.nova.cz/porad/vikend',2,icon,1)
-    addDir('Koření','http://novaplus.nova.cz/porad/koreni',2,icon,1)
-    addDir('Střepiny','http://novaplus.nova.cz/porad/strepiny',2,icon,1)
+    ch = {}
+    html = get_url('https://novaplus.nova.cz/sledujte-zive/1-nova')
+    sections = re.findall("class=\"js-channels-navigation-carousel(.*?)s-content-wrapper", html, re.S)
+    for section in sections:
+        chans = re.findall("img.*?alt=\"(.*?)\".*?<h4.*?>(.*?)</h4>.*?e-time-start\">(.*?)<.*?e-time-end\">(.*?)<", section, re.S)
+        for chan in chans:
+            ch[chan[0]] = ' (' + chan[1].replace("&nbsp;", " ") + ' ' + chan[2] + ' - ' + chan[3] + ')'
+    addDir('ŽIVĚ - Nova'+ch.get('Nova',''),'nova-live',7,None,1)
+    addDir('ŽIVĚ - Nova Cinema'+ch.get('Nova Cinema',''),'nova-cinema-live',7,None,1)
+    addDir('ŽIVĚ - Nova Action'+ch.get('Nova Action',''),'nova-action-live',7,None,1)
+    addDir('ŽIVĚ - Nova Fun'+ch.get('Nova Fun',''),'nova-fun-live',7,None,1)
+    addDir('ŽIVĚ - Nova Lady'+ch.get('Nova Lady',''),'nova-lady-live',7,None,1)
+    addDir('ŽIVĚ - Nova Gold'+ch.get('Nova Gold',''),'nova-gold-live',7,None,1)
+    addDir('Úvodní stránka','http://novaplus.nova.cz/',6,None,1)
+    addDir('Seriály a pořady','http://novaplus.nova.cz/porady/',5,None,1)
+    addDir('Televizní noviny','http://novaplus.nova.cz/porad/televizni-noviny',2,None,1)
+    addDir('Víkend','http://novaplus.nova.cz/porad/vikend',2,None,1)
+    addDir('Koření','http://novaplus.nova.cz/porad/koreni',2,None,1)
+    addDir('Střepiny','http://novaplus.nova.cz/porad/strepiny',2,None,1)
 
 
 def HOMEPAGE(url,page):  # new by MN
@@ -94,7 +102,7 @@ def HOMEPAGE(url,page):  # new by MN
     sections = re.findall("<h3 class=\"e-articles-title\">(.*?)</h3>(.*?)</section>", html, re.S)
     if sections != None:
         for section in sections:
-            category = re.sub(r'<[^>]*?>', '',section[0]).replace('&nbsp;', ' ').replace(' ','').replace('\n','')
+            category = re.sub(r'<[^>]*?>', '',section[0]).replace('&nbsp;', ' ').replace('  ',' ').replace('\n','').strip()
             articles = re.findall("<article(.*?)</article>", section[1], re.S)
             if category == "TOP POŘADY":
                 Hmode = 2
@@ -104,6 +112,7 @@ def HOMEPAGE(url,page):  # new by MN
                 for article in articles:
                     url = re.search("<a href=\"(.*?)\"", article, re.S) or ""
                     title = re.search("<a.*?title=\"(.*?)\"", article, re.S) or ""
+                    title = re.search("<span class=\"e-text\">(.*?)<\/span>", article, re.S) or title
                     thumb = re.search("<img.*?data-original=\"(.*?)\"", article, re.S) or ""
                     if url != "" and title != "":
                         if thumb != "":
@@ -111,9 +120,9 @@ def HOMEPAGE(url,page):  # new by MN
                         else:
                             addDir(category + " - " + title.group(1).replace('&nbsp;', ' '),url.group(1),Hmode,None,1)
             else:
-                addLink("[COLOR red]Chyba načítání pořadů[/COLOR]","#",None,"")
+                session.open(MessageBox, text='Chyba načítání pořadů', timeout=20, type=MessageBox.TYPE_INFO, close_on_any_key=False, enable_input=True)
     else:
-        addLink("[COLOR red]Chyba načítání kategorie[/COLOR]","#",None,"")
+        session.open(MessageBox, text='Chyba načítání kategorie', timeout=20, type=MessageBox.TYPE_INFO, close_on_any_key=False, enable_input=True)
 
 def CATEGORIES(url,page):  # rewrite by MN
     html = get_url(url)
@@ -131,9 +140,9 @@ def CATEGORIES(url,page):  # rewrite by MN
                     else:
                         addDir(title.group(1).replace('&nbsp;', ' '),url.group(1),2,None,1)
         else:
-            addLink("[COLOR red]Chyba načítání pořadů[/COLOR]","#",None,"")
+            session.open(MessageBox, text='Chyba načítání pořadů', timeout=20, type=MessageBox.TYPE_INFO, close_on_any_key=False, enable_input=True)
     else:
-        addLink("[COLOR red]Chyba načítání kategorie[/COLOR]","#",None,"")
+        session.open(MessageBox, text='Chyba načítání kategorie', timeout=20, type=MessageBox.TYPE_INFO, close_on_any_key=False, enable_input=True)
 
 def EPISODES(url,name): # rewrite by MN
     html = get_url(url)
@@ -176,15 +185,13 @@ def VIDEOLINK(url,name):    # rewrite by MN
 
     # pokud hlavni article neexistuje, jsme na specialni strance se seznamem dilu a hledame odkaz
     if aarticle is None and html.find('property="og:url" content="http://voyo.nova.cz/') != -1:
-        addLink("[COLOR red]Chyba: Video lze přehrát jen na voyo.nova.cz[/COLOR]","#",None,"")
+        session.open(MessageBox, text='Video lze přehrát jen na voyo.nova.cz', timeout=20, type=MessageBox.TYPE_INFO, close_on_any_key=False, enable_input=True)
         return
 
     # pokud stale hlavni article neexistuje, chyba
     if aarticle is None:
-        article = None
-        print "Na stránce nenalezena sekce s videi. Program nebude fungovat správně."+url
-        addLink("[COLOR red]Na stránce nenalezena sekce s videi: "+url+"[/COLOR]","#",None,"")
-        #xbmcgui.Dialog().ok("Nova Plus TV Archiv", "Na stránce nenalezena sekce s videi. Program nebude fungovat správně.", url)
+        message = 'Na stránce nenalezena sekce s videi. Pravděpodpobně se jedná o placený obsah VOYO. '+url
+        session.open(MessageBox, text=message, timeout=20, type=MessageBox.TYPE_INFO, close_on_any_key=False, enable_input=True)
         return
     else:
         article = aarticle.group(1)
@@ -209,7 +216,6 @@ def VIDEOLINK(url,name):    # rewrite by MN
         url = iframe.group(1)
     else:
         url = None
-    print ' - iframe src ' + url
 
     # nacteni a zpracovani iframe
     req = urllib2.Request(url)
@@ -234,16 +240,7 @@ def VIDEOLINK(url,name):    # rewrite by MN
         if urls != None:
             addLink('[B]' + name.replace('&nbsp;', ' ') + '[/B]',urls.group(1).replace("\\","")+".m3u8",thumb,desc.replace('&nbsp;', ' '))
         else:
-            print 'Chyba: Video nelze přehrát'
-            addLink("[COLOR red]Chyba: Video nelze přehrát[/COLOR]","#",None,"")
-            #xbmcgui.Dialog().ok('Chyba', 'Video nelze přehrát', '', '')
-
-    # dalsi dily poradu
-#    for article in doc.findAll('article', 'b-article b-article-text b-article-inline'):
-#        url = article.a['href'].encode('utf-8')
-#        title = article.a['title'].encode('utf-8')
-#        thumb = article.a.div.img['data-original'].encode('utf-8')
-#        addDir(title,url,3,thumb,1)
+            session.open(MessageBox, text='Video bohužel nelze přehrát', timeout=20, type=MessageBox.TYPE_INFO, close_on_any_key=False, enable_input=True)
 
     # stranka poradu
     section = re.search("<h1 class=\"title\"><a href=\"(.*?)\">(.*?)</a>", html, re.S)
@@ -254,7 +251,12 @@ def VIDEOLINK(url,name):    # rewrite by MN
         addDir(title.replace('&nbsp;', ' '),url,2,thumb,1)
 
 def LIVE(url):
-    add_video(name,'https://nova-live.ssl.cdn.cra.cz/channels/'+url+'/playlist/cze.m3u8',live=True)
+    text = get_url('https://media.cms.nova.cz/embed/'+url+'?autoplay=1', headers={"referer": "https://novaplus.nova.cz/"})
+    data = re.search("replacePlaceholders\(\{(.*?)\}\)", text, re.S)
+    if data != None:
+        plr = json.loads('{'+data.group(1)+'}')
+        url = plr["tracks"]["HLS"][0]["src"]
+        add_video(name,url,live=True,settings={"user-agent":_UserAgent_,"extra-headers":{'referer':'https://media.cms.nova.cz/'}})
 
 url=None
 name=None
@@ -278,8 +280,6 @@ try:
         page=int(params["page"])
 except:
         pass
-
-#print "Mode: %s, Url: %s, Name: %s, Page: %s"%(mode, url, name, page)
 
 if mode==None or url==None or len(url)<1:
         OBSAH()

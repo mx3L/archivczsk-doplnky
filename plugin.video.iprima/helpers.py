@@ -78,7 +78,8 @@ def getUrl(url, headers, cookies):
 		url,
 		timeout=20,
 		headers=headers,
-		cookies=cookies
+		cookies=cookies,
+		verify=False
 	)
 	return request
 
@@ -89,6 +90,7 @@ def postUrl(url, data, headers, cookies):
 		data=data,
 		timeout=20,
 		headers=headers,
-		cookies=cookies
+		cookies=cookies,
+		verify=False
 	)
 	return request
