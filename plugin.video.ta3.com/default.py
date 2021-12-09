@@ -276,56 +276,62 @@ class TA3ContentProvider(ContentProvider):
 
     def _resolve_vod(self, item):
         resolved = []
-        data = util.request(self._url(item['url']))
-        video_id = re.search("LiveboxPlayer.archiv\(.+?videoId:\s*'([^']+)'", data, re.DOTALL).group(1)
-        #print "video_id", video_id
-        player_data = util.request("http://embed.livebox.cz/ta3_v2/vod-source.js", {'Referer':self._url(item['url'])})
-        #print "player_data", player_data
-        url_format = re.search(r'my.embedurl = \[\{"src" : "([^"]+)"', player_data).group(1)
-        #print "url_format", url_format
-        manifest_url = "https:" + url_format.format(video_id)
-        #print "manifest_url", manifest_url
-        manifest = util.request(manifest_url)
-        print("manifest", manifest)
-        for m in re.finditer('#EXT-X-STREAM-INF:PROGRAM-ID=\d+,BANDWIDTH=(?P<bandwidth>\d+).*?(,RESOLUTION=(?P<resolution>\d+x\d+))?\s(?P<chunklist>[^\s]+)', manifest, re.DOTALL):
-            item = self.video_item()
-            item['surl'] = item['title']
-            item['quality'] = m.group('bandwidth')
-            item['url'] = urlparse.urljoin(manifest_url, m.group('chunklist'))
-            resolved.append(item)
-        resolved = sorted(resolved, key=lambda x:int(x['quality']), reverse=True)
-        if len(resolved) == 3:
-            qualities = ['720p', '480p', '360p']
-            for idx, item in enumerate(resolved):
-                item['quality'] = qualities[idx]
-        else:
-            for idx, item in enumerate(resolved):
-                item['quality'] += 'b/s'
+        try:
+            data = util.request(self._url(item['url']))
+            video_id = re.search("LiveboxPlayer.archiv\(.+?videoId:\s*'([^']+)'", data, re.DOTALL).group(1)
+            #print "video_id", video_id
+            player_data = util.request("http://embed.livebox.cz/ta3_v2/vod-source.js", {'Referer':self._url(item['url'])})
+            #print "player_data", player_data
+            url_format = re.search(r'my.embedurl = \[\{"src" : "([^"]+)"', player_data).group(1)
+            #print "url_format", url_format
+            manifest_url = "https:" + url_format.format(video_id)
+            #print "manifest_url", manifest_url
+            manifest = util.request(manifest_url)
+            print("manifest", manifest)
+            for m in re.finditer('#EXT-X-STREAM-INF:PROGRAM-ID=\d+,BANDWIDTH=(?P<bandwidth>\d+).*?(,RESOLUTION=(?P<resolution>\d+x\d+))?\s(?P<chunklist>[^\s]+)', manifest, re.DOTALL):
+                item = self.video_item()
+                item['surl'] = item['title']
+                item['quality'] = m.group('bandwidth')
+                item['url'] = urlparse.urljoin(manifest_url, m.group('chunklist'))
+                resolved.append(item)
+            resolved = sorted(resolved, key=lambda x:int(x['quality']), reverse=True)
+            if len(resolved) == 3:
+                qualities = ['720p', '480p', '360p']
+                for idx, item in enumerate(resolved):
+                    item['quality'] = qualities[idx]
+            else:
+                for idx, item in enumerate(resolved):
+                    item['quality'] += 'b/s'
+        except:
+            showInfo('Chyba zpracovania videa.')
         return resolved
 
     def _resolve_live(self, item):
         resolved = []
-        # data = util.request(self._url(item['url']))
-        player_data = util.request("http://embed.livebox.cz/ta3_v2/live-source.js", {'Referer':self._url(item['url'])})
-        #print "player_data", player_data
-        for m_manifest in re.finditer(r'\{"src"\s*:\s*"([^"]+)"\s*\}', player_data, re.DOTALL):
-            manifest_url = m_manifest.group(1)
-            if manifest_url.startswith('//'):
-               manifest_url = 'http:'+ manifest_url
-            #print "manifest_url", manifest_url
-            req = urllib2.Request(manifest_url)
-            resp = urllib2.urlopen(req)
-            manifest = resp.read()
-            resp.close()
-            #print "manifest", manifest
-            for m in re.finditer('RESOLUTION=\d+x(?P<resolution>\d+)\s*(?P<chunklist>[^\s]+)', manifest, re.DOTALL):
-                item = self.video_item()
-                item['surl'] = item['title']
-                item['quality'] = m.group('resolution') + 'p'
-                item['url'] = resp.geturl().rsplit('/', 1)[0] + '/' + m.group('chunklist')
-                resolved.append(item)
-            # only first manifest url looks to be is valid
-            break
+        try:
+            # data = util.request(self._url(item['url']))
+            player_data = util.request("http://embed.livebox.cz/ta3_v2/live-source.js", {'Referer':self._url(item['url'])})
+            #print "player_data", player_data
+            for m_manifest in re.finditer(r'\{"src"\s*:\s*"([^"]+)"\s*\}', player_data, re.DOTALL):
+                manifest_url = m_manifest.group(1)
+                if manifest_url.startswith('//'):
+                   manifest_url = 'http:'+ manifest_url
+                #print "manifest_url", manifest_url
+                req = urllib2.Request(manifest_url)
+                resp = urllib2.urlopen(req)
+                manifest = resp.read()
+                resp.close()
+                #print "manifest", manifest
+                for m in re.finditer('RESOLUTION=\d+x(?P<resolution>\d+)\s*(?P<chunklist>[^\s]+)', manifest, re.DOTALL):
+                    item = self.video_item()
+                    item['surl'] = item['title']
+                    item['quality'] = m.group('resolution') + 'p'
+                    item['url'] = resp.geturl().rsplit('/', 1)[0] + '/' + m.group('chunklist')
+                    resolved.append(item)
+                # only first manifest url looks to be is valid
+                break
+        except:
+            showInfo('Chyba zpracovania videa.')
         return resolved
 
 settings = {'quality':__addon__.getSetting('quality')}
