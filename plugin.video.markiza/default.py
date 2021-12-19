@@ -136,10 +136,10 @@ class markizaContentProvider(ContentProvider):
 		if not reSection:
 			return []
 		data = reSection.group(1)
-		pattern = re.compile(u'<article.*?href="(.*?)".*?title="(.*?)".*?data-original="(.*?)"', re.DOTALL)
+		pattern = re.compile(u'<article.*?href="(.*?)".*?data-original="(.*?)".*?"e-title">(.*?)<', re.DOTALL)
 		it = re.finditer(pattern,data)
 		for item in it:
-			link,title,img = item.groups()
+			link,img,title = item.groups()
 			item = self.video_item()
 			item['url'] = link
 			item['title'] = title
