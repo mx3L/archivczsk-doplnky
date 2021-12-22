@@ -166,6 +166,9 @@ class RtvsContentProvider(ContentProvider):
         item = self.video_item("live.6")
         item['title'] = "Live RTVS"
         result.append(item)
+        item = self.video_item("live.15")
+        item['title'] = "Live Sport"
+        result.append(item)
         item = self.dir_item()
         item['title'] = 'Archív: A-Z'
         item['url'] = "#az#"
@@ -196,6 +199,9 @@ class RtvsContentProvider(ContentProvider):
         result.append(item)
         item = self.video_item("live.6")
         item['title'] = "STV RTVS"
+        result.append(item)
+        item = self.video_item("live.15")
+        item['title'] = "STV Sport"
         result.append(item)
         return result
 

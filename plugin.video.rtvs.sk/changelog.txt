@@ -1,3 +1,5 @@
+[B]1.9.3: (misanov)[/B]
+- Live Sport
 [B]1.9.2: (misanov)[/B]
 - search
 - fix archiv
