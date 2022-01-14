@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
+# -*- coding: UTF-8 -*-
 # /*
-# *  Copyright (C) 2021 Michal Novotny https://github.com/misanov
-# *  based od Kodi plugin https://github.com/sterd71/plugin.video.eurosporton
+# *  Copyright (C) 2022 Michal Novotny https://github.com/misanov
 # *
 # *  This Program is free software; you can redistribute it and/or modify
 # *  it under the terms of the GNU General Public License as published by
@@ -19,671 +18,264 @@
 # *  http://www.gnu.org/copyleft/gpl.html
 # *
 # */
-
-sys.path.append(os.path.dirname(__file__))
-
-import sys, os, string, random, time, json, uuid, requests, re
-from urllib import urlencode, quote, unquote_plus
-from datetime import datetime
-from dateutil.parser import parse as parse_date
-from dateutil import tz
-try:
-	from urlparse import urlparse, parse_qs
-except ImportError:
-	from urllib.parse import urlparse, parse_qs
-
 from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
-from Plugins.Extensions.archivCZSK.engine.client import add_dir, add_video
 from Plugins.Extensions.archivCZSK.engine import client
+import cookielib,urllib2
+import re,util,datetime,time,json
+from provider import ContentProvider
+import xbmcprovider
+import util
 from Components.config import config
 
-
-############### Eurosport ###########
-
-def addDir(name, url, mode, image, page=None, kanal=None, infoLabels={}, menuItems={}):
-	params = {'name':name, 'url':url, 'mode':mode, 'page':page, 'kanal':kanal}
-	add_dir(name, params, image, infoLabels=infoLabels, menuItems=menuItems)
-
-def sport_sort_key(sport):
-	attrs = sport['attributes']
-	return attrs.get('name')
-
-def name_sort_key(schedule):
-	attrs = schedule['attributes']
-	return attrs.get('name')
-
-def date_sort_key(options):
-	return options.get('value')
-
-def schedule_start_key(video):
-	attrs = video['attributes']
-	return attrs.get('scheduleStart')
-
-def publish_start_key(video):
-	attrs = video['attributes']
-	return attrs.get('publishStart')
-	
-def publish_end_key(video):
-	attrs = video['attributes']
-	return attrs.get('publishEnd')
-
-def build_list(type, video, listing, response):
-
-	engine = addon.getSetting('engine')
-	streamType = addon.getSetting('streamType')
-
-#	try:
-	attrs = video['attributes']
-	alternateTitle = attrs.get('alternateId')
-
-	if type == 'sport':
-		# Pull start time from availability window
-		availability = video.get('attributes', {}).get('availabilityWindows', [])
-		if len(availability) > 0:
-			av_window = availability[0]
-			av_start = parse_date(av_window['playableStart'])
-			av_start_local = av_start.astimezone(tz.tzlocal())
-			av_startstr = av_start_local.strftime("%d.%m.%Y %H:%M")
-		title = av_startstr + ' - ' + attrs.get('name')
-	elif type == 'daily':
-		# Pull start time from schedule start
-		av_start = parse_date(attrs['scheduleStart'])
-		av_start_local = av_start.astimezone(tz.tzlocal())
-		av_startstr = av_start_local.strftime("%d.%m.%Y %H:%M")
-		title = av_startstr + ' - ' + attrs.get('name')
-	elif type == 'ontv':
-		# Pull start time from schedule start
-		av_start = parse_date(attrs['scheduleStart'])
-		av_start_local = av_start.astimezone(tz.tzlocal())
-		channel = attrs.get('path')
-		if 'eurosport-1' in channel:
-			title = 'Eurosport 1: ' + attrs.get('name')
-		if 'eurosport-2' in channel:
-			title = 'Eurosport 2: ' + attrs.get('name')
-	else:
-		# Set the base title
-		title = attrs.get('name')
-
-	# Add chanel details for on-air shows
-	if type == 'daily':
-		if attrs.get('materialType') == 'LINEAR':
-			channel = attrs.get('path')
-			if 'eurosport-1' in channel:
-				title = title + ' - (E1)'
-			if 'eurosport-2' in channel:
-				title = title + ' - (E2)'
-		if attrs.get('broadcastType') == 'LIVE':
-			title = title + ' (Live)'
-
-	# Get image and it's url
-	images = video.get('relationships', {}).get('images', {}).get('data', [])
-	image_url = ''
-	if len(images) > 0:
-		try: 
-			image_url = response.get_image_url(images[0]['id'])
-		except:
-			pass
-
-	# Set the premiered date
-	if type == 'daily':
-		premiered = str(attrs.get('scheduleStart')[:10])
-		timestamp = attrs.get('scheduleStart')
-	
-	if type == 'sport':
-		premiered = str(attrs.get('publishStart')[:10])
-		timestamp = attrs.get('publishStart')
-	
-	# Get the plot
-	plot = attrs.get('description')
-	if plot == '' or plot is None:
-		plot = attrs.get('secondaryTitle')
-
-	# Set the metadata
-	if type == 'ondemand':
-		labels = {
-			'title': title
-		}
-	else:	
-		labels = {
-			'title': title,
-			'plot': plot
-		}
-
-	if type == 'ondemand':
-		isPlayable = 'false'
-	else:	
-		now = datetime.now(tz.tzutc())
-		if av_start_local > now:
-			isPlayable = 'false'
-		else:
-			isPlayable = 'true'
-
-	# Ondemand brings up a list of items to select, not play
-	if type == 'ondemand':
-		url = '{0}?action=select-sport&sport={1}'.format('', alternateTitle)   
-		isfolder = True
-	else:	
-		id = video.get('id')
-		url = '{0}?action=play&id={1}'.format('', id)
-		isfolder = False
-
-	if isfolder:
-		add_dir(title, {'url': url}, image_url, infoLabels=labels)
-	else:
-		add_dir(title, {'url': url}, image_url, infoLabels=labels)
-#	except:
-#		pass
-
-"""
-	Return list of available videos for this sport
-"""	
-def sport_list(eurosport,sport):
-	sport = eurosport.sport(sport)
-	videos = sport.videos()
-	listing = []
-
-	if sortOrder == "Ending soon":
-		for video in sorted(videos, key=publish_end_key):
-			build_list('sport', video, listing, sport)
-	elif sortOrder == 'Earliest first':
-		for video in sorted(videos, key=publish_start_key):
-			build_list('sport', video, listing, sport)
-	else:		
-		for video in sorted(videos, key=publish_start_key, reverse=True):
-			build_list('sport', video, listing, sport)
-
-"""
-	Return list of available videos for this day
-"""	
-def daily_list(eurosport,collid,day):
-	dailyList = eurosport.dailyList(collid,day)
-	videos = dailyList.videos()
-	listing = []
-
-	for video in sorted(videos, key=schedule_start_key):
-		build_list('daily', video, listing, dailyList)
-
-"""
-	Return list of on demand sports
-"""	
-def ondemand_list(eurosport):
-	ondemand = eurosport.ondemand()
-	sports = ondemand.sports()
-	listing = []
-	for sport in sorted(sports, key=sport_sort_key):
-		build_list('ondemand', sport,  listing, ondemand)
-
-"""
-	Return list of on available dates
-"""	
-def onschedule_list(eurosport):
-	onschedule = eurosport.onschedule()
-	scheduleCollection = onschedule.scheduleCollection()
-	listing = []
-	for schedule in scheduleCollection:		
-		try:		
-			collectionId = schedule.get('id')
-			attrs = schedule['attributes']
-			component = attrs.get('component')
-			filters = component.get('filters')
-			for scheduleFilter in filters:
-				 options = scheduleFilter.get('options')
-				 for option in options:
-					scheduleStr = option.get('value')
-					try:
-						scheduleDate = datetime.strptime(scheduleStr, '%Y-%m-%d')   
-					except TypeError:
-						scheduleDate = datetime(*(time.strptime(scheduleStr, '%Y-%m-%d')[0:6]))
-					format = '%d %B'
-					title = scheduleDate.strftime(format)  
-					parameter = option.get('parameter')
-					url = '{0}?action=select-date&collid={1}&day={2}'.format('', collectionId, parameter)   
-					add_dir(title, { 'url': url }, None)
-		except:	
-			pass
-
-"""
-  Eurosport object checks session token
-  and returns the list of items available to watch now, or scheduled for later
-"""
-class Eurosport(object):
-	def __init__(self, token):
-		self.token = token
-		self.session = requests.Session()
-		self.session.headers = {
-			'cookie': 'st={}'.format(token),
-			'X-disco-client': 'WEB:UNKNOWN:esplayer:prod',
-			'X-disco-params': 'realm=eurosport,,'  
-		}
-
-	def onschedule(self):
-		res = self.session.get('{}/cms/routes/schedule?include=default'.format(ROOT_URL)).json()
-		return OnscheduleResponse(res)
-
-	def dailyList(self, collid, day):
-		res = self.session.get('{0}/cms/collections/{1}?include=default&{2}'.format(ROOT_URL,collid,day)).json()
-		return DailyResponse(res)
-
-	def ondemand(self):
-		res = self.session.get('{}/cms/routes/on-demand?include=default'.format(ROOT_URL)).json()
-		return OndemandResponse(res)
-
-	def sport(self, sport):
-		res = self.session.get('{0}/cms/routes/sport/{1}?include=default'.format(ROOT_URL,sport)).json()
-		return SportResponse(res)
-
-	def playback_info(self, video_id):
-		res = self.session.get('{}/playback/v2/videoPlaybackInfo/{}?usePreAuth=true'.format(ROOT_URL,video_id)).json()
-		return res
-
-	def olyonnow(self):
-		res = self.session.get('{0}/cms/routes/olympics/on-now?include=default'.format(ROOT_URL)).json()
-		for error in res.get('errors',[]):
-			if error.get('status',200) != 200:
-				client.showInfo('Error: ' + error.get('detail',''),timeout=20)
-		return OntvResponse(res)
-
-	def olyontoday(self):
-		res = self.session.get('{0}/cms/routes/olympics/schedule?include=default'.format(ROOT_URL)).json()
-		return DailyResponse(res)
-
-
-"""
-    OntvResponse sends back a list of videos that have a start time before now and
-    and end time after now
-"""    
-class OntvResponse(object):
-    def __init__(self, data):
-        self._data = data
-
-    def videos(self, onlyAvailable=True):
-
-        def filterMethod(o):
-            
-            if o.get('type') != 'video':
-                return False
-            if not onlyAvailable:
-                return True
-
-            attributes = o.get('attributes', {})
-
-            # Exclude items not on a channel
-            materialType = attributes.get('materialType')
-            if materialType != 'LINEAR':
-                return False
-
-            # Only include items that are on now
-            if len(attributes) > 0:
-                av_start = parse_date(attributes['scheduleStart'])
-                av_end = parse_date(attributes['scheduleEnd'])
-                now = datetime.now(tz.tzutc())
-                return av_start <= now <= av_end
-
-            return False
-
-        return filter(
-            filterMethod,
-            self._data.get('included', [])
-        )
-
-"""
-    OnscheduleResponse sends back an object containing an id and an array of dates inthe current schedule
-"""
-class OnscheduleResponse(object):
-    def __init__(self, data):
-        self._data = data
-
-    def scheduleCollection(self, onlyAvailable=True):
-
-        def filterMethod(o):
-            if o.get('type') != 'collection':
-                return False
-            if not onlyAvailable:
-                return True
-                
-            return True    
-
-        return filter(
-            filterMethod,
-            self._data.get('included', [])
-        )
-
-    def images(self):
-        return filter(
-            lambda o: o.get('type') == 'image',
-            self._data.get('included', [])
-        )
-
-    def get_image_url(self, id):
-        wanted_images = list(
-            filter(
-                lambda i: i['id'] == id,
-                self.images()
-            )
-        )
-        if len(wanted_images) > 0:
-            return wanted_images[0]['attributes'].get('src')
-        return None
-
-
-"""
-	OndemandResponse sends back a list of sports that have videos available
-"""
-class OndemandResponse(object):
-	def __init__(self, data):
-		self._data = data
-
-	def sports(self, onlyAvailable=True):
-
-		def filterMethod(o):
-
-			if o.get('type') != 'taxonomyNode':
-				return False
-			if not onlyAvailable:
-				return True
-				
-			return True	
-
-		return filter(
-			filterMethod,
-			self._data.get('included', [])
-		)
-
-	def images(self):
-		return filter(
-			lambda o: o.get('type') == 'image',
-			self._data.get('included', [])
-		)
-
-	def get_image_url(self, id):
-		wanted_images = list(
-			filter(
-				lambda i: i['id'] == id,
-				self.images()
-			)
-		)
-		if len(wanted_images) > 0:
-			return wanted_images[0]['attributes'].get('src')
-		return None
-
-"""
-	SportResponse sends back a list of on demand videos that have a start time before now and
-	and end time after now
-"""	
-class SportResponse(object):
-	def __init__(self, data):
-		self._data = data
-
-	def videos(self, onlyAvailable=True):
-
-		def filterMethod(o):
-
-			if o.get('type') != 'video':
-				return False
-			if not onlyAvailable:
-				return True
-
-			availability = o.get('attributes', {}).get('availabilityWindows', [])
-			if len(availability) > 0:
-				av_window = availability[0]
-				av_start = parse_date(av_window['playableStart'])
-				av_end = parse_date(av_window['playableEnd'])
-				now = datetime.now(tz.tzutc())
-				return av_start <= now <= av_end
-
-			return False
-
-		return filter(
-			filterMethod,
-			self._data.get('included', [])
-		)
-
-	def images(self):
-		return filter(
-			lambda o: o.get('type') == 'image',
-			self._data.get('included', [])
-		)
-
-	def get_image_url(self, id):
-		wanted_images = list(
-			filter(
-				lambda i: i['id'] == id,
-				self.images()
-			)
-		)
-		if len(wanted_images) > 0:
-			return wanted_images[0]['attributes'].get('src')
-		return None
-
-
-"""
-	DailyResponse sends back a list of videos that are showing on the selected day
-"""	
-class DailyResponse(object):
-	def __init__(self, data):
-		self._data = data
-
-	def videos(self, onlyAvailable=True):
-
-		def filterMethod(o):
-
-			if o.get('type') != 'video':
-				return False
-			if not onlyAvailable:
-				return True
-
-			return True
-
-		return filter(
-			filterMethod,
-			self._data.get('included', [])
-		)
-
-	def images(self):
-		return filter(
-			lambda o: o.get('type') == 'image',
-			self._data.get('included', [])
-		)
-
-	def get_image_url(self, id):
-		wanted_images = list(
-			filter(
-				lambda i: i['id'] == id,
-				self.images()
-			)
-		)
-		if len(wanted_images) > 0:
-			return wanted_images[0]['attributes'].get('src')
-		return None
-
-"""
-    List what's on Eurosport 1 first
-"""    
-def channel_schedule_key(video):
-    attrs = video['attributes']
-
-    #if attrs.get('materialType') == 'LINEAR':
-    channel = attrs.get('path')
-    if 'eurosport-1' in channel:
-        return 1
-    if 'eurosport-2' in channel:
-        return 2
-
-    return attrs.get('scheduleStart')
-
-
-"""
-    Sort videos by the scheduleStart timestamp
-"""
-def schedule_start_key(video):
-    attrs = video['attributes']
-    return attrs.get('scheduleStart')
-
-
-"""
-    Return list of programmes that are on now
-"""    
-def olympics_onnow(eurosport):
-    olyonnow = eurosport.olyonnow()
-    videos = olyonnow.videos()
-    listing = []
-
-    for video in sorted(videos, key=channel_schedule_key):
-        build_list('ontv', video, listing, olyonnow)
-
-
-"""
-    Return list of available videos for this day
-"""    
-def olympics_ontoday(eurosport):
-    olyontoday = eurosport.olyontoday()
-    videos = olyontoday.videos()
-    listing = []
-
-    for video in sorted(videos, key=schedule_start_key):
-        build_list('daily', video, listing, olyontoday)
-
-
-"""
-Play video located at the URL
-"""
-def play_video(id):
-	streamType = addon.getSetting('streamType') or 'hls'
-	playback_info = eurosport.playback_info(id)
-
-	if streamType == 'hls':
-		stream_url = playback_info.get(
-			'data', {}
-		).get(
-			'attributes', {}
-		).get(
-			'streaming', {}
-		).get(
-			'hls', {}
-		).get('url')
-
-	if streamType == 'ism':
-		stream_url = playback_info.get(
-			'data', {}
-		).get(
-			'attributes', {}
-		).get(
-			'streaming', {}
-		).get(
-			'mss', {}
-		).get('url')
-
-	if not stream_url: return []
-
-	spliturl = stream_url.split('index.m3u8')
-
-	data = requests.get(stream_url).content
-
-	audqiurl = ''
-	audenurl = ''
-	audczurl = ''
-	# default qis lang
-	audio = re.search('#EXT-X-MEDIA:TYPE=AUDIO,.*?,LANGUAGE="qis",.*?,URI="(.*?)"', data, re.S)
-	if audio:
-		audqiurl = audio.group(1)
-	# default eng lang
-	audio = re.search('#EXT-X-MEDIA:TYPE=AUDIO,.*?,LANGUAGE="eng",.*?,URI="(.*?)"', data, re.S)
-	if audio:
-		audenurl = audio.group(1)
-	# cze lang
-	audio = re.search('#EXT-X-MEDIA:TYPE=AUDIO,.*?,LANGUAGE="cze",.*?,URI="(.*?)"', data, re.S)
-	if audio:
-		audczurl = audio.group(1)
-
-	res = []
-	for m in re.finditer('#EXT-X-STREAM-INF:.*?RESOLUTION=\d+x(?P<quality>\d+),.*?\s(?P<chunklist>[^\s]+)', data, re.DOTALL):
-		if int(m.group('quality')) < 720: continue
-		if audczurl != '':
-			itm = {}
-			itm['quality'] = m.group('quality') + 'p'
-			itm['lang'] = ' CZ'
-			itm['url'] = spliturl[0] + m.group('chunklist') + '&suburi=' + spliturl[0] + audczurl
-			res.append(itm)
-		if audenurl != '':
-			itm = {}
-			itm['quality'] = m.group('quality') + 'p'
-			itm['lang'] = ' EN'
-			itm['url'] = spliturl[0] + m.group('chunklist') + '&suburi=' + spliturl[0] + audenurl
-			res.append(itm)
-		if audqiurl != '':
-			itm = {}
-			itm['quality'] = m.group('quality') + 'p'
-			itm['lang'] = ' N/A'
-			itm['url'] = spliturl[0] + m.group('chunklist') + '&suburi=' + spliturl[0] + audqiurl
-			res.append(itm)
-	res = sorted(res,key=lambda i:(len(i['quality']),i['quality']), reverse = True)
-	for item in res:
-		add_video(item['quality'] + item['lang'], item['url'], None, None)
-
-
-############### init ################
-addon = ArchivCZSK.get_xbmc_addon('plugin.video.eurosport')
-addon_userdata_dir = addon.getAddonInfo('profile')
-home = addon.getAddonInfo('path')
-icon = os.path.join(home, 'icon.png')
-
 LOG_FILE = os.path.join(config.plugins.archivCZSK.logPath.getValue(),'eurosport.log')
-
-ROOT_URL = 'https://eu3-prod-direct.eurosportplayer.com'
-sortOrder = addon.getSetting('ondemand-sort-order')
+letters = "aábcčdďeéěfghiíjklmnňoóöpqrřsštťuúůvwxyýzžAÁBCČDĎEÉĚFGHIÍJKLMNŇOÓÖPQRŘSŠTŤUÚŮVWXYÝZŽ"
 
 def writeLog(msg, type='INFO'):
 	try:
 		f = open(LOG_FILE, 'a')
-		dtn = datetime.now()
+		dtn = datetime.datetime.now()
 		f.write(dtn.strftime("%d.%m.%Y %H:%M:%S.%f")[:-3] + " [" + type + "] %s\n" % msg)
 		f.close()
 	except:
 		pass
 
-def addDir(name, url, mode, image, page=None, kanal=None, infoLabels={}, menuItems={}):
-	params = {'name':name, 'url':url, 'mode':mode, 'page':page, 'kanal':kanal}
-	add_dir(name, params, image, infoLabels=infoLabels, menuItems=menuItems)
+def showInfo(mmsg):
+	client.add_operation("SHOW_MSG", {'msg': mmsg, 'msgType': 'info', 'msgTimeout': 4, 'canClose': True })
 
-def menu():
-#	add_dir('Vyhledat', { 'url': '/search/'}, None)
-#	add_dir('Olympics: On now', { 'url': '?action=olympics-onnow'}, None)
-#	add_dir('Olympics: On today', { 'url': '?action=olympics-ontoday'}, None)
-	add_dir(addon.getLocalizedString(30030), { 'url': '?action=on-schedule'}, None)
-	add_dir(addon.getLocalizedString(30031), { 'url': '?action=on-demand' }, None)
+def showError(mmsg):
+	client.add_operation("SHOW_MSG", {'msg': mmsg, 'msgType': 'error', 'msgTimeout': 4, 'canClose': True })
 
-def router(params):
-	if params:
-		if params['action'][0] == "on-schedule":
-			onschedule_list(eurosport)
-		if params['action'][0] == 'select-date':
-			daily_list(eurosport, params['collid'][0],params['day'][0])
-		if params['action'][0] == 'on-demand':
-			ondemand_list(eurosport)
-		if params['action'][0] == 'select-sport':
-			sport_list(eurosport, params['sport'][0])
-		if params['action'][0] == 'play':
-			play_video(params['id'][0])
-		if params['action'][0] == 'olympics-onnow':
-			olympics_onnow(eurosport)
-		if params['action'][0] == 'olympics-ontoday':
-			olympics_ontoday(eurosport)
+def parse_date(dt,totime=False):
+	if not dt: return ''
+	utcdate=datetime.datetime.strptime(dt,'%Y-%m-%dT%H:%M:%SZ')
+	now_timestamp=time.time()
+	offset=datetime.datetime.fromtimestamp(now_timestamp)-datetime.datetime.utcfromtimestamp(now_timestamp)
+	if totime:
+		return (utcdate+offset)
 	else:
-		olympics_onnow(eurosport)
-		menu()
+		return (utcdate+offset).strftime('%d.%m.%Y %H:%M')
 
-token = addon.getSetting('eurosporttoken')
+def is_now(df,dt):
+	now_timestamp=time.time()
+	now=datetime.datetime.fromtimestamp(now_timestamp)
+	offset=datetime.datetime.fromtimestamp(now_timestamp)-datetime.datetime.utcfromtimestamp(now_timestamp)
+	utcdf=datetime.datetime.strptime(df,'%Y-%m-%dT%H:%M:%SZ')
+	utcdt=datetime.datetime.strptime(dt,'%Y-%m-%dT%H:%M:%SZ')
+	return (utcdf+offset<now<utcdt+offset)
+
+class EPContentProvider(ContentProvider):
+
+	def __init__(self, username=None, password=None, filter=None, tmp_dir='/tmp', token=''):
+		ContentProvider.__init__(self, 'eurosport', 'https://eu3-prod-direct.eurosportplayer.com', username, password, filter, tmp_dir)
+		self.cp = urllib2.HTTPCookieProcessor(cookielib.LWPCookieJar())
+		self.init_urllib()
+		self.token = token
+		self.headers = {
+			'referer': 'https://www.eurosportplayer.com/',
+			'cookie': 'st={}'.format(token),
+			'X-disco-client': 'WEB:UNKNOWN:esplayer:prod',
+			'X-disco-params': 'realm=eurosport,,'
+		}
+		self.data = ""
+		self.images = {}
+		self.channels = {}
+		self.taxos = {}
+
+	def init_urllib(self):
+		opener = urllib2.build_opener(self.cp)
+		urllib2.install_opener(opener)
+
+	def getDatas(self):
+		items = json.loads(self.data)
+		self.channels = {}
+		self.images = {}
+		self.taxos = {}
+		for item in items.get('included'):
+			if item['type'] == 'channel':
+				self.channels[item['id']] = item['attributes']['name']
+			elif item['type'] == 'image':
+				self.images[item['id']] = item['attributes']['src']
+			elif item['type'] == 'taxonomyNode':
+				self.taxos[item['id']] = item['attributes']['name']
+
+	def parseVideos(self,item,addlive=False,adddate=False,addtime=False):
+		chname = self.channels.get(item.get('relationships',{}).get('primaryChannel',{}).get('data',{}).get('id',None))
+		try:
+			sport = self.taxos.get(item.get('relationships',{}).get('txSports',{}).get('data',{})[0].get('id',None))
+		except:
+			sport = ''
+		itm = self.video_item()
+		itm['url'] = 'playback/v2/videoPlaybackInfo/%s?usePreAuth=true'%item['id']
+		itm['title'] = ''
+		itm['title'] += parse_date(item['attributes'].get('scheduleStart',item['attributes'].get('publishStart')))+' ' if adddate else ''
+		itm['title'] += parse_date(item['attributes'].get('scheduleStart',item['attributes'].get('publishStart')))[11:]+' ' if addtime else ''
+		itm['title'] += 'LIVE ' if addlive else ''
+		itm['title'] += '[%s] ' % chname if chname and addlive else ''
+		itm['title'] += '- %s ' % item['attributes']['name']
+		itm['title'] += '[%s] ' % chname if chname and not addlive else ''
+		itm['plot'] = '%s - %s'%(sport, item['attributes'].get('secondaryTitle'))
+		itm['plot'] += ' (%s min.)' % int(item['attributes'].get('videoDuration')/1000/60) if item['attributes'].get('videoDuration') else ''
+		itm['img'] = self.images.get(item.get('relationships',{}).get('images',{}).get('data',{})[0].get('id',None))
+		itm['date'] = parse_date(item['attributes'].get('scheduleStart',item['attributes'].get('publishStart')),totime=True)
+		return itm
+
+	def capabilities(self):
+		return ['categories', 'resolve', 'search']
+
+	def search(self,keyword):
+		result = []
+		try:
+			self.data = util.request(self.base_url+'content/videos?include=images,primaryChannel,taxonomyNodes&filter[videoType]=LIVE&filter[isPlayable]=true&query=%s'%keyword, headers=self.headers)
+			self.getDatas()
+			items = json.loads(self.data)
+			for item in items.get('data'):
+				if item['type'] != 'video': continue
+				result.append(self.parseVideos(item,addlive=True,adddate=True))
+			self.data = util.request(self.base_url+'content/videos?include=images,primaryChannel,taxonomyNodes&filter[videoType]=STANDALONE&filter[isPlayable]=true&query=%s'%keyword, headers=self.headers)
+			self.getDatas()
+			items = json.loads(self.data)
+			for item in items.get('data'):
+				if item['type'] != 'video': continue
+				result.append(self.parseVideos(item,adddate=True))
+		except:
+			showInfo('Chyba vyhledávání.')
+		return result
+
+	def categories(self):
+		result = []
+		result.append(self.dir_item('Program', '#schedule'))
+		result.append(self.dir_item('Na požádání', '#on-demand'))
+		self.data = util.request(self.base_url+'cms/routes/home?include=default&decorators=viewingHistory,isFavorite,playbackAllowed&page[items.number]=1&page[items.size]=8', headers=self.headers)
+		self.getDatas()
+		items = json.loads(self.data)
+		for item in items.get('included'):
+			if item['type'] != 'video': continue
+			if not is_now(item['attributes']['scheduleStart'], item['attributes']['scheduleEnd']): continue
+			result.append(self.parseVideos(item,addlive=True))
+		return result
+
+	def list(self, url):
+		result = []
+		if '#day;' in url:
+			vals = url.split(";")
+			self.data = util.request(self.base_url+'cms/collections/%s?include=default&pf[day]=%s'%(vals[1],vals[2]), headers=self.headers)
+			self.getDatas()
+			items = json.loads(self.data)
+			for item in items.get('included'):
+				if item['type'] != 'video': continue
+				result.append(self.parseVideos(item,addtime=True))
+			result = sorted(result, key=lambda x:x['title'])
+		elif '#sport;' in url:
+			vals = url.split(";")
+			# self.data = util.request(self.base_url+'cms/routes/sport/%s?include=default&decorators=viewingHistory,isFavorite,playbackAllowed&page[items.number]=1&page[items.size]=8'%vals[1], headers=self.headers)
+			self.data = util.request(self.base_url+'cms/routes/sport/%s?include=default'%vals[1], headers=self.headers)
+			self.getDatas()
+			items = json.loads(self.data)
+			for item in items.get('included'):
+				if item['type'] != 'video': continue
+				result.append(self.parseVideos(item,adddate=True))
+			result = sorted(result, key=lambda x:x['date'], reverse=True)
+		elif '#schedule' in url:
+			httpdata = util.request(self.base_url+'cms/routes/schedule?include=default', headers=self.headers)
+			items = json.loads(httpdata)
+			for item in items.get('included'):
+				if item['type'] == 'collection' and item.get('attributes',{}).get('alias') == 'schedule' and item.get('attributes',{}).get('component',{}).get('filters',{})[0].get('options'):
+					for day in item['attributes']['component']['filters'][0]['options']:
+						sd = day['value'].split('-')
+						result.append(self.dir_item('%s.%s.%s'%(sd[2],sd[1],sd[0]), '#day;' + item['id'] + ';' + day['value']))
+		elif '#on-demand' in url:
+			httpdata = util.request(self.base_url+'cms/routes/on-demand?include=default', headers=self.headers)
+			items = json.loads(httpdata)
+			for item in items.get('included'):
+				if item['type'] == 'taxonomyNode' and item['attributes'].get('kind') == 'sport':
+					result.append(self.dir_item(item['attributes'].get('name'), '#sport;' + item['attributes'].get('alternateId')))
+			result = sorted(result, key=lambda x:x['title'])
+		return result
+
+	def resolve(self, item, captcha_cb=None, select_cb=None):
+		item = item.copy()
+		result = []
+		try:
+			httpdata = util.request(self.base_url+item['url'], headers=self.headers)
+		except urllib2.HTTPError as e:
+			if e.code == 403: showInfo('Toto video není dostupné.')
+			return []
+		items = json.loads(httpdata)
+
+		url = items.get('data',{}).get('attributes',{}).get('streaming',{}).get('hls',{}).get('url')
+		if url:
+			spliturl = url.split('index.m3u8')
+			data = util.request(url)
+
+			audqiurl = ''
+			audenurl = ''
+			audczurl = ''
+			# default qis lang
+			audio = re.search('#EXT-X-MEDIA:TYPE=AUDIO,.*?,LANGUAGE="qis",.*?,URI="(.*?)"', data, re.S)
+			if audio:
+				audqiurl = audio.group(1)
+			# default eng lang
+			audio = re.search('#EXT-X-MEDIA:TYPE=AUDIO,.*?,LANGUAGE="eng",.*?,URI="(.*?)"', data, re.S)
+			if audio:
+				audenurl = audio.group(1)
+			# cze lang
+			audio = re.search('#EXT-X-MEDIA:TYPE=AUDIO,.*?,LANGUAGE="cze",.*?,URI="(.*?)"', data, re.S)
+			if audio:
+				audczurl = audio.group(1)
+
+			res = []
+			for m in re.finditer('#EXT-X-STREAM-INF:.*?RESOLUTION=\d+x(?P<quality>\d+),.*?\s(?P<chunklist>[^\s]+)', data, re.DOTALL):
+				if int(m.group('quality')) < 720: continue
+				if audczurl != '':
+					itm = {}
+					itm['quality'] = m.group('quality') + 'p'
+					itm['lang'] = ' CZ'
+					itm['url'] = spliturl[0] + m.group('chunklist') + '&suburi=' + spliturl[0] + audczurl
+					res.append(itm)
+				if audenurl != '':
+					itm = {}
+					itm['quality'] = m.group('quality') + 'p'
+					itm['lang'] = ' EN'
+					itm['url'] = spliturl[0] + m.group('chunklist') + '&suburi=' + spliturl[0] + audenurl
+					res.append(itm)
+				if audqiurl != '':
+					itm = {}
+					itm['quality'] = m.group('quality') + 'p'
+					itm['lang'] = ' N/A'
+					itm['url'] = spliturl[0] + m.group('chunklist') + '&suburi=' + spliturl[0] + audqiurl
+					res.append(itm)
+			res = sorted(res,key=lambda i:(len(i['quality']),i['quality']), reverse = True)
+
+			for item in res:
+				itm = self.video_item()
+				itm['title'] = item['lang']
+				itm['quality'] = item['quality']
+				itm['url'] = item['url']
+				result.append(itm)
+
+		if len(result) > 0 and select_cb:
+			return select_cb(result)
+		return result
+
+__addon__ = ArchivCZSK.get_xbmc_addon('plugin.video.eurosport')
+addon_userdata_dir = __addon__.getAddonInfo('profile')
+settings = {'quality':__addon__.getSetting('quality')}
+cookie_file = addon_userdata_dir + "/" + "cookie"
+
+#print("PARAMS: %s"%params)
+
+try:
+	token = open(cookie_file,"r").read()
+except:
+	token = __addon__.getSetting('eurosporttoken')
+	if token:
+		f = open(cookie_file, 'w')
+		f.write(token)
+		f.close()
+	else:
+		token = None
 if token:
-	eurosport = Eurosport(token)
-
-	url=params['url'][1:] if 'url' in params else urlencode(params)
-	parsed_url = urlparse(params['url'] if 'url' in params else urlencode(params))
-	params = parse_qs(parsed_url.query)
-	page = int(params['page'][0]) if 'page' in params else 0
-	adr = url.split('/')
-
-	router(params)
-
-	if len(client.GItem_lst[0]) == 0: addDir(None,'',1,None)
+	provider = EPContentProvider(token=token)
+	xbmcprovider.XBMCMultiResolverContentProvider(provider, settings, __addon__, session).run(params)
 else:
 	client.showInfo('Pro přehrávání pořadů je potřeba účet na eurosportplayer.com\n\nPokud účet máte, musíte vložit dlouhý token z webu.\n\nPřečtěte si prosím Změny nebo soubor readme.md v adresáři doplňku jak na to.', timeout=20)

@@ -9,17 +9,11 @@
 # Free for non-commercial use under author's permissions
 # Credits must be used
 
-import urllib2,urllib,re,sys,os,string,time,base64,datetime,json,aes
+import urllib2,urllib,re,os,time,datetime,json
 import email.utils as eut
-from urlparse import urlparse, urlunparse, parse_qs
 from Components.config import config
-try:
-    import hashlib
-except ImportError:
-    import md5
-
 from parseutils import *
-from util import addDir, addLink, addSearch, getSearch
+from util import addDir, addLink
 from Plugins.Extensions.archivCZSK.archivczsk import ArchivCZSK
 
 __baseurl__ = 'https://video.aktualne.cz/rss/'
@@ -30,41 +24,6 @@ __settings__ = addon
 home = __settings__.getAddonInfo('path')
 icon =  os.path.join( home, 'icon.png' )
 fanart = os.path.join( home, 'fanart.jpg' )
-
-class loguj(object):
-    ERROR = 0
-    INFO = 1
-    DEBUG = 2
-    mode = INFO
-
-    logEnabled = True
-    logDebugEnabled = False
-    LOG_FILE = os.path.join(config.plugins.archivCZSK.logPath.getValue(),'aktualne.log')
-
-    @staticmethod
-    def logDebug(msg):
-        if loguj.logDebugEnabled:
-            loguj.writeLog(msg, 'DEBUG')
-
-    @staticmethod
-    def logInfo(msg):
-        loguj.writeLog(msg, 'INFO')
-
-    @staticmethod
-    def logError(msg):
-        loguj.writeLog(msg, 'ERROR')
-
-    @staticmethod
-    def writeLog(msg, type):
-        try:
-            if not loguj.logEnabled:
-                return
-            f = open(loguj.LOG_FILE, 'a')
-            dtn = datetime.datetime.now()
-            f.write(dtn.strftime("%d.%m.%Y %H:%M:%S.%f")[:-3] + " [" + type + "] %s\n" % msg)
-            f.close()
-        except:
-            pass
 
 def get_url(url):
     req = urllib2.Request(url)
@@ -82,22 +41,38 @@ def listItems(offset):
     articles = re.findall("<item>(.*?)</item>", html, re.S)
     if articles != None:
         for article in articles:
+            infoLabels = {'plot': '', 'duration': 0}
+            article = article.replace("&lt;","<").replace("&gt;",">").replace("&quot;","\"")
             try:
                 url = re.search("<link>(.*?)</link>", article, re.S).group(1)
             except:
                 url = ""
             try:
                 category = re.search("<category.*?>(.*?)</category>", article, re.S).group(1) + " - "
+                infoLabels['plot'] += category
             except:
                 category = ""
             try:
                 title = re.search("<title>(.*?)</title>", article, re.S).group(1)
+                infoLabels['plot'] += title
             except:
                 title = ""
             try:
-                thumb = re.search("<img.*?src=\"(.*?)\"", article, re.S).group(1)
+                infoLabels['plot'] += '\n\n' + re.search("<description>(.*?)</description>", article, re.S).group(1)
             except:
-                thumb = ""
+                pass
+            try:
+                duration = re.search("duration=\"(.*?)\"", article, re.S).group(1).split(':')
+                if len(duration) == 3:
+                    infoLabels['duration'] = (int(duration[0])*3600 + int(duration[1])*60 + int(duration[2]))
+                else:
+                    infoLabels['duration'] = (int(duration[0])*60 + int(duration[1]))
+            except:
+                pass
+            try:
+                thumb = re.search("img.*?src=\"(.*?)\"", article, re.S).group(1)
+            except:
+                thumb = None
             try:
                 pdate = re.search("<pubDate>(.*?)</pubDate>", article, re.S).group(1)
                 pdats = re.sub('\s+',' ',pdate).strip()
@@ -106,10 +81,7 @@ def listItems(offset):
             except:
                 pdate = ""
             if url != "" and title != "":
-                if thumb != "":
-                    addDir(pdate + category + title, url, 3, thumb, 1)
-                else:
-                    addDir(pdate + category + title, url, 3, None, 1)
+                addDir(pdate + category + title, url, 3, thumb, 1, infoLabels=infoLabels)
         o = offset + 30
         u = __baseurl__ + '?offset=' + urllib.quote_plus(str(o))
         addDir('Další', u, None, None, 1)
@@ -159,9 +131,6 @@ try:
         offset=int(urllib.unquote_plus(re.search('offset=([0-9]+)', url, re.S).group(1)))
 except:
         pass
-
-#loguj.logInfo(str(url))
-#loguj.logInfo(str(offset))
 
 if mode==None or url==None or len(url)<1:
         listItems(offset)
