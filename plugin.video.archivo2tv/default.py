@@ -448,7 +448,7 @@ def list_recordings():
 			plot = program["program"]["longDescription"]
 		  else:
 			plot = ""
-		  if "images" in program["program"] and len(program["program"]["images"]) > 0:
+		  if "images" in program["program"] and len(program["program"]["images"]) > 0 and "cover" in program["program"]["images"][0]:
 			img = program["program"]["images"][0]["cover"]
 		  else:
 			img = ""
@@ -501,7 +501,7 @@ def list_future_recordings():
 			plot = program["program"]["longDescription"]
 		  else:
 			plot = ""
-		  if "images" in program["program"] and len(program["program"]["images"]) > 0:
+		  if "images" in program["program"] and len(program["program"]["images"]) > 0 and "cover" in program["program"]["images"][0]:
 			img = program["program"]["images"][0]["cover"]
 		  else:
 			img = ""
