@@ -56,6 +56,7 @@ def parse_date(dt,totime=False):
 		return (utcdate+offset).strftime('%d.%m.%Y %H:%M')
 
 def is_now(df,dt):
+	if not df or not dt: return False
 	now_timestamp=time.time()
 	now=datetime.datetime.fromtimestamp(now_timestamp)
 	offset=datetime.datetime.fromtimestamp(now_timestamp)-datetime.datetime.utcfromtimestamp(now_timestamp)
@@ -150,7 +151,7 @@ class EPContentProvider(ContentProvider):
 		items = json.loads(self.data)
 		for item in items.get('included'):
 			if item['type'] != 'video': continue
-			if not is_now(item['attributes']['scheduleStart'], item['attributes']['scheduleEnd']): continue
+			if not is_now(item['attributes'].get('scheduleStart'), item['attributes'].get('scheduleEnd')): continue
 			result.append(self.parseVideos(item,addlive=True))
 		return result
 
