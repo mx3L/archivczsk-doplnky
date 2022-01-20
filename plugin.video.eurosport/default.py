@@ -275,7 +275,7 @@ except:
 	else:
 		token = None
 if token:
-	provider = EPContentProvider(token=token)
+	provider = EPContentProvider(token=token.strip())
 	xbmcprovider.XBMCMultiResolverContentProvider(provider, settings, __addon__, session).run(params)
 else:
 	client.showInfo('Pro přehrávání pořadů je potřeba účet na eurosportplayer.com\n\nPokud účet máte, musíte vložit dlouhý token z webu.\n\nPřečtěte si prosím Změny nebo soubor readme.md v adresáři doplňku jak na to.', timeout=20)
