@@ -1,5 +1,8 @@
 vvv CESKA VERZE JE UPLNE DOLE vvv
 
+[B]1.5:[/B]
+- fix schedule dates error
+
 [B]1.4:[/B]
 - cookie correction if the user enters incorrectly, including a new line
 
