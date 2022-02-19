@@ -38,17 +38,31 @@ from lameDB import lameDB
 ######### contentprovider ##########
 
 proxy_url = "http://127.0.0.1:18080"
+PROXY_VER='2'
 
 # #################################################################################################
 
 def install_antiktv_proxy():
-	try:
-		response = requests.get( proxy_url + '/info', timeout=2 )
-		
-		if response.text.startswith("antiktv_proxy"):
-			return True
-	except:
-		pass
+	for i in range(3):
+		try:
+			response = requests.get( proxy_url + '/info', timeout=2 )
+			
+			if response.text.startswith("antiktv_proxy"):
+				if response.text == "antiktv_proxy" + PROXY_VER:
+					# current running version match
+					return True
+				else:
+					# wrong runnig version - restart it and try again
+					os.system('/etc/init.d/antiktv_proxy.sh stop')
+					time.sleep(2)
+					os.system('/etc/init.d/antiktv_proxy.sh start')
+					time.sleep(2)
+			else:
+				# incorrect response - install new antiktv proxy
+				break
+		except:
+			# something's wrong - we will try again
+			pass
 	
 	src_file = os.path.dirname(__file__) + '/antiktv_proxy.sh'
 	os.chmod( src_file, 0o755 )
@@ -72,9 +86,8 @@ def install_antiktv_proxy():
 			time.sleep(1)
 			pass
 		
-		if response != None and response.text.startswith("antiktv_proxy"):
-			return True
-			
+		if response != None and response.text == "antiktv_proxy" + PROXY_VER:
+			return True		
 	
 	return False
 

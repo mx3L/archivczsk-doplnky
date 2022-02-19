@@ -31,6 +31,7 @@ XMLEPG_DATA_FILE = 'antiktv.data.xml'
 XMLEPG_CHANNELS_FILE = 'antiktv.channels.xml'
 XMLEPG_SOURCES_FILE = '/etc/epgimport/antiktv.sources.xml'
 EPGIMPORT_SETTINGS_FILE = '/etc/enigma2/epgimport.conf'
+PROXY_VER='2'
 
 XMLEPG_SOURCES_CONTENT ='''<?xml version="1.0" encoding="utf-8"?>
 <sources>
@@ -166,7 +167,7 @@ class Handler(BaseHTTPRequestHandler):
 	def do_GET(self):
 		response = None
 		if self.path == "/info":
-			response = "antiktv_proxy"
+			response = "antiktv_proxy" + PROXY_VER
 		elif self.path == "/reloadconfig":
 			global maxim, key_cache
 			maxim = None
