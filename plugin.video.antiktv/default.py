@@ -2,8 +2,18 @@
 
 from __future__ import print_function
 import sys, os
-sys.path.append( os.path.dirname(__file__)  )
-from Maxim import Maxim
+try:
+	sys.path.append( os.path.dirname(__file__)  )
+except:
+	pass
+
+try:
+	import requests
+	from Maxim import Maxim
+	maxim_available = True
+except:
+	maxim_available = False
+	
 import base64
 
 try:
@@ -20,9 +30,9 @@ from provider import ContentProvider
 import xbmcprovider
 from datetime import datetime
 from datetime import timedelta
-import requests
 import time
 import json
+import threading
 from lameDB import lameDB
 
 ######### contentprovider ##########
@@ -75,8 +85,8 @@ def build_service_ref( service, player_id ):
 
 # #################################################################################################
 
-def service_ref_get( lamedb, channel_name, player_id ):
-
+def service_ref_get( lamedb, channel_name, player_id, channel_id, channel_type ):
+	
 	skylink_freq = [ 11739, 11778, 11856, 11876, 11934, 11954, 11973, 12012, 12032, 12070, 12090, 12110, 12129, 12168, 12344, 12363 ]
 	antik_freq = [ 11055, 11094, 11231, 11283, 11324, 11471, 11554, 11595, 11637, 12605 ]
 	
@@ -89,50 +99,70 @@ def service_ref_get( lamedb, channel_name, player_id ):
 	
 		return False
 
-	try:
-		services = lamedb.Services[ lamedb.name_normalise( channel_name ) ]
-		
-		# try position 23.5E first
-		for s in services:
-			if s.Transponder.Data.OrbitalPosition == 235 and cmp_freq( s.Transponder.Data.Frequency, skylink_freq ):
-				return build_service_ref(s, player_id)
-
-		# then 16E
-		for s in services:
-			if s.Transponder.Data.OrbitalPosition == 160 and cmp_freq( s.Transponder.Data.Frequency, antik_freq ):
-				return build_service_ref(s, player_id)
-
-		for s in services:
-			if s.Transponder.Data.OrbitalPosition == 235:
-				return build_service_ref(s, player_id)
-
-		# then 16E
-		for s in services:
-			if s.Transponder.Data.OrbitalPosition == 160:
-				return build_service_ref(s, player_id)
-
-		# then 0,8W
-		for s in services:
-			if s.Transponder.Data.OrbitalPosition == -8:
-				return build_service_ref(s, player_id)
-
-		# then 192
-		for s in services:
-			if s.Transponder.Data.OrbitalPosition == 192:
-				return build_service_ref(s, player_id)
-
-		# take the first one
-		for s in services:
-			return build_service_ref(s, player_id)
-
-	except:
-		pass
+	if lamedb != None:
+		try:
+			services = lamedb.Services[ lamedb.name_normalise( channel_name ) ]
+			
+			# try position 23.5E first
+			for s in services:
+				if s.Transponder.Data.OrbitalPosition == 235 and cmp_freq( s.Transponder.Data.Frequency, skylink_freq ):
+					return build_service_ref(s, player_id)
 	
-	return player_id + ":0:0:0:0:0:0:0:0:0:"
+			# then 16E
+			for s in services:
+				if s.Transponder.Data.OrbitalPosition == 160 and cmp_freq( s.Transponder.Data.Frequency, antik_freq ):
+					return build_service_ref(s, player_id)
+	
+			for s in services:
+				if s.Transponder.Data.OrbitalPosition == 235:
+					return build_service_ref(s, player_id)
+	
+			# then 16E
+			for s in services:
+				if s.Transponder.Data.OrbitalPosition == 160:
+					return build_service_ref(s, player_id)
+	
+			# then 0,8W
+			for s in services:
+				if s.Transponder.Data.OrbitalPosition == -8:
+					return build_service_ref(s, player_id)
+	
+			# then 192
+			for s in services:
+				if s.Transponder.Data.OrbitalPosition == 192:
+					return build_service_ref(s, player_id)
+	
+			# take the first one
+			for s in services:
+				return build_service_ref(s, player_id)
+	
+		except:
+			pass
+	
+	return player_id + ":0:1:%X:%X:0:E010000:0:0:0:" % (channel_id, channel_type)
 
 
 # #################################################################################################
+
+def download_picons( picons ):
+	if not os.path.exists( '/usr/share/enigma2/picon' ):
+		os.mkdir('/usr/share/enigma2/picon')
 		
+	for ref in picons:
+		fileout = '/usr/share/enigma2/picon/' + ref + '.png'
+		
+		for url in (picons[ref].replace('.png', '_100x100.png'), picons[ref]):
+			if not os.path.exists(fileout):
+				try:
+					r = requests.get( url, timeout=3 )
+					if r.status_code == 200:
+						with open(fileout, 'wb') as f:
+							f.write( r.content )
+				except:
+					pass
+	
+# #################################################################################################
+	
 class antiktvContentProvider(ContentProvider):
 	maxim = None
 	
@@ -144,8 +174,9 @@ class antiktvContentProvider(ContentProvider):
 		self.username = username
 		self.password = password
 		self.device_id = device_id
+		self.maxim = None
 		
-		if len( username ) > 0 and len( password ) > 0 and len( device_id ) > 0:
+		if maxim_available and len( username ) > 0 and len( password ) > 0 and len( device_id ) > 0:
 			self.maxim = Maxim( username, password, device_id )
 
 		self.channels_archive_ids = None
@@ -167,6 +198,10 @@ class antiktvContentProvider(ContentProvider):
 	# #################################################################################################
 
 	def login(self):
+		if not maxim_available:
+			client.showInfo("Nepodarilo sa inicializovať niektoré časti doplnku!\nSkontrolujte či máte nainštalované nasledujúce knižnice:\npython-requests\npython-pycryptodome alebo python-pycrypto")
+			return False
+			
 		if self.maxim == None:
 			device_id = __addon__.getSetting( 'device_id' )
 			
@@ -327,7 +362,11 @@ class antiktvContentProvider(ContentProvider):
 	def generate_bouquet( self, channel_type="tv" ):
 		self.load_channel_list( channel_type )
 		
-		lamedb = lameDB("/etc/enigma2/lamedb")
+		# if epg generator is disabled, then try to create service references based on lamedb
+		if __addon__.getSetting('enable_xmlepg').lower() == 'true':
+			lamedb = None
+		else:
+			lamedb = lameDB("/etc/enigma2/lamedb")
 		
 		player_name = __addon__.getSetting('player_name')
 		
@@ -343,7 +382,11 @@ class antiktvContentProvider(ContentProvider):
 		else:
 			player_id = "4097"
 
+		channel_type_num = 0 if channel_type == "tv" else 1
 		file_name = "userbouquet.antiktv_" + channel_type + ".tv"
+		
+		picons = {}
+		picons_enabled = __addon__.getSetting('enable_picons').lower() == 'true'
 		
 		with open( "/etc/enigma2/" + file_name, "w" ) as f:
 			f.write( "#NAME Antik " + channel_type + "\n")
@@ -359,12 +402,19 @@ class antiktvContentProvider(ContentProvider):
 					url = quote_plus( url )
 					
 					if channel["name"] in gst_blacklist:
-						service_ref = service_ref_get( lamedb, channel["name"], "5002" )
+						# some channels don't work with gstplayer, so use exteplayer3 for it
+						service_ref = service_ref_get( lamedb, channel["name"], "5002", channel["id"], channel_type_num )
 					else:
-						service_ref = service_ref_get( lamedb, channel["name"], player_id )
+						service_ref = service_ref_get( lamedb, channel["name"], player_id, channel["id"], channel_type_num )
 						
 					f.write( "#SERVICE " + service_ref + url + ":" + channel["name"] + "\n")
 					f.write( "#DESCRIPTION " + channel["name"] + "\n")
+					
+					try:
+						if picons_enabled and service_ref.endswith(':E010000:0:0:0:'):
+							picons[ service_ref[:-1].replace(':', '_') ] = channel['logo']
+					except:
+						pass
 		
 		first_export = True
 		with open( "/etc/enigma2/bouquets.tv", "r" ) as f:
@@ -381,6 +431,9 @@ class antiktvContentProvider(ContentProvider):
 			requests.get("http://127.0.0.1/web/servicelistreload?mode=2")
 		except:
 			pass
+		
+		if picons_enabled:
+			threading.Thread(target=download_picons,args=(picons,)).start()
 		
 		return "userbouquet pre typ " + channel_type + " vygenerovaný"
 			
