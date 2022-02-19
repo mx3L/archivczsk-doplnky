@@ -570,34 +570,34 @@ class Maxim:
 			ok, data = self.call_Register()
 			
 			if ok == False:
-				return False, "Wrong response to register command"
+				return False, "Neočakávaná odpoveď na príkaz register"
 
 			data = json.loads( data )
 			
 			if data["status"] != "ok":
-				return False, "Wrong status response to register command: " + data["status"]
+				return False, "Neočakávaný status na príkaz register: " + data["status"]
 			
 			time.sleep(1)
 
 		ok, data = self.call_MwLogOnCustomer()
 		
 		if ok == False:
-			return False, "Wrong response to login command"
+			return False, "Neočakávaná odpoveď na príkaz login"
 		
 		data = json.loads( data )
 
 		if data["code"] > 400:
 			if data["code"] == 401:
-				return False, "Wrong username or password! - code 401"
+				return False, "Nesprávne meno alebo heslo! - code 401"
 			elif data["code"] == 406:
-				return False, "Login error - check activation email! - code 406"
+				return False, "Chyba prihlásenia - skontrolujte aktivačný email! - code 406"
 			elif data["code"] == 416:
-				return False, "Too many registered devices for this account - code 416"
+				return False, "Príliš veľa registrovaných zariadení pre toto konto - code 416"
 			else:
-				return False, "Other login error! - code " + str( data["code"] )
+				return False, "Neznáma chyba prihlásenia! - code " + str( data["code"] )
 		
 		if data["code"] != 200:
-			return False, "Wrong response code to login command: " + str(data["code"])
+			return False, "Neočakávaný návratový kód na príkaz login: " + str(data["code"])
 		
 		response_msg = data["status"]
 		
@@ -607,7 +607,7 @@ class Maxim:
 				ok, data = self.call_MwSyncCallbackPing( data["ping"] )
 				
 				if ok == False:
-					return False, "Wrong response to sync command"
+					return False, "Neočakávaná odpoveď na príkaz sync"
 				
 				data = json.loads( data )
 				
@@ -615,7 +615,7 @@ class Maxim:
 					break
 
 			if data["code"] != 200:
-				return False, "Wrong response code to sync command: " + str(data["code"])
+				return False, "Neočakávaný návratový kód na príkaz sync: " + str(data["code"])
 		
 			response_msg = response_msg + "; " + data["status"]
 		
@@ -631,14 +631,14 @@ class Maxim:
 		ok, data = self.call_MwUnregisterDevice()
 		
 		if ok == False:
-			return False, "Wrong response to unregister command"
+			return False, "Neočakávaná odpoveď na príkaz unregister"
 
 		data = json.loads( data )
 		
 		if data["code"] == 200:
 			return True, data["status"]
 		
-		return False, "Wrong response code: %d, status: %s" % (data["code"], data["status"])
+		return False, "Neočakávaný návratový kód: %d, status: %s" % (data["code"], data["status"])
 
 	# #################################################################################################
 	#
@@ -791,7 +791,7 @@ class Maxim:
 				else:
 					archive = False
 					
-				channels[channel_cat].append( { "name": channel["name"], "url": url, "resolution": resolution, "logo": channel["logo"], "snapshot" : snapshot, "id_content" : channel["id_content"], "archive": archive, "streams": stream_list } )
+				channels[channel_cat].append( { "name": channel["name"], "url": url, "resolution": resolution, "logo": channel["logo"], "snapshot" : snapshot, "id_content" : channel["id_content"], "id" : channel["id"], "archive": archive, "streams": stream_list } )
 		
 		return channels
 
