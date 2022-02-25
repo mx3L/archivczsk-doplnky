@@ -38,7 +38,7 @@ from lameDB import lameDB
 ######### contentprovider ##########
 
 proxy_url = "http://127.0.0.1:18080"
-PROXY_VER='2'
+PROXY_VER='3'
 
 # #################################################################################################
 
@@ -385,15 +385,19 @@ class antiktvContentProvider(ContentProvider):
 		
 		gst_blacklist = []
 		
-		if player_name == "3":
+		if player_name == "3": # mix: gstplayer + exteplayer3
 			player_id = "5001"
 			gst_blacklist = [ "HBO", "HBO 2", "HBO 3", "Cinemax", "Cinemax 2" ]
-		elif player_name == "1":
+		elif player_name == "1": # gstplayer
 			player_id = "5001"
-		elif player_name == "2":
+		elif player_name == "2": # exteplayer3
 			player_id = "5002"
+		elif player_name == "4": # DMM
+			player_id = "8193"
+		elif player_name == "5": # DVB service (OE >=2.5)
+			player_id = "1"
 		else:
-			player_id = "4097"
+			player_id = "4097" # system default
 
 		channel_type_num = 0 if channel_type == "tv" else 1
 		file_name = "userbouquet.antiktv_" + channel_type + ".tv"
