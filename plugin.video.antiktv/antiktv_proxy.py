@@ -258,17 +258,19 @@ def create_xmlepg( data_file, channels_file, days ):
 						epg = maxim.get_channel_epg( id_epg, date_from, date_to )
 						
 						for event in epg:
-							xml_data = {
-								'start': event['start'].replace("-", '').replace("T", '').replace(':','').replace('+',' '),
-								'stop': event['stop'].replace("-", '').replace("T", '').replace(':','').replace('+',' '),
-								'title': escape(str(event['title'])),
-								'desc': escape(event['description']) if event['description'] != None else None
-							}
-							
-							f.write( ' <programme start="%s" stop="%s" channel="%s">\n' % (xml_data['start'], xml_data['stop'], id_content ) )
-							f.write( '  <title lang="cs">%s</title>\n' % xml_data['title'])
-							f.write( '  <desc lang="cs">%s</desc>\n' % xml_data['desc'] )
-							f.write( ' </programme>\n')
+							try:
+								xml_data = {
+									'start': event['start'].replace("-", '').replace("T", '').replace(':','').replace('+',' '),
+									'stop': event['stop'].replace("-", '').replace("T", '').replace(':','').replace('+',' '),
+									'title': escape(str(event['title'])),
+									'desc': escape(event['description']) if event['description'] != None else None
+								}
+								f.write( ' <programme start="%s" stop="%s" channel="%s">\n' % (xml_data['start'], xml_data['stop'], id_content ) )
+								f.write( '  <title lang="cs">%s</title>\n' % xml_data['title'])
+								f.write( '  <desc lang="cs">%s</desc>\n' % xml_data['desc'] )
+								f.write( ' </programme>\n')
+							except:
+								pass
 						
 			fc.write('</channels>\n')
 			f.write('</tv>\n')
@@ -333,8 +335,9 @@ def generate_xmlepg_if_needed():
 		create_xmlepg(data_file, channels_file, settings['xmlepg_days'])
 		data_mtime = time()
 		print("[XMLEPG] Epg generated in %d seconds" % int(data_mtime - gen_time_start))
-	except:
+	except Exception as e:
 		print("[XMLEPG] something's failed by generating epg")
+		print(e)
 
 	# generate proper sources file for EPGImport
 	if epgimport_found and not os.path.exists('/etc/epgimport'):

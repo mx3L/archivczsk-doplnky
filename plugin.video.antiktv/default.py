@@ -291,6 +291,7 @@ class antiktvContentProvider(ContentProvider):
 		result.append(self.dir_item("Rádiá", "#radio" ))
 		result.append(self.dir_item("Kamery", "#cam" ))
 		result.append(self.dir_item("Filmy", "#vod" ))
+		result.append(self.dir_item("VOD balíky", "#vod_packages" ))
 		result.append(self.dir_item("Archív", "#archive" ))
 		
 		if __addon__.getSetting('enable_extra') == "true":
@@ -311,6 +312,8 @@ class antiktvContentProvider(ContentProvider):
 			return self.show_radiocam( "cam" )
 		elif url == '#vod':
 			return self.show_vod()
+		elif url == '#vod_packages':
+			return self.show_vod_packages()
 		elif url == '#archive':
 			result = []
 			if self.maxim != None:
@@ -338,6 +341,12 @@ class antiktvContentProvider(ContentProvider):
 			return self.show_tv_cat( url[8:] )
 		elif url.startswith( '#vod_genre#'):
 			return self.show_vod_genre( url[11:] )
+		elif url.startswith( '#vod_package#'):
+			return self.show_vod_package( url[13:] )
+		elif url.startswith( '#vod_series#'):
+			return self.show_vod_series( url[12:] )
+		elif url.startswith( '#vod_series_seasons#'):
+			return self.show_vod_series_seasons( url[20:] )
 		
 		return []
 
@@ -887,6 +896,135 @@ class antiktvContentProvider(ContentProvider):
 
 		if count > offset + len( movies ):
 			item = self.dir_item( "Ďalšie", "#vod_genre#" + str(genre_id) + "_" + str( offset + len( movies ))  )
+			item["type"] = 'next'
+			result.append( item )
+			
+		return result
+
+	# #################################################################################################
+
+	def show_vod_packages( self ):
+		result = []
+		
+		if self.maxim != None:
+			packages = self.maxim.get_vod_packages()
+			for package in packages:
+				result.append(self.dir_item( package["name"], "#vod_package#" + str(package["id"]) ) )
+
+		return result
+
+	# #################################################################################################
+	
+	def show_vod_package( self, package_id ):
+		offset = 0
+		x = package_id.split('_')
+		if len(x) > 1:
+			offset = int(x[1])
+		
+		package_id = int(x[0])
+		
+		movies, count = self.maxim.get_vod_movies_by_package( package_id, 200, offset )
+		img_url = self.maxim.get_vod_img_url()
+		
+		result = []
+		
+		for movie in movies:
+			if movie.get("series_main") != 1:
+				item = self.video_item( "#vod_movie#" + str( movie["id"] ) )
+				item["title"] = movie["title"]
+			else:
+				item = self.dir_item( movie["title"], "#vod_series#" + str( movie["id"] ) )
+				
+			try:
+				item["img"] = img_url.format(movie["id"])
+				item["rating"] = movie["imdb_rating"]
+			except:
+				pass
+				
+			result.append(item)
+
+		if count > offset + len( movies ):
+			item = self.dir_item( "Ďalšie", "#vod_package#" + str(package_id) + "_" + str( offset + len( movies ))  )
+			item["type"] = 'next'
+			result.append( item )
+			
+		return result
+
+	# #################################################################################################
+	
+	def show_vod_series( self, series_id ):
+		offset = 0
+		x = series_id.split('_')
+		if len(x) > 1:
+			offset = int(x[1])
+		
+		series_id = int(x[0])
+		
+		movies, count = self.maxim.get_vod_series_seasons( series_id, 200, offset )
+		img_url = self.maxim.get_vod_img_url()
+		
+		result = []
+		
+		for movie in movies:
+			if movie["series_season"] is not None and movie["series_season"] != "":
+				
+				# if there is only one season, then show directly episodes
+				if count == 1:
+					return self.show_vod_series_seasons( str( movie["series_parent_id"] ) + '+' + str( movie["series_season"]) )
+				
+				item = self.dir_item( movie["title"], "#vod_series_seasons#" + str( movie["series_parent_id"] ) + '+' + str( movie["series_season"]) )
+			else:
+				item = self.video_item(  "#vod_movie#" + str( movie["id"] ) )
+				item["title"] = movie["title"]
+			
+			try:
+				item["img"] = img_url.format(movie["image_id"])
+				item["rating"] = movie["imdb_rating"]
+			except:
+				pass
+				
+			result.append(item)
+
+		if count > offset + len( movies ):
+			item = self.dir_item( "Ďalšie", "#vod_series#" + str(series_id) + "_" + str( offset + len( movies ))  )
+			item["type"] = 'next'
+			result.append( item )
+			
+		return result
+
+	# #################################################################################################
+	
+	def show_vod_series_seasons( self, season_id ):
+		x = season_id.split('+')
+		
+		series_id = int(x[0])
+		season_id = x[1]
+		
+		offset = 0
+		x = season_id.split('_')
+		if len(x) > 1:
+			offset = int(x[1])
+		
+		season_id = int(x[0])
+		
+		movies, count = self.maxim.get_vod_season_parts( series_id, season_id, 200, offset )
+		img_url = self.maxim.get_vod_img_url()
+		
+		result = []
+		
+		for movie in movies:
+			item = self.video_item(  "#vod_movie#" + str( movie["id"] ) )
+			item["title"] = movie["title"]
+			item["img"] = img_url.format(movie["image_id"])
+			try:
+				item["rating"] = movie["imdb_rating"]
+			except:
+				pass
+				
+			result.append(item)
+
+		if count > offset + len( movies ):
+			item = self.dir_item( "Ďalšie", "#vod_series#" + str(series_id) + "_" + str( offset + len( movies ))  )
 			item["type"] = 'next'
 			result.append( item )
 			

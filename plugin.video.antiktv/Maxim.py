@@ -21,10 +21,12 @@ class Maxim:
 	# name - username to moj.antik.sk
 	# password - password to moj.antik.sk
 	# device_id - already registered device ID - can be seen on moj.antik.sk
+	# is_stb - If True, then we will act as STB (better quality streams), if False, then we will act as MOBILE
 	#
 	# #################################################################################################
 	
-	def __init__(self, name, password, device_id ):
+	def __init__(self, name, password, device_id, is_stb=True):
+		self.is_stb           = is_stb
 		self.device_id        = device_id
 		self.name             = name
 		self.password         = password
@@ -115,23 +117,39 @@ class Maxim:
 	# #################################################################################################
 	#
 	# Returns dictionary with device info data - it is used in every request
+	# returned value depends on is_stb set by initialisation of the class
 	#
 	# #################################################################################################
 	
 	def getDeviceInfo( self ):
-		return {
-			"vendor": "Raspberry",
-			"model": "Android_AntikTV_VOD",
-			"os_version": "10",
-			"app_version": "1.1.17.7",
-			"app_name": "Antik TV",
-			"id": self.device_id,
-			"ip": "192.168.1.2",
-			"lang": "sk",
-			"type": "stb",
-			"os": "Android",
-			"service": "OTT"
-		}
+		if self.is_stb == True:
+			return {
+				"vendor": "Raspberry",
+				"model": "Android_AntikTV_VOD",
+				"os_version": "10",
+				"app_version": "1.1.18",
+				"app_name": "Antik TV",
+				"id": self.device_id,
+				"ip": "192.168.1.2",
+				"lang": "sk",
+				"type": "stb",
+				"os": "Android",
+				"service": "OTT"
+			}
+		else:
+			return {
+				"vendor": "samsung",
+				"model": "Android_AntikTV_VOD",
+				"os_version": "10",
+				"app_version": "1.1.9",
+				"app_name": "Antik TV",
+				"id": self.device_id,
+				"ip": "192.168.1.2",
+				"lang": "sk",
+				"type": "phone",
+				"os": "Android",
+				"service": "MOBILE"
+			}
 
 	# #################################################################################################
 	#
@@ -169,14 +187,14 @@ class Maxim:
 	#
 	# #################################################################################################
 	def call_MwGetSettings( self, request_type="normal" ):
-		xml_data = {
+		json_data = {
 			"function": "MwGetSettings",
 			"mac_address": self.device_id,
 			"ip_address": "",
 			"device": self.getDeviceInfo()
 		}
 		
-		return self.do_request( json.dumps( xml_data ).encode("utf-8"), request_type )
+		return self.do_request( json.dumps( json_data ).encode("utf-8"), request_type )
 
 	# #################################################################################################
 	#
@@ -185,12 +203,12 @@ class Maxim:
 	# #################################################################################################
 	
 	def call_MwGetMyAccountInfo( self ):
-		xml_data = {
+		json_data = {
 			"function": "MwGetMyAccountInfo",
 			"device": self.getDeviceInfo()
 		}
 		
-		return self.do_request( json.dumps( xml_data ).encode("utf-8") )
+		return self.do_request( json.dumps( json_data ).encode("utf-8") )
 
 	# #################################################################################################
 	#
@@ -199,13 +217,13 @@ class Maxim:
 	# #################################################################################################
 	
 	def call_Register( self ):
-		xml_data = {
+		json_data = {
 			"function": "Register",
 			"username": self.device_id,
 			"device": self.getDeviceInfo()
 		}
 		
-		return self.do_request( json.dumps( xml_data ).encode("utf-8"), "register" )
+		return self.do_request( json.dumps( json_data ).encode("utf-8"), "register" )
 
 	# #################################################################################################
 	#
@@ -214,12 +232,12 @@ class Maxim:
 	# #################################################################################################
 	
 	def call_MwUnregisterDevice( self ):
-		xml_data = {
+		json_data = {
 			"function": "MwUnregisterDevice",
 			"device": self.getDeviceInfo()
 		}
 		
-		return self.do_request( json.dumps( xml_data ).encode("utf-8") )
+		return self.do_request( json.dumps( json_data ).encode("utf-8") )
 
 	# #################################################################################################
 	#
@@ -228,7 +246,7 @@ class Maxim:
 	# #################################################################################################
 	
 	def call_MwLogOnCustomer( self ):
-		xml_data = {
+		json_data = {
 			"function": "MwLogOnCustomer",
 			"device": self.getDeviceInfo(),
 			"login": {
@@ -238,7 +256,7 @@ class Maxim:
 			}
 		}
 		
-		return self.do_request( json.dumps( xml_data ).encode("utf-8"), "device" )
+		return self.do_request( json.dumps( json_data ).encode("utf-8"), "device" )
 
 	# #################################################################################################
 	#
@@ -247,14 +265,14 @@ class Maxim:
 	# #################################################################################################
 	
 	def call_MwSyncCallbackPing( self, data ):
-		xml_data = {
+		json_data = {
 			"function": "MwSyncCallbackPing",
 			"device": self.getDeviceInfo(),
 			"data": data,
 			"mac_address": ""
 		}
 		
-		return self.do_request( json.dumps( xml_data ).encode("utf-8"), "device" )
+		return self.do_request( json.dumps( json_data ).encode("utf-8"), "device" )
 
 	# #################################################################################################
 	# ####################################  Live TV calls  ############################################
@@ -268,7 +286,7 @@ class Maxim:
 	# #################################################################################################
 	
 	def call_ChannelList( self, channel_type="tv" ):
-		xml_data = {
+		json_data = {
 			"function": "ChannelList",
 			"limit": 1000,
 			"offset": 0,
@@ -276,7 +294,7 @@ class Maxim:
 			"device": self.getDeviceInfo()
 		}
 		
-		return self.do_request( json.dumps( xml_data ).encode("utf-8") )
+		return self.do_request( json.dumps( json_data ).encode("utf-8") )
 
 	# #################################################################################################
 	#
@@ -286,13 +304,13 @@ class Maxim:
 	# #################################################################################################
 	
 	def call_GetContentKey( self, key_id ):
-		xml_data = {
+		json_data = {
 			"function": "GetContentKey",
 			"id": key_id,
 			"device": self.getDeviceInfo()
 		}
 		
-		return self.do_request( json.dumps( xml_data ).encode("utf-8"), "device" )
+		return self.do_request( json.dumps( json_data ).encode("utf-8"), "device" )
 
 	# #################################################################################################
 	#
@@ -301,7 +319,7 @@ class Maxim:
 	# #################################################################################################
 	
 	def call_ChannelEpg( self, channel, time_start, time_end ):
-		xml_data = {
+		json_data = {
 			"function": "ChannelEpg",
 			"channel_id": channel,
 			"from": time_start,
@@ -309,7 +327,7 @@ class Maxim:
 			"device": self.getDeviceInfo()
 		}
 		
-		return self.do_request( json.dumps( xml_data ).encode("utf-8") )
+		return self.do_request( json.dumps( json_data ).encode("utf-8") )
 
 	# #################################################################################################
 	#
@@ -318,7 +336,7 @@ class Maxim:
 	# #################################################################################################
 	
 	def call_ActualEpg( self, channels, add_next=0 ):
-		xml_data = {
+		json_data = {
 			"function": "ActualEpg",
 			"channels": channels,
 			"next": add_next,
@@ -326,7 +344,7 @@ class Maxim:
 			"device": self.getDeviceInfo()
 		}
 		
-		return self.do_request( json.dumps( xml_data ).encode("utf-8") )
+		return self.do_request( json.dumps( json_data ).encode("utf-8") )
 	
 	# ################################# VOD calls ############################################
 	
@@ -337,12 +355,12 @@ class Maxim:
 	# #################################################################################################
 	
 	def call_VodGetUser( self ):
-		xml_data = {
+		json_data = {
 			"function": "VodGetUser",
 			"device": self.getDeviceInfo()
 		}
 		
-		return self.do_request( json.dumps( xml_data ).encode("utf-8"), "vod_get_auth" )
+		return self.do_request( json.dumps( json_data ).encode("utf-8"), "vod_get_auth" )
 	
 	# #################################################################################################
 	#
@@ -351,12 +369,12 @@ class Maxim:
 	# #################################################################################################
 	
 	def call_VodGenres( self ):
-		xml_data = {
+		json_data = {
 			"function": "VodGenres",
 			"device": self.getDeviceInfo()
 		}
 		
-		return self.do_request( json.dumps( xml_data ).encode("utf-8"), "vod" )
+		return self.do_request( json.dumps( json_data ).encode("utf-8"), "vod" )
 
 	# #################################################################################################
 	#
@@ -365,14 +383,14 @@ class Maxim:
 	# #################################################################################################
 	
 	def call_VodTopMovies( self, limit=20, offset=0 ):
-		xml_data = {
+		json_data = {
 			"function": "VodTopMovies",
 			"limit": limit,
 			"offset": offset,
 			"device": self.getDeviceInfo()
 		}
 		
-		return self.do_request( json.dumps( xml_data ).encode("utf-8"), "vod" )
+		return self.do_request( json.dumps( json_data ).encode("utf-8"), "vod" )
 
 	# #################################################################################################
 	#
@@ -381,7 +399,7 @@ class Maxim:
 	# #################################################################################################
 	
 	def call_VodGenreMovies( self, genre_id, limit=1000, offset=0 ):
-		xml_data = {
+		json_data = {
 			"function": "VodGenreMovies",
 			"genre_id": genre_id,
 			"type": "genre",
@@ -390,7 +408,7 @@ class Maxim:
 			"device": self.getDeviceInfo()
 		}
 		
-		return self.do_request( json.dumps( xml_data ).encode("utf-8"), "vod" )
+		return self.do_request( json.dumps( json_data ).encode("utf-8"), "vod" )
 
 	# #################################################################################################
 	#
@@ -399,13 +417,13 @@ class Maxim:
 	# #################################################################################################
 	
 	def call_VodMovieDetail( self, movie_id ):
-		xml_data = {
+		json_data = {
 			"function": "VodMovieDetail",
 			"movie_id": movie_id,
 			"device": self.getDeviceInfo()
 		}
 		
-		return self.do_request( json.dumps( xml_data ).encode("utf-8"), "vod" )
+		return self.do_request( json.dumps( json_data ).encode("utf-8"), "vod" )
 
 	# #################################################################################################
 	#
@@ -414,7 +432,7 @@ class Maxim:
 	# #################################################################################################
 	
 	def call_VodPlay( self, movie_id, movie_key ):
-		xml_data = {
+		json_data = {
 			"function": "VodPlay",
 			"movie_id": movie_id,
 			"key": movie_key,
@@ -422,7 +440,27 @@ class Maxim:
 			"device": self.getDeviceInfo()
 		}
 		
-		return self.do_request( json.dumps( xml_data ).encode("utf-8"), "vod" )
+		return self.do_request( json.dumps( json_data ).encode("utf-8"), "vod" )
+
+	# #################################################################################################
+	#
+	# Calls VodStop method to report info about played content
+	# order_id, movie_key and storage_ip is returned from VodPlay call
+	# seconds is the number of seconds played from movie
+	#
+	# #################################################################################################
+	
+	def call_VodStop( self, order_id, movie_key, storage_ip, seconds ):
+		json_data = {
+			"function": "VodStop",
+			"order_id": order_id,
+			"seconds": seconds,
+			"key": movie_key,
+			"storage_ip": storage_ip,
+			"device": self.getDeviceInfo()
+		}
+		
+		return self.do_request( json.dumps( json_data ).encode("utf-8"), "vod" )
 
 	# #################################################################################################
 	#
@@ -432,13 +470,80 @@ class Maxim:
 	# #################################################################################################
 	
 	def call_VodGetKey( self, key_id ):
-		xml_data = {
+		json_data = {
 			"function": "VodGetKey",
 			"id": key_id,
 			"device": self.getDeviceInfo()
 		}
 		
-		return self.do_request( json.dumps( xml_data ).encode("utf-8"), "vod" )
+		return self.do_request( json.dumps( json_data ).encode("utf-8"), "vod" )
+
+	# #################################################################################################
+	#
+	# Calls VodPackages method to get available VOD packages
+	#
+	# #################################################################################################
+	
+	def call_VodPackages( self ):
+		json_data = {
+			"function": "VodPackages",
+			"device": self.getDeviceInfo()
+		}
+		
+		return self.do_request( json.dumps( json_data ).encode("utf-8"), "vod" )
+
+	# #################################################################################################
+	#
+	# Calls VodPackageMovies method to get available movies for selected VOD package
+	#
+	# #################################################################################################
+	
+	def call_VodPackageMovies( self, package_id, limit=100, offset=0 ):
+		json_data = {
+			"function": "VodPackageMovies",
+			"package_id": package_id,
+			"offset": offset,
+			"limit": limit,
+			"type": "package",
+			"device": self.getDeviceInfo()
+		}
+		
+		return self.do_request( json.dumps( json_data ).encode("utf-8"), "vod" )
+
+	# #################################################################################################
+	#
+	# Calls VodSeriesSeasons method to get available series for selected VOD series_id
+	#
+	# #################################################################################################
+	
+	def call_VodSeriesSeasons( self, series_id, limit=100, offset=0 ):
+		json_data = {
+			"function": "VodSeriesSeasons",
+			"series_id": series_id,
+			"offset": offset,
+			"limit": limit,
+			"device": self.getDeviceInfo()
+		}
+		
+		return self.do_request( json.dumps( json_data ).encode("utf-8"), "vod" )
+
+	# #################################################################################################
+	#
+	# Calls VodSeasonParts method to get available season parts for selected VOD series_id + season_id
+	#
+	# #################################################################################################
+	
+	def call_VodSeasonParts( self, series_id, season_id, limit=100, offset=0 ):
+		json_data = {
+			"function": "VodSeasonParts",
+			"series_id": series_id,
+			"season_id": season_id,
+			"offset": offset,
+			"limit": limit,
+			"device": self.getDeviceInfo()
+		}
+		
+		return self.do_request( json.dumps( json_data ).encode("utf-8"), "vod" )
 
 	# ############################### Archive calls ##########################################
 
@@ -449,12 +554,12 @@ class Maxim:
 	# #################################################################################################
 	
 	def call_ArchiveBrowserGenres( self ):
-		xml_data = {
+		json_data = {
 			"function": "ArchiveBrowserGenres",
 			"device": self.getDeviceInfo()
 		}
 		
-		return self.do_request( json.dumps( xml_data ).encode("utf-8") )
+		return self.do_request( json.dumps( json_data ).encode("utf-8") )
 	
 	# #################################################################################################
 	#
@@ -463,7 +568,7 @@ class Maxim:
 	# #################################################################################################
 	
 	def call_ArchiveBrowserMain( self, channels, genre, limit=20, offset=0 ):
-		xml_data = {
+		json_data = {
 			"function": "ArchiveBrowserMain",
 			"device": self.getDeviceInfo(),
 			"limit": limit,
@@ -472,7 +577,7 @@ class Maxim:
 			"genre": genre
 		}
 		
-		return self.do_request( json.dumps( xml_data ).encode("utf-8") )
+		return self.do_request( json.dumps( json_data ).encode("utf-8") )
 
 	# #################################################################################################
 	#
@@ -481,7 +586,7 @@ class Maxim:
 	# #################################################################################################
 	
 	def call_ArchiveBrowserSeries( self, channels, serie_id, limit=20, offset=0 ):
-		xml_data = {
+		json_data = {
 			"function": "ArchiveBrowserSeries",
 			"device": self.getDeviceInfo(),
 			"limit": limit,
@@ -491,7 +596,7 @@ class Maxim:
 			"series": serie_id
 		}
 		
-		return self.do_request( json.dumps( xml_data ).encode("utf-8") )
+		return self.do_request( json.dumps( json_data ).encode("utf-8") )
 
 	# #################################################################################################
 	#
@@ -500,7 +605,7 @@ class Maxim:
 	# #################################################################################################
 	
 	def call_ArchiveBrowserSeason( self, channels, serie_id, season_nr, limit=20, offset=0 ):
-		xml_data = {
+		json_data = {
 			"function": "ArchiveBrowserSeason",
 			"device": self.getDeviceInfo(),
 			"limit": limit,
@@ -511,7 +616,7 @@ class Maxim:
 			"season": season_nr
 		}
 		
-		return self.do_request( json.dumps( xml_data ).encode("utf-8") )
+		return self.do_request( json.dumps( json_data ).encode("utf-8") )
 
 	# #################################################################################################
 	#
@@ -520,7 +625,7 @@ class Maxim:
 	# #################################################################################################
 	
 	def call_GetContentArchive( self, channel_id, time_from, time_to ):
-		xml_data = {
+		json_data = {
 			"function": "GetContentArchive",
 			"device": self.getDeviceInfo(),
 			"channel_id": channel_id,
@@ -528,7 +633,7 @@ class Maxim:
 			"to": time_to
 		}
 		
-		return self.do_request( json.dumps( xml_data ).encode("utf-8") )
+		return self.do_request( json.dumps( json_data ).encode("utf-8") )
 	
 	#
 	# #################################################################################################
@@ -1009,6 +1114,90 @@ class Maxim:
 		else:
 			return ""
 
+	# #################################################################################################
+	#
+	# Returns available packages in VOD
+	#
+	# #################################################################################################
+	
+	def get_vod_packages( self ):
+		self.create_vod_request_template()
+		
+		ok, data = self.call_VodPackages()
+		
+		if ok == False:
+			return []
+		
+		response = json.loads( data )
+		
+		if response["status"] != "ok":
+			return []
+		
+		return response["data"]
+
+	# #################################################################################################
+	#
+	# Returns list of movies in package_id
+	#
+	# #################################################################################################
+	
+	def get_vod_movies_by_package( self, package_id, limit=100, offset=0 ):
+		self.create_vod_request_template()
+		
+		ok, data = self.call_VodPackageMovies( package_id, limit, offset )
+
+		if ok == False:
+			return [], 0
+		
+		response = json.loads( data )
+		
+		if response["status"] != "ok":
+			return [], 0
+		
+		return response["data"], response["count"]
+
+	# #################################################################################################
+	#
+	# Returns list of series seasons in series_id
+	#
+	# #################################################################################################
+	
+	def get_vod_series_seasons( self, series_id, limit=100, offset=0 ):
+		self.create_vod_request_template()
+		
+		ok, data = self.call_VodSeriesSeasons( series_id, limit, offset )
+
+		if ok == False:
+			return [], 0
+		
+		response = json.loads( data )
+		
+		if response["status"] != "ok":
+			return [], 0
+		
+		return response["data"], response["count"]
+
+	# #################################################################################################
+	#
+	# Returns list of series seasons in series_id
+	#
+	# #################################################################################################
+	
+	def get_vod_season_parts( self, series_id, season_id, limit=100, offset=0 ):
+		self.create_vod_request_template()
+		
+		ok, data = self.call_VodSeasonParts( series_id, season_id, limit, offset )
+
+		if ok == False:
+			return [], 0
+		
+		response = json.loads( data )
+		
+		if response["status"] != "ok":
+			return [], 0
+		
+		return response["data"], response["count"]
+	
 	# #################################################################################################
 	# ################################### Archive calls ###############################################
 	# #################################################################################################
