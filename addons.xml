@@ -507,7 +507,7 @@
 
 <addon id="plugin.video.novaplus"
        name="Nova Plus TV"
-       version="2.2.10"
+       version="2.2.11"
        provider-name="Michal Novotny, Jiri Vyhnalek">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
@@ -587,7 +587,7 @@
   </extension>
 </addon>
 
-<addon id="plugin.video.antiktv" name="Antik TV" provider-name="skyjet" version="1.2">
+<addon id="plugin.video.antiktv" name="Antik TV" provider-name="skyjet" version="1.4">
   <requires>
     <import addon="xbmc.python" version="2.1.0" />
     <import addon="script.module.stream.resolver" version="1.6.22" />
