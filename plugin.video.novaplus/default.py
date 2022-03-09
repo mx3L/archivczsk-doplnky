@@ -77,6 +77,7 @@ def OBSAH():
         for chan in chans:
             ch[chan[0]] = ' (' + chan[1].replace("&nbsp;", " ") + ' ' + chan[2] + ' - ' + chan[3] + ')'
     addDir('ŽIVĚ - Nova'+ch.get('Nova',''),'nova-live',7,None,1)
+    addDir('ŽIVĚ - TN Live'+ch.get('TN LIVE',''),'tn-live-live',7,None,1)
     addDir('ŽIVĚ - Nova Cinema'+ch.get('Nova Cinema',''),'nova-cinema-live',7,None,1)
     addDir('ŽIVĚ - Nova Action'+ch.get('Nova Action',''),'nova-action-live',7,None,1)
     addDir('ŽIVĚ - Nova Fun'+ch.get('Nova Fun',''),'nova-fun-live',7,None,1)
@@ -252,7 +253,7 @@ def VIDEOLINK(url,name):    # rewrite by MN
 
 def LIVE(url):
     text = get_url('https://media.cms.nova.cz/embed/'+url+'?autoplay=1', headers={"referer": "https://novaplus.nova.cz/"})
-    data = re.search("replacePlaceholders\(\{(.*?)\}\)", text, re.S)
+    data = re.search("processAdTagModifier\(\{(.*?)\}\)", text, re.S)
     if data != None:
         plr = json.loads('{'+data.group(1)+'}')
         url = plr["tracks"]["HLS"][0]["src"]
