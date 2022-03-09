@@ -27,13 +27,18 @@ maxim = None
 data_mtime = 0
 key_cache={}
 
+PROXY_VER='3'
+
 XMLEPG_DATA_FILE = 'antiktv.data.xml'
 XMLEPG_CHANNELS_FILE = 'antiktv.channels.xml'
-XMLEPG_SOURCES_FILE = '/etc/epgimport/antiktv.sources.xml'
-EPGIMPORT_SETTINGS_FILE = '/etc/enigma2/epgimport.conf'
-PROXY_VER='2'
 
-XMLEPG_SOURCES_CONTENT ='''<?xml version="1.0" encoding="utf-8"?>
+
+# settings for EPGImport
+
+EPGIMPORT_SOURCES_FILE = '/etc/epgimport/antiktv.sources.xml'
+EPGIMPORT_SETTINGS_FILE = '/etc/enigma2/epgimport.conf'
+
+EPGIMPORT_SOURCES_CONTENT ='''<?xml version="1.0" encoding="utf-8"?>
 <sources>
   <mappings>
       <channel name="antiktv.channels.xml">
@@ -46,6 +51,22 @@ XMLEPG_SOURCES_CONTENT ='''<?xml version="1.0" encoding="utf-8"?>
       <url>%s</url>
     </source>
   </sourcecat>
+</sources>
+'''
+
+# parameters for EPGLoad
+
+EPGLOAD_SOURCES_FILE = '/etc/epgload/antiktv.sources.xml'
+EPGLOAD_SETTINGS_FILE = '/etc/epgload/epgimport.conf'
+
+EPGLOAD_SOURCES_CONTENT ='''<?xml version="1.0" encoding="utf-8"?>
+<sources>
+	<sourcecat sourcecatname="AntikTV XMLTV">
+		<source type="gen_xmltv" nocheck="1" channels="//localhost%s">
+			<description>AntikTV</description>
+			<url>//localhost%s</url>
+		</source>
+	</sourcecat>
 </sources>
 '''
 
@@ -237,17 +258,19 @@ def create_xmlepg( data_file, channels_file, days ):
 						epg = maxim.get_channel_epg( id_epg, date_from, date_to )
 						
 						for event in epg:
-							xml_data = {
-								'start': event['start'].replace("-", '').replace("T", '').replace(':','').replace('+',' '),
-								'stop': event['stop'].replace("-", '').replace("T", '').replace(':','').replace('+',' '),
-								'title': escape(str(event['title'])),
-								'desc': escape(event['description']) if event['description'] != None else None
-							}
-							
-							f.write( ' <programme start="%s" stop="%s" channel="%s">\n' % (xml_data['start'], xml_data['stop'], id_content ) )
-							f.write( '  <title lang="cs">%s</title>\n' % xml_data['title'])
-							f.write( '  <desc lang="cs">%s</desc>\n' % xml_data['desc'] )
-							f.write( ' </programme>\n')
+							try:
+								xml_data = {
+									'start': event['start'].replace("-", '').replace("T", '').replace(':','').replace('+',' '),
+									'stop': event['stop'].replace("-", '').replace("T", '').replace(':','').replace('+',' '),
+									'title': escape(str(event['title'])),
+									'desc': escape(event['description']) if event['description'] != None else None
+								}
+								f.write( ' <programme start="%s" stop="%s" channel="%s">\n' % (xml_data['start'], xml_data['stop'], id_content ) )
+								f.write( '  <title lang="cs">%s</title>\n' % xml_data['title'])
+								f.write( '  <desc lang="cs">%s</desc>\n' % xml_data['desc'] )
+								f.write( ' </programme>\n')
+							except:
+								pass
 						
 			fc.write('</channels>\n')
 			f.write('</tv>\n')
@@ -270,8 +293,24 @@ def generate_xmlepg_if_needed():
 	
 	# check if epgimport plugin exists
 	epgimport_check_file = '/usr/lib/enigma2/python/Plugins/Extensions/EPGImport/__init__.py'
-	if not os.path.exists( epgimport_check_file ) and not os.path.exists( epgimport_check_file + 'o' ) and not os.path.exists( epgimport_check_file + 'c' ):
-		print("[XMLEPG] epgimport plugin not detected")
+
+	if os.path.exists( epgimport_check_file ) or os.path.exists( epgimport_check_file + 'o' ) or os.path.exists( epgimport_check_file + 'c' ):
+		epgimport_found = True
+	else:
+		print("[XMLEPG] EPGImport plugin not detected")
+		epgimport_found = False
+
+	# check if epgimport plugin exists
+	epgload_check_file = '/usr/lib/enigma2/python/Plugins/Extensions/EPGLoad/__init__.py'
+
+	if os.path.exists( epgload_check_file ) or os.path.exists( epgload_check_file + 'o' ) or os.path.exists( epgload_check_file + 'c' ):
+		epgload_found = True
+	else:
+		print("[XMLEPG] EPGLoad plugin not detected")
+		epgload_found = False
+	
+	if not epgimport_found and not epgload_found:
+		print("[XMLEPG] Neither EPGImport nor EPGLoad plugin not detected")
 		return
 	
 	# create paths to export files
@@ -284,8 +323,8 @@ def generate_xmlepg_if_needed():
 			# data_mtime is global to prevent rotary disc to start by every check
 			data_mtime = os.path.getmtime( data_file )
 			
-		if (data_mtime + 86400) > time():
-			# we have generated data file less then 1 day ago
+		if (data_mtime + 82800) >= time():
+			# we have generated data file less then 23 hours
 			return
 	except:
 		pass
@@ -296,32 +335,47 @@ def generate_xmlepg_if_needed():
 		create_xmlepg(data_file, channels_file, settings['xmlepg_days'])
 		data_mtime = time()
 		print("[XMLEPG] Epg generated in %d seconds" % int(data_mtime - gen_time_start))
-	except:
+	except Exception as e:
 		print("[XMLEPG] something's failed by generating epg")
+		print(e)
 
-	# generate proper sources file for epgimport
-	if not os.path.exists('/etc/epgimport'):
+	# generate proper sources file for EPGImport
+	if epgimport_found and not os.path.exists('/etc/epgimport'):
 		os.mkdir( '/etc/epgimport')
-	
-	xmlepg_source_content = XMLEPG_SOURCES_CONTENT % (channels_file, data_file)
-	xmlepg_source_content_md5 = MD5.new( xmlepg_source_content ).hexdigest()
-	
-	# check for correct content of sources file and update is if needed
-	if not os.path.exists( XMLEPG_SOURCES_FILE ) or MD5.new( open( XMLEPG_SOURCES_FILE, 'r' ).read() ).hexdigest() != xmlepg_source_content_md5:
-		print("[XMLEPG] Writing new sources file to " + XMLEPG_SOURCES_FILE )
-		with open( XMLEPG_SOURCES_FILE, 'w' ) as f:
-			f.write( xmlepg_source_content )
 
-	# check if antik source is enabled in epgimport settings and enable if needed
-	if os.path.exists( EPGIMPORT_SETTINGS_FILE ):
-		epgimport_settings = pickle.load(open(EPGIMPORT_SETTINGS_FILE, 'rb'))
-	else:
-		epgimport_settings = { 'sources': [] }
+	# generate proper sources file for EPGLoad
+	if epgload_found and not os.path.exists('/etc/epgload'):
+		os.mkdir( '/etc/epgload')
+	
+	epgplugin_data_list = []
+	
+	if epgimport_found:
+		epgplugin_data_list.append( (EPGIMPORT_SOURCES_CONTENT, EPGIMPORT_SOURCES_FILE, EPGIMPORT_SETTINGS_FILE) )
 
-	if 'AntikTV' not in epgimport_settings['sources']:
-		print("[XMLEPG] Enabling AntikTV in epgimport config" )
-		epgimport_settings['sources'].append('AntikTV')
-		pickle.dump(epgimport_settings, open(EPGIMPORT_SETTINGS_FILE, 'wb'), pickle.HIGHEST_PROTOCOL)
+	if epgload_found:
+		epgplugin_data_list.append( (EPGLOAD_SOURCES_CONTENT, EPGLOAD_SOURCES_FILE, EPGLOAD_SETTINGS_FILE) )
+
+	for epgplugin_data in epgplugin_data_list:
+		xmlepg_source_content = epgplugin_data[0] % (channels_file, data_file)
+		xmlepg_source_content_md5 = MD5.new( xmlepg_source_content ).hexdigest()
+	
+		# check for correct content of sources file and update it if needed
+		if not os.path.exists( epgplugin_data[1] ) or MD5.new( open( epgplugin_data[1], 'r' ).read() ).hexdigest() != xmlepg_source_content_md5:
+			print("[XMLEPG] Writing new sources file to " + epgplugin_data[1] )
+			with open( epgplugin_data[1], 'w' ) as f:
+				f.write( xmlepg_source_content )
+	
+		# check if antik source is enabled in epgimport settings and enable if needed
+		if os.path.exists( epgplugin_data[2] ):
+			epgimport_settings = pickle.load(open(epgplugin_data[2], 'rb'))
+		else:
+			epgimport_settings = { 'sources': [] }
+	
+		if 'AntikTV' not in epgimport_settings['sources']:
+			print("[XMLEPG] Enabling AntikTV in epgimport/epgload config %s" % epgplugin_data[2] )
+			epgimport_settings['sources'].append('AntikTV')
+			pickle.dump(epgimport_settings, open(epgplugin_data[2], 'wb'), pickle.HIGHEST_PROTOCOL)
+
 	
 # #################################################################################################
 

@@ -10,6 +10,6 @@
 	<setting label="Pre koľko dní dopredu generovať EPG" id="xmlepg_days" type="enum" lvalues="1|2|3|4|5|6|7" default="4"/>
 	<setting label="Pri generovaní userbouquetu automaticky stiahnuť picony" id="enable_picons" type="bool" default="false" />
 	<setting label="Povoliť špeciálnu sekciu hlavnej ponuke" id="enable_extra" type="bool" default="false" />
-	<setting label="Prehrávač použitý pre userbouquet" id="player_name" type="enum" lvalues="Predvolený|gstplayer|exteplayer3|mix" default="3"/>
+	<setting label="Prehrávač použitý pre userbouquet" id="player_name" type="enum" lvalues="Predvolený|gstplayer|exteplayer3|gst + exte3|DMM|DVB (OE>=2.5)" default="3"/>
 	<setting label="Zobraziť v zozname TV doplnkov" id="tv_addon" type="bool" default="true"/>
 </settings>
